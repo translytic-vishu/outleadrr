@@ -4,7 +4,6 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Zap,
@@ -23,7 +22,6 @@ import {
   TrendingUp,
   Users,
   ArrowRight,
-  ExternalLink,
 } from "lucide-react";
 
 const EXAMPLE_SEARCHES = [
@@ -34,298 +32,490 @@ const EXAMPLE_SEARCHES = [
   { business: "real estate agents", location: "Miami, FL" },
 ];
 
-function GlowOrb({ className, style }: { className?: string; style?: React.CSSProperties }) {
+/* ─── small decorative helpers ────────────────────────────────────────── */
+
+function GridBg() {
   return (
     <div
-      className={`absolute rounded-full blur-3xl pointer-events-none ${className}`}
-      style={style}
-    />
-  );
-}
-
-function ScanLine() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div
-        className="absolute left-0 right-0 h-px opacity-10"
-        style={{
-          background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.8), rgba(168,85,247,0.8), transparent)",
-          animation: "scan-line 8s linear infinite",
-        }}
-      />
-    </div>
-  );
-}
-
-function GridPattern() {
-  return (
-    <div
-      className="absolute inset-0 pointer-events-none"
+      aria-hidden
       style={{
-        backgroundImage: `
-          linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px)
-        `,
-        backgroundSize: "60px 60px",
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        backgroundImage:
+          "linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)",
+        backgroundSize: "64px 64px",
+        pointerEvents: "none",
       }}
     />
   );
 }
 
-function StatCard({
+function GlowBlob({
+  top,
+  left,
+  right,
+  color,
+  size = 500,
+  opacity = 0.25,
+}: {
+  top?: number | string;
+  left?: number | string;
+  right?: number | string;
+  color: string;
+  size?: number;
+  opacity?: number;
+}) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "fixed",
+        top,
+        left,
+        right,
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: color,
+        filter: "blur(120px)",
+        opacity,
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    />
+  );
+}
+
+/* ─── stat pill shown after results load ──────────────────────────────── */
+function StatPill({
   icon: Icon,
   label,
   value,
-  delay = 0,
 }: {
   icon: any;
   label: string;
   value: string | number;
-  delay?: number;
 }) {
   return (
     <div
-      className="relative rounded-md p-4 flex items-center gap-3"
       style={{
-        background: "rgba(15,15,20,0.8)",
-        border: "1px solid rgba(99,102,241,0.15)",
-        animation: `fade-up 0.5s ease-out ${delay}ms forwards`,
-        opacity: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "12px 16px",
+        borderRadius: 8,
+        background: "rgba(15,15,22,0.9)",
+        border: "1px solid rgba(99,102,241,0.18)",
       }}
     >
       <div
-        className="flex items-center justify-center w-9 h-9 rounded-md flex-shrink-0"
-        style={{ background: "rgba(99,102,241,0.15)" }}
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 7,
+          background: "rgba(99,102,241,0.16)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
       >
-        <Icon className="w-4 h-4 text-indigo-400" />
+        <Icon size={16} color="#818cf8" />
       </div>
       <div>
-        <p className="text-xs text-white/40 font-display uppercase tracking-widest leading-none mb-1">
+        <div
+          style={{
+            fontSize: 10,
+            fontFamily: "Space Grotesk, sans-serif",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.35)",
+            lineHeight: 1,
+            marginBottom: 4,
+          }}
+        >
           {label}
-        </p>
-        <p className="text-lg font-display font-semibold text-white leading-none">
+        </div>
+        <div
+          style={{
+            fontSize: 17,
+            fontFamily: "Space Grotesk, sans-serif",
+            fontWeight: 700,
+            color: "#ffffff",
+            lineHeight: 1,
+          }}
+        >
           {value}
-        </p>
+        </div>
       </div>
     </div>
   );
 }
 
-function EmailCard({ lead, index }: { lead: Lead; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState<"subject" | "body" | "email" | null>(null);
-  const { toast } = useToast();
+/* ─── single lead card ────────────────────────────────────────────────── */
+function LeadCard({ lead, index }: { lead: Lead; index: number }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState<"email" | "subject" | "body" | null>(null);
 
-  const copyText = async (text: string, type: "subject" | "body" | "email") => {
+  const copy = async (text: string, key: "email" | "subject" | "body") => {
     await navigator.clipboard.writeText(text);
-    setCopied(type);
+    setCopied(key);
     setTimeout(() => setCopied(null), 2000);
-  };
-
-  const statusColors: Record<string, string> = {
-    new: "rgba(99,102,241,0.2)",
-    contacted: "rgba(234,179,8,0.2)",
-    replied: "rgba(34,197,94,0.2)",
-    closed: "rgba(107,114,128,0.2)",
-  };
-
-  const statusTextColors: Record<string, string> = {
-    new: "#818cf8",
-    contacted: "#fbbf24",
-    replied: "#4ade80",
-    closed: "#9ca3af",
   };
 
   return (
     <div
-      className="relative rounded-md group"
       style={{
-        background: "rgba(10,10,15,0.9)",
-        border: "1px solid rgba(99,102,241,0.12)",
-        animation: `fade-up 0.5s ease-out ${index * 60}ms forwards`,
-        opacity: 0,
-        transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+        borderRadius: 10,
+        background: "rgba(8,8,14,0.95)",
+        border: "1px solid rgba(99,102,241,0.14)",
+        overflow: "hidden",
+        transition: "border-color 0.25s, box-shadow 0.25s",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.35)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 30px rgba(99,102,241,0.08), 0 0 60px rgba(168,85,247,0.04)";
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = "rgba(99,102,241,0.38)";
+        el.style.boxShadow = "0 0 32px rgba(99,102,241,0.09)";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.12)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.borderColor = "rgba(99,102,241,0.14)";
+        el.style.boxShadow = "none";
       }}
     >
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-3 min-w-0">
+      <div style={{ padding: "20px 22px" }}>
+        {/* top row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
             <div
-              className="flex items-center justify-center w-10 h-10 rounded-md flex-shrink-0 font-display font-bold text-sm"
               style={{
-                background: `linear-gradient(135deg, rgba(99,102,241,0.25), rgba(168,85,247,0.25))`,
-                border: "1px solid rgba(99,102,241,0.2)",
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: "linear-gradient(135deg,rgba(99,102,241,0.22),rgba(168,85,247,0.22))",
+                border: "1px solid rgba(99,102,241,0.22)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                fontFamily: "Space Grotesk, sans-serif",
+                fontWeight: 700,
+                fontSize: 12,
                 color: "#a5b4fc",
               }}
             >
               {String(index + 1).padStart(2, "0")}
             </div>
-            <div className="min-w-0">
-              <h3 className="font-display font-semibold text-white text-base leading-tight truncate">
+            <div>
+              <div
+                style={{
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  color: "#ffffff",
+                  lineHeight: 1.3,
+                }}
+              >
                 {lead.companyName}
-              </h3>
-              <p className="text-sm text-white/50 mt-0.5">{lead.contactName}</p>
+              </div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
+                {lead.contactName}
+              </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
-            <span
-              className="text-xs font-display font-medium px-2 py-1 rounded-md uppercase tracking-wider"
-              style={{
-                background: statusColors[lead.status || "new"],
-                color: statusTextColors[lead.status || "new"],
-              }}
-            >
-              {lead.status || "new"}
-            </span>
-          </div>
+          <span
+            style={{
+              fontSize: 10,
+              fontFamily: "Space Grotesk, sans-serif",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              padding: "4px 10px",
+              borderRadius: 6,
+              background: "rgba(99,102,241,0.15)",
+              color: "#818cf8",
+            }}
+          >
+            New Lead
+          </span>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* info chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
           <button
-            onClick={() => copyText(lead.email, "email")}
-            className="flex items-center gap-2 text-sm text-white/60 rounded-md px-3 py-2 text-left transition-colors duration-200"
+            onClick={() => copy(lead.email, "email")}
+            title="Click to copy email"
             style={{
-              background: "rgba(99,102,241,0.06)",
-              border: "1px solid rgba(99,102,241,0.1)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 12px",
+              borderRadius: 6,
+              background: "rgba(99,102,241,0.07)",
+              border: "1px solid rgba(99,102,241,0.12)",
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 12,
+              fontFamily: "monospace",
+              cursor: "pointer",
+              transition: "background 0.2s",
             }}
             data-testid={`button-copy-email-${lead.id}`}
           >
-            <Mail className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-            <span className="truncate font-mono text-xs">{lead.email}</span>
+            <Mail size={12} color="#818cf8" />
+            {lead.email}
             {copied === "email" ? (
-              <CheckCheck className="w-3.5 h-3.5 text-green-400 ml-auto flex-shrink-0" />
+              <CheckCheck size={12} color="#4ade80" style={{ marginLeft: 4 }} />
             ) : (
-              <Copy className="w-3.5 h-3.5 text-white/30 ml-auto flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Copy size={11} color="rgba(255,255,255,0.25)" style={{ marginLeft: 4 }} />
             )}
           </button>
 
           {lead.phone && (
             <div
-              className="flex items-center gap-2 text-sm text-white/60 rounded-md px-3 py-2"
               style={{
-                background: "rgba(99,102,241,0.06)",
-                border: "1px solid rgba(99,102,241,0.1)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 12px",
+                borderRadius: 6,
+                background: "rgba(99,102,241,0.07)",
+                border: "1px solid rgba(99,102,241,0.12)",
+                color: "rgba(255,255,255,0.5)",
+                fontSize: 12,
+                fontFamily: "monospace",
               }}
             >
-              <Phone className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-              <span className="text-xs font-mono">{lead.phone}</span>
+              <Phone size={12} color="#818cf8" />
+              {lead.phone}
             </div>
           )}
 
           {lead.website && (
             <div
-              className="flex items-center gap-2 text-sm text-white/60 rounded-md px-3 py-2"
               style={{
-                background: "rgba(99,102,241,0.06)",
-                border: "1px solid rgba(99,102,241,0.1)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 12px",
+                borderRadius: 6,
+                background: "rgba(99,102,241,0.07)",
+                border: "1px solid rgba(99,102,241,0.12)",
+                color: "rgba(255,255,255,0.5)",
+                fontSize: 12,
+                fontFamily: "monospace",
+                overflow: "hidden",
+                maxWidth: 200,
               }}
             >
-              <Globe className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-              <span className="text-xs font-mono truncate">{lead.website}</span>
+              <Globe size={12} color="#818cf8" />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {lead.website}
+              </span>
             </div>
           )}
         </div>
 
-        <div className="mt-4">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-md transition-all duration-200 text-left"
-            style={{
-              background: expanded ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.05)",
-              border: "1px solid rgba(99,102,241,0.15)",
-            }}
-            data-testid={`button-expand-email-${lead.id}`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-              <span className="text-xs font-display font-medium text-white/70 uppercase tracking-wider">
-                AI Cold Email
-              </span>
-              <span className="text-xs text-white/40 truncate hidden sm:block">
-                — {lead.emailSubject}
-              </span>
-            </div>
-            {expanded ? (
-              <ChevronUp className="w-4 h-4 text-white/40 flex-shrink-0" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-white/40 flex-shrink-0" />
-            )}
-          </button>
-
-          {expanded && (
-            <div
-              className="mt-2 rounded-md overflow-hidden"
+        {/* expand trigger */}
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            marginTop: 14,
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px 14px",
+            borderRadius: 7,
+            background: open ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)",
+            border: "1px solid rgba(99,102,241,0.16)",
+            cursor: "pointer",
+            transition: "background 0.2s",
+          }}
+          data-testid={`button-expand-email-${lead.id}`}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Sparkles size={13} color="#c084fc" />
+            <span
               style={{
-                border: "1px solid rgba(99,102,241,0.12)",
-                animation: "fade-in 0.3s ease-out forwards",
+                fontSize: 11,
+                fontFamily: "Space Grotesk, sans-serif",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.65)",
+              }}
+            >
+              AI Cold Email
+            </span>
+            <span
+              style={{
+                fontSize: 12,
+                color: "rgba(255,255,255,0.3)",
+                fontStyle: "italic",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: 240,
+              }}
+            >
+              — {lead.emailSubject}
+            </span>
+          </div>
+          {open ? (
+            <ChevronUp size={15} color="rgba(255,255,255,0.35)" />
+          ) : (
+            <ChevronDown size={15} color="rgba(255,255,255,0.35)" />
+          )}
+        </button>
+      </div>
+
+      {/* expanded email */}
+      {open && (
+        <div
+          style={{
+            borderTop: "1px solid rgba(99,102,241,0.1)",
+          }}
+        >
+          {/* subject */}
+          <div
+            style={{
+              padding: "14px 22px",
+              background: "rgba(99,102,241,0.07)",
+              borderBottom: "1px solid rgba(99,102,241,0.08)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 600,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.3)",
+                  marginBottom: 4,
+                }}
+              >
+                Subject
+              </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 600,
+                  color: "#ffffff",
+                }}
+              >
+                {lead.emailSubject}
+              </div>
+            </div>
+            <button
+              onClick={() => copy(lead.emailSubject, "subject")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                borderRadius: 6,
+                background: "rgba(99,102,241,0.18)",
+                border: "none",
+                color: copied === "subject" ? "#4ade80" : "#a5b4fc",
+                fontSize: 12,
+                fontFamily: "Space Grotesk, sans-serif",
+                fontWeight: 600,
+                cursor: "pointer",
+                flexShrink: 0,
+                transition: "color 0.2s",
+              }}
+              data-testid={`button-copy-subject-${lead.id}`}
+            >
+              {copied === "subject" ? <CheckCheck size={13} /> : <Copy size={13} />}
+              {copied === "subject" ? "Copied!" : "Copy"}
+            </button>
+          </div>
+
+          {/* body */}
+          <div style={{ padding: "18px 22px", background: "rgba(4,4,10,0.9)" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+                flexWrap: "wrap",
+                gap: 8,
               }}
             >
               <div
-                className="px-4 py-3 flex items-center justify-between gap-2"
-                style={{ background: "rgba(99,102,241,0.08)", borderBottom: "1px solid rgba(99,102,241,0.1)" }}
+                style={{
+                  fontSize: 10,
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 600,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.3)",
+                }}
               >
-                <div className="min-w-0">
-                  <p className="text-xs text-white/40 font-display uppercase tracking-wider mb-1">Subject</p>
-                  <p className="text-sm font-display font-medium text-white truncate">{lead.emailSubject}</p>
-                </div>
-                <button
-                  onClick={() => copyText(lead.emailSubject, "subject")}
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors duration-200 flex-shrink-0"
-                  style={{
-                    background: "rgba(99,102,241,0.15)",
-                    color: copied === "subject" ? "#4ade80" : "#a5b4fc",
-                  }}
-                  data-testid={`button-copy-subject-${lead.id}`}
-                >
-                  {copied === "subject" ? (
-                    <><CheckCheck className="w-3 h-3" /> Copied</>
-                  ) : (
-                    <><Copy className="w-3 h-3" /> Copy</>
-                  )}
-                </button>
+                Email Body
               </div>
-
-              <div className="px-4 py-4" style={{ background: "rgba(5,5,10,0.8)" }}>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <p className="text-xs text-white/40 font-display uppercase tracking-wider">Email Body</p>
-                  <button
-                    onClick={() => copyText(lead.emailBody, "body")}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors duration-200 flex-shrink-0"
-                    style={{
-                      background: "rgba(99,102,241,0.15)",
-                      color: copied === "body" ? "#4ade80" : "#a5b4fc",
-                    }}
-                    data-testid={`button-copy-body-${lead.id}`}
-                  >
-                    {copied === "body" ? (
-                      <><CheckCheck className="w-3 h-3" /> Copied</>
-                    ) : (
-                      <><Copy className="w-3 h-3" /> Copy</>
-                    )}
-                  </button>
-                </div>
-                <div className="text-sm text-white/70 leading-relaxed whitespace-pre-line font-sans">
-                  {lead.emailBody}
-                </div>
-              </div>
+              <button
+                onClick={() => copy(lead.emailBody, "body")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 12px",
+                  borderRadius: 6,
+                  background: "rgba(99,102,241,0.18)",
+                  border: "none",
+                  color: copied === "body" ? "#4ade80" : "#a5b4fc",
+                  fontSize: 12,
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "color 0.2s",
+                }}
+                data-testid={`button-copy-body-${lead.id}`}
+              >
+                {copied === "body" ? <CheckCheck size={13} /> : <Copy size={13} />}
+                {copied === "body" ? "Copied!" : "Copy"}
+              </button>
             </div>
-          )}
+            <div
+              style={{
+                fontSize: 14,
+                lineHeight: 1.8,
+                color: "rgba(255,255,255,0.72)",
+                whiteSpace: "pre-line",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              {lead.emailBody}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function LoadingState() {
+/* ─── loading animation ───────────────────────────────────────────────── */
+function LoadingIndicator() {
   const steps = [
     "Scanning business directory...",
     "Identifying top prospects...",
@@ -336,61 +526,75 @@ function LoadingState() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStep((s) => (s < steps.length - 1 ? s + 1 : s));
-    }, 1800);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setStep((s) => (s < steps.length - 1 ? s + 1 : s)), 2000);
+    return () => clearInterval(id);
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center py-24 gap-8">
-      <div className="relative">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "80px 24px",
+        gap: 28,
+      }}
+    >
+      <div style={{ position: "relative", width: 72, height: 72 }}>
         <div
-          className="w-20 h-20 rounded-full flex items-center justify-center"
           style={{
-            border: "1px solid rgba(99,102,241,0.3)",
-            background: "rgba(10,10,20,0.8)",
-            boxShadow: "0 0 40px rgba(99,102,241,0.2), inset 0 0 20px rgba(99,102,241,0.05)",
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            background: "rgba(10,10,22,0.9)",
+            border: "1px solid rgba(99,102,241,0.35)",
+            boxShadow: "0 0 40px rgba(99,102,241,0.25), inset 0 0 20px rgba(99,102,241,0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <Zap className="w-7 h-7 text-indigo-400" style={{ animation: "float 2s ease-in-out infinite" }} />
+          <Zap size={26} color="#818cf8" />
         </div>
         <div
-          className="absolute inset-0 rounded-full opacity-40"
           style={{
-            border: "1px solid rgba(168,85,247,0.5)",
-            animation: "glow-pulse 2s ease-in-out infinite",
-            transform: "scale(1.3)",
-          }}
-        />
-        <div
-          className="absolute inset-0 rounded-full opacity-20"
-          style={{
-            border: "1px solid rgba(99,102,241,0.5)",
-            animation: "glow-pulse 2s ease-in-out infinite 0.5s",
-            transform: "scale(1.6)",
+            position: "absolute",
+            inset: -12,
+            borderRadius: "50%",
+            border: "1px solid rgba(168,85,247,0.3)",
+            animation: "spin-slow 6s linear infinite",
           }}
         />
       </div>
 
-      <div className="text-center">
-        <p
+      <div style={{ textAlign: "center" }}>
+        <div
           key={step}
-          className="font-display text-white/70 text-sm tracking-widest uppercase"
-          style={{ animation: "fade-up 0.4s ease-out forwards" }}
+          style={{
+            fontFamily: "Space Grotesk, sans-serif",
+            fontWeight: 600,
+            fontSize: 13,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.55)",
+          }}
         >
           {steps[step]}
-        </p>
+        </div>
       </div>
 
-      <div className="flex gap-1.5">
+      <div style={{ display: "flex", gap: 6 }}>
         {steps.map((_, i) => (
           <div
             key={i}
-            className="w-1.5 h-1.5 rounded-full transition-all duration-300"
             style={{
-              background: i <= step ? "rgba(99,102,241,0.8)" : "rgba(99,102,241,0.2)",
-              boxShadow: i <= step ? "0 0 6px rgba(99,102,241,0.6)" : "none",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: i <= step ? "#6366f1" : "rgba(99,102,241,0.2)",
+              boxShadow: i <= step ? "0 0 6px rgba(99,102,241,0.7)" : "none",
+              transition: "all 0.4s ease",
             }}
           />
         ))}
@@ -399,6 +603,7 @@ function LoadingState() {
   );
 }
 
+/* ─── main page ───────────────────────────────────────────────────────── */
 export default function Dashboard() {
   const [businessType, setBusinessType] = useState("");
   const [location, setLocation] = useState("");
@@ -413,351 +618,521 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       setResult(data);
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     },
     onError: (err: any) => {
-      toast({
-        title: "Generation Failed",
-        description: err.message || "Could not generate leads. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Generation Failed", description: err.message || "Please try again.", variant: "destructive" });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessType.trim() || !location.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both a business type and location.",
-        variant: "destructive",
-      });
+      toast({ title: "Missing Info", description: "Please enter a business type and location.", variant: "destructive" });
       return;
     }
     mutation.mutate({ businessType: businessType.trim(), location: location.trim() });
   };
 
-  const handleExample = (example: (typeof EXAMPLE_SEARCHES)[0]) => {
-    setBusinessType(example.business);
-    setLocation(example.location);
-  };
-
   const copyAllEmails = async () => {
     if (!result) return;
-    const emails = result.leads.map((l) => l.email).join(", ");
-    await navigator.clipboard.writeText(emails);
-    toast({ title: "Copied!", description: "All 10 email addresses copied to clipboard." });
+    await navigator.clipboard.writeText(result.leads.map((l) => l.email).join(", "));
+    toast({ title: "Copied!", description: "All 10 email addresses copied." });
   };
 
   return (
     <div
-      className="min-h-screen relative overflow-x-hidden"
-      style={{ background: "#000000", color: "#ffffff" }}
+      style={{
+        minHeight: "100vh",
+        background: "#000000",
+        color: "#ffffff",
+        position: "relative",
+        overflowX: "hidden",
+      }}
     >
-      <GridPattern />
-      <ScanLine />
+      <GridBg />
+      <GlowBlob top={-160} left={-160} color="radial-gradient(circle, rgba(99,102,241,0.7) 0%, transparent 70%)" size={600} opacity={0.22} />
+      <GlowBlob top={-100} right={-100} color="radial-gradient(circle, rgba(168,85,247,0.7) 0%, transparent 70%)" size={420} opacity={0.16} />
 
-      <GlowOrb className="w-[600px] h-[600px] top-[-200px] left-[-200px] opacity-30" style={{ background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%)" }} />
-      <GlowOrb className="w-[400px] h-[400px] top-[-100px] right-[-100px] opacity-20" style={{ background: "radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 70%)" }} />
-
-      <div className="relative z-10 max-w-5xl mx-auto px-6 pt-20 pb-32">
-        {/* Header */}
-        <header className="text-center mb-20">
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: 860,
+          margin: "0 auto",
+          padding: "0 24px 120px",
+        }}
+      >
+        {/* ── HERO ──────────────────────────────────────────────────── */}
+        <section
+          style={{
+            textAlign: "center",
+            paddingTop: 100,
+            paddingBottom: 72,
+          }}
+        >
+          {/* badge */}
           <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-8"
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 16px",
+              borderRadius: 999,
               background: "rgba(99,102,241,0.1)",
-              border: "1px solid rgba(99,102,241,0.25)",
-              animation: "fade-in 0.6s ease-out forwards",
+              border: "1px solid rgba(99,102,241,0.28)",
+              marginBottom: 36,
             }}
           >
             <div
-              className="w-1.5 h-1.5 rounded-full bg-indigo-400"
-              style={{ animation: "glow-pulse 2s ease-in-out infinite", boxShadow: "0 0 6px rgba(99,102,241,0.8)" }}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "#818cf8",
+                boxShadow: "0 0 8px rgba(99,102,241,0.9)",
+                animation: "glow-pulse 2s ease-in-out infinite",
+              }}
             />
-            <span className="text-xs font-display font-medium text-indigo-300 uppercase tracking-widest">
+            <span
+              style={{
+                fontFamily: "Space Grotesk, sans-serif",
+                fontWeight: 600,
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "#a5b4fc",
+              }}
+            >
               AI Sales Intelligence
             </span>
           </div>
 
+          {/* headline */}
           <h1
-            className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-none tracking-tight mb-6"
-            style={{ animation: "fade-up 0.6s ease-out 0.1s forwards", opacity: 0 }}
+            style={{
+              fontFamily: "Space Grotesk, sans-serif",
+              fontWeight: 800,
+              fontSize: "clamp(42px, 7vw, 76px)",
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+              margin: "0 0 24px",
+              color: "#ffffff",
+            }}
           >
-            <span className="text-white">Find Your Next</span>
-            <br />
+            Find Your Next{" "}
             <span
               style={{
-                background: "linear-gradient(135deg, #818cf8 0%, #a78bfa 40%, #c084fc 100%)",
+                background: "linear-gradient(135deg, #818cf8 0%, #a78bfa 45%, #c084fc 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}
             >
               10 Clients
             </span>
           </h1>
 
+          {/* subtitle */}
           <p
-            className="text-white/50 text-lg max-w-xl mx-auto leading-relaxed font-sans"
-            style={{ animation: "fade-up 0.6s ease-out 0.2s forwards", opacity: 0 }}
-          >
-            Enter a business type and city. Our AI finds 10 real prospects
-            and writes a personalized cold email for each one — instantly.
-          </p>
-        </header>
-
-        {/* Search Form */}
-        <div
-          className="relative rounded-lg p-8 mb-8"
-          style={{
-            background: "rgba(10,10,15,0.9)",
-            border: "1px solid rgba(99,102,241,0.2)",
-            boxShadow: "0 0 60px rgba(99,102,241,0.06), 0 0 120px rgba(168,85,247,0.03)",
-            animation: "fade-up 0.6s ease-out 0.3s forwards",
-            opacity: 0,
-          }}
-        >
-          <div
-            className="absolute inset-0 rounded-lg opacity-50 pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse at 50% -20%, rgba(99,102,241,0.08) 0%, transparent 60%)",
+              fontFamily: "Inter, sans-serif",
+              fontSize: "clamp(15px, 2vw, 18px)",
+              lineHeight: 1.7,
+              color: "rgba(255,255,255,0.48)",
+              maxWidth: 520,
+              margin: "0 auto 56px",
             }}
-          />
+          >
+            Enter a business type and city. Our AI instantly finds 10 real
+            prospects and writes a personalized cold email for each one.
+          </p>
 
-          <form onSubmit={handleSubmit} className="relative">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-xs font-display font-medium text-white/40 uppercase tracking-widest mb-2">
-                  Business Type
-                </label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400/60" />
-                  <Input
-                    value={businessType}
-                    onChange={(e) => setBusinessType(e.target.value)}
-                    placeholder="e.g. plumbers, dentists, HVAC..."
-                    className="pl-9 font-sans text-white placeholder-white/20 border-white/10 focus:border-indigo-500/50 bg-white/5"
+          {/* ── FORM CARD ─────────────────────────────────────────── */}
+          <div
+            style={{
+              borderRadius: 16,
+              background: "rgba(10,10,18,0.92)",
+              border: "1px solid rgba(99,102,241,0.22)",
+              boxShadow: "0 0 80px rgba(99,102,241,0.07), 0 0 140px rgba(168,85,247,0.04)",
+              padding: "36px 36px 28px",
+              backdropFilter: "blur(20px)",
+              textAlign: "left",
+            }}
+          >
+            <form onSubmit={handleSubmit}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                  marginBottom: 20,
+                }}
+                className="form-grid"
+              >
+                {/* business type */}
+                <div>
+                  <label
                     style={{
-                      background: "rgba(255,255,255,0.04)",
-                      borderColor: "rgba(99,102,241,0.15)",
+                      display: "block",
+                      fontFamily: "Space Grotesk, sans-serif",
+                      fontWeight: 600,
+                      fontSize: 10,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.38)",
+                      marginBottom: 8,
                     }}
-                    data-testid="input-business-type"
-                  />
+                  >
+                    Business Type
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <Building2
+                      size={15}
+                      color="#6366f1"
+                      style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }}
+                    />
+                    <input
+                      value={businessType}
+                      onChange={(e) => setBusinessType(e.target.value)}
+                      placeholder="e.g. plumbers, dentists, HVAC..."
+                      data-testid="input-business-type"
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px 12px 38px",
+                        borderRadius: 8,
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(99,102,241,0.18)",
+                        color: "#ffffff",
+                        fontSize: 14,
+                        fontFamily: "Inter, sans-serif",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.18)")}
+                    />
+                  </div>
+                </div>
+
+                {/* location */}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontFamily: "Space Grotesk, sans-serif",
+                      fontWeight: 600,
+                      fontSize: 10,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: "rgba(255,255,255,0.38)",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Location
+                  </label>
+                  <div style={{ position: "relative" }}>
+                    <MapPin
+                      size={15}
+                      color="#6366f1"
+                      style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }}
+                    />
+                    <input
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="e.g. Houston, TX or Chicago..."
+                      data-testid="input-location"
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px 12px 38px",
+                        borderRadius: 8,
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(99,102,241,0.18)",
+                        color: "#ffffff",
+                        fontSize: 14,
+                        fontFamily: "Inter, sans-serif",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.18)")}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-display font-medium text-white/40 uppercase tracking-widest mb-2">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400/60" />
-                  <Input
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Houston, TX or Chicago..."
-                    className="pl-9 font-sans text-white placeholder-white/20 border-white/10 focus:border-indigo-500/50 bg-white/5"
-                    style={{
-                      background: "rgba(255,255,255,0.04)",
-                      borderColor: "rgba(99,102,241,0.15)",
-                    }}
-                    data-testid="input-location"
-                  />
-                </div>
+              {/* generate button */}
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                data-testid="button-generate-leads"
+                style={{
+                  width: "100%",
+                  padding: "15px 24px",
+                  borderRadius: 9,
+                  background: mutation.isPending
+                    ? "rgba(99,102,241,0.3)"
+                    : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                  border: "1px solid rgba(99,102,241,0.45)",
+                  boxShadow: mutation.isPending
+                    ? "none"
+                    : "0 0 40px rgba(99,102,241,0.35), 0 0 80px rgba(168,85,247,0.12)",
+                  color: "#ffffff",
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  cursor: mutation.isPending ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  transition: "all 0.3s ease",
+                }}
+              >
+                {mutation.isPending ? (
+                  <>
+                    <Zap size={17} style={{ animation: "spin-slow 2s linear infinite" }} />
+                    Generating Intelligence...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={17} />
+                    Generate 10 Leads + Emails
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* quick-start examples */}
+            <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+              <div
+                style={{
+                  fontFamily: "Space Grotesk, sans-serif",
+                  fontWeight: 600,
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.25)",
+                  marginBottom: 10,
+                }}
+              >
+                Quick Start
               </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={mutation.isPending}
-              className="w-full font-display font-semibold text-sm uppercase tracking-widest h-11"
-              style={{
-                background: mutation.isPending
-                  ? "rgba(99,102,241,0.3)"
-                  : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-                border: "1px solid rgba(99,102,241,0.4)",
-                boxShadow: mutation.isPending ? "none" : "0 0 30px rgba(99,102,241,0.3), 0 0 60px rgba(168,85,247,0.1)",
-                transition: "all 0.3s ease",
-              }}
-              data-testid="button-generate-leads"
-            >
-              {mutation.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Zap className="w-4 h-4" style={{ animation: "spin-slow 2s linear infinite" }} />
-                  Generating Intelligence...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Generate 10 Leads + Emails
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-5 pt-5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <p className="text-xs text-white/30 font-display uppercase tracking-widest mb-3">
-              Quick Start
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {EXAMPLE_SEARCHES.map((ex) => (
-                <button
-                  key={ex.business}
-                  onClick={() => handleExample(ex)}
-                  className="text-xs px-3 py-1.5 rounded-md font-sans transition-all duration-200"
-                  style={{
-                    background: "rgba(99,102,241,0.08)",
-                    border: "1px solid rgba(99,102,241,0.15)",
-                    color: "rgba(165,180,252,0.8)",
-                  }}
-                  data-testid={`button-example-${ex.business.replace(/\s+/g, "-")}`}
-                >
-                  {ex.business} in {ex.location}
-                </button>
-              ))}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {EXAMPLE_SEARCHES.map((ex) => (
+                  <button
+                    key={ex.business}
+                    onClick={() => {
+                      setBusinessType(ex.business);
+                      setLocation(ex.location);
+                    }}
+                    data-testid={`button-example-${ex.business.replace(/\s+/g, "-")}`}
+                    style={{
+                      padding: "6px 13px",
+                      borderRadius: 6,
+                      background: "rgba(99,102,241,0.08)",
+                      border: "1px solid rgba(99,102,241,0.16)",
+                      color: "rgba(165,180,252,0.8)",
+                      fontSize: 12,
+                      fontFamily: "Inter, sans-serif",
+                      cursor: "pointer",
+                      transition: "background 0.2s, border-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "rgba(99,102,241,0.16)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(99,102,241,0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "rgba(99,102,241,0.08)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(99,102,241,0.16)";
+                    }}
+                  >
+                    {ex.business} · {ex.location}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Loading State */}
-        {mutation.isPending && <LoadingState />}
+          {/* ── HOW IT WORKS (shown only before results) ──────────── */}
+          {!result && !mutation.isPending && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 16,
+                marginTop: 40,
+              }}
+            >
+              {[
+                { icon: Search, label: "1. Search", desc: "Enter any business category and city in the form above" },
+                { icon: Sparkles, label: "2. Generate", desc: "AI finds 10 prospects and writes each a cold email" },
+                { icon: Mail, label: "3. Send", desc: "Copy emails instantly and start reaching out today" },
+              ].map(({ icon: Icon, label, desc }) => (
+                <div
+                  key={label}
+                  style={{
+                    padding: "22px 20px",
+                    borderRadius: 10,
+                    background: "rgba(8,8,14,0.7)",
+                    border: "1px solid rgba(99,102,241,0.1)",
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 9,
+                      background: "rgba(99,102,241,0.1)",
+                      border: "1px solid rgba(99,102,241,0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 12px",
+                    }}
+                  >
+                    <Icon size={18} color="rgba(129,140,248,0.7)" />
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "Space Grotesk, sans-serif",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: "rgba(255,255,255,0.7)",
+                      marginBottom: 6,
+                    }}
+                  >
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}>
+                    {desc}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
-        {/* Results */}
+        {/* ── LOADING ──────────────────────────────────────────────── */}
+        {mutation.isPending && <LoadingIndicator />}
+
+        {/* ── RESULTS ──────────────────────────────────────────────── */}
         {result && !mutation.isPending && (
           <div ref={resultsRef}>
-            {/* Stats Row */}
+            {/* stats */}
             <div
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8"
-              style={{ animation: "fade-up 0.5s ease-out forwards" }}
-            >
-              <StatCard icon={Users} label="Leads Found" value={result.leads.length} delay={0} />
-              <StatCard icon={Mail} label="Emails Written" value={result.leads.length} delay={60} />
-              <StatCard icon={Target} label="Business Type" value={result.businessType} delay={120} />
-              <StatCard icon={MapPin} label="Location" value={result.location} delay={180} />
-            </div>
-
-            {/* Results Header */}
-            <div
-              className="flex items-center justify-between gap-4 mb-6 flex-wrap"
-              style={{ animation: "fade-up 0.5s ease-out 0.1s forwards", opacity: 0 }}
-            >
-              <div>
-                <h2 className="font-display font-bold text-xl text-white">
-                  Lead Intelligence Report
-                </h2>
-                <p className="text-sm text-white/40 mt-0.5 font-sans">
-                  {result.leads.length} prospects found for{" "}
-                  <span className="text-indigo-400">{result.businessType}</span> in{" "}
-                  <span className="text-purple-400">{result.location}</span>
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={copyAllEmails}
-                className="font-display text-xs uppercase tracking-widest flex items-center gap-2"
-                style={{
-                  background: "rgba(99,102,241,0.08)",
-                  borderColor: "rgba(99,102,241,0.2)",
-                  color: "#a5b4fc",
-                }}
-                data-testid="button-copy-all-emails"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copy All Emails
-              </Button>
-            </div>
-
-            {/* Lead Cards Grid */}
-            <div className="flex flex-col gap-4">
-              {result.leads.map((lead, i) => (
-                <EmailCard key={lead.id} lead={lead} index={i} />
-              ))}
-            </div>
-
-            {/* Footer CTA */}
-            <div
-              className="mt-12 text-center"
-              style={{ animation: "fade-up 0.5s ease-out 0.8s forwards", opacity: 0 }}
-            >
-              <p className="text-white/30 text-sm font-sans mb-4">
-                Ready to reach out? Click on any email to copy it.
-              </p>
-              <Button
-                onClick={() => mutation.mutate({ businessType, location })}
-                variant="outline"
-                className="font-display text-xs uppercase tracking-widest"
-                style={{
-                  background: "transparent",
-                  borderColor: "rgba(99,102,241,0.2)",
-                  color: "rgba(165,180,252,0.7)",
-                }}
-                data-testid="button-regenerate"
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-2" />
-                Generate New Batch
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!result && !mutation.isPending && (
-          <div className="mt-12">
-            <div
-              className="text-center py-16 rounded-lg relative overflow-hidden"
               style={{
-                background: "rgba(5,5,10,0.5)",
-                border: "1px solid rgba(99,102,241,0.08)",
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 12,
+                marginBottom: 28,
               }}
             >
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: "radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.06) 0%, transparent 70%)",
-                }}
-              />
-              <div className="relative">
-                <div
-                  className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center"
+              <StatPill icon={Users} label="Leads Found" value={result.leads.length} />
+              <StatPill icon={Mail} label="Emails Written" value={result.leads.length} />
+              <StatPill icon={Target} label="Business" value={result.businessType} />
+              <StatPill icon={MapPin} label="Location" value={result.location} />
+            </div>
+
+            {/* results header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 12,
+                marginBottom: 20,
+              }}
+            >
+              <div>
+                <h2
                   style={{
-                    background: "rgba(99,102,241,0.08)",
-                    border: "1px solid rgba(99,102,241,0.15)",
+                    fontFamily: "Space Grotesk, sans-serif",
+                    fontWeight: 700,
+                    fontSize: 20,
+                    color: "#ffffff",
+                    margin: 0,
                   }}
                 >
-                  <TrendingUp className="w-6 h-6 text-indigo-400/60" />
-                </div>
-                <h3 className="font-display font-semibold text-white/50 text-lg mb-2">
-                  No leads generated yet
-                </h3>
-                <p className="text-white/25 text-sm font-sans max-w-xs mx-auto">
-                  Enter a business type and location above to discover your next 10 clients with personalized outreach.
+                  Lead Intelligence Report
+                </h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}>
+                  {result.leads.length} prospects ·{" "}
+                  <span style={{ color: "#818cf8" }}>{result.businessType}</span> in{" "}
+                  <span style={{ color: "#c084fc" }}>{result.location}</span>
                 </p>
-
-                <div className="mt-8 grid grid-cols-3 gap-4 max-w-xs mx-auto">
-                  {[
-                    { icon: Search, label: "Find" },
-                    { icon: Sparkles, label: "Write" },
-                    { icon: Mail, label: "Send" },
-                  ].map(({ icon: Icon, label }) => (
-                    <div key={label} className="flex flex-col items-center gap-2">
-                      <div
-                        className="w-10 h-10 rounded-md flex items-center justify-center"
-                        style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.12)" }}
-                      >
-                        <Icon className="w-4 h-4 text-indigo-400/50" />
-                      </div>
-                      <span className="text-xs text-white/30 font-display uppercase tracking-wider">{label}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={copyAllEmails}
+                  data-testid="button-copy-all-emails"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "9px 16px",
+                    borderRadius: 7,
+                    background: "rgba(99,102,241,0.1)",
+                    border: "1px solid rgba(99,102,241,0.22)",
+                    color: "#a5b4fc",
+                    fontSize: 12,
+                    fontFamily: "Space Grotesk, sans-serif",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  <Copy size={13} />
+                  Copy All Emails
+                </button>
+                <button
+                  onClick={() => mutation.mutate({ businessType, location })}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "9px 16px",
+                    borderRadius: 7,
+                    background: "transparent",
+                    border: "1px solid rgba(99,102,241,0.15)",
+                    color: "rgba(165,180,252,0.55)",
+                    fontSize: 12,
+                    fontFamily: "Space Grotesk, sans-serif",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    letterSpacing: "0.05em",
+                  }}
+                  data-testid="button-regenerate"
+                >
+                  <Sparkles size={13} />
+                  New Batch
+                </button>
+              </div>
+            </div>
+
+            {/* lead cards */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {result.leads.map((lead, i) => (
+                <LeadCard key={lead.id} lead={lead} index={i} />
+              ))}
             </div>
           </div>
         )}
       </div>
+
+      {/* responsive override for narrow screens */}
+      <style>{`
+        @media (max-width: 600px) {
+          .form-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
