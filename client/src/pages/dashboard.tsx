@@ -14,7 +14,6 @@ import {
   Phone,
   Building2,
   MapPin,
-  Search,
   Sparkles,
   Target,
   Users,
@@ -28,6 +27,36 @@ import {
   Briefcase,
 } from "lucide-react";
 
+/* ─── design tokens ──────────────────────────────────────────────── */
+const C = {
+  bg: "#09090b",
+  surface: "rgba(255,255,255,0.025)",
+  surfaceHover: "rgba(255,255,255,0.045)",
+  border: "rgba(255,255,255,0.07)",
+  borderSubtle: "rgba(255,255,255,0.04)",
+  text: "#ffffff",
+  textMuted: "rgba(255,255,255,0.45)",
+  textFaint: "rgba(255,255,255,0.22)",
+  accent: "#ffffff",
+  pill: "rgba(255,255,255,0.06)",
+  pillBorder: "rgba(255,255,255,0.09)",
+  green: "#22c55e",
+  greenBg: "rgba(34,197,94,0.08)",
+  greenBorder: "rgba(34,197,94,0.15)",
+  red: "#ef4444",
+  redBg: "rgba(239,68,68,0.08)",
+  redBorder: "rgba(239,68,68,0.15)",
+  amber: "#f59e0b",
+  amberBg: "rgba(245,158,11,0.06)",
+  amberBorder: "rgba(245,158,11,0.15)",
+};
+
+const F = {
+  display: "'Space Grotesk', sans-serif",
+  body: "'Inter', sans-serif",
+  mono: "monospace",
+};
+
 const EXAMPLE_SEARCHES = [
   { business: "plumbers", location: "Houston, TX" },
   { business: "dentists", location: "Los Angeles, CA" },
@@ -36,238 +65,149 @@ const EXAMPLE_SEARCHES = [
   { business: "real estate agents", location: "Miami, FL" },
 ];
 
-/* ─── decorators ─────────────────────────────────────────────────── */
-
-function GridBg() {
+/* ─── background mesh ────────────────────────────────────────────── */
+function BgMesh() {
   return (
-    <div
-      aria-hidden
-      style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage:
-          "linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)",
-        backgroundSize: "64px 64px", pointerEvents: "none",
-      }}
-    />
+    <>
+      <div aria-hidden style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        background: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,255,255,0.04) 0%, transparent 60%)`,
+      }} />
+      <div aria-hidden style={{
+        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
+        backgroundImage: "radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)",
+        backgroundSize: "32px 32px",
+      }} />
+    </>
   );
 }
 
-function GlowBlob({ top, left, right, color, size = 500, opacity = 0.25 }: {
-  top?: number | string; left?: number | string; right?: number | string;
-  color: string; size?: number; opacity?: number;
-}) {
+/* ─── top nav ────────────────────────────────────────────────────── */
+function TopNav({ auth, onDisconnect }: { auth?: AuthStatus; onDisconnect: () => void }) {
   return (
-    <div aria-hidden style={{
-      position: "fixed", top, left, right, width: size, height: size,
-      borderRadius: "50%", background: color, filter: "blur(120px)",
-      opacity, pointerEvents: "none", zIndex: 0,
-    }} />
-  );
-}
-
-/* ─── Gmail connect strip ────────────────────────────────────────── */
-
-function GmailBar({ auth, onDisconnect }: { auth: AuthStatus; onDisconnect: () => void }) {
-  if (!auth.connected) {
-    return (
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexWrap: "wrap", gap: 12,
-        padding: "14px 20px", borderRadius: 10,
-        background: "rgba(10,10,18,0.92)",
-        border: "1px solid rgba(99,102,241,0.22)",
-        marginBottom: 20,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: "rgba(156,163,175,0.5)",
-            boxShadow: "0 0 6px rgba(156,163,175,0.3)",
-          }} />
-          <div>
-            <span style={{
-              fontFamily: "Space Grotesk, sans-serif", fontWeight: 600,
-              fontSize: 13, color: "rgba(255,255,255,0.55)",
-            }}>
-              Gmail not connected
-            </span>
-            <span style={{
-              fontFamily: "Inter, sans-serif", fontSize: 12,
-              color: "rgba(255,255,255,0.28)", marginLeft: 8,
-            }}>
-              Connect your account to send emails directly from Gmail
-            </span>
-          </div>
-        </div>
-        <a
-          href="/api/auth/google"
-          data-testid="button-connect-gmail"
-          style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "9px 18px", borderRadius: 7,
-            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-            border: "1px solid rgba(99,102,241,0.4)",
-            boxShadow: "0 0 24px rgba(99,102,241,0.25)",
-            color: "#fff",
-            fontFamily: "Space Grotesk, sans-serif", fontWeight: 700,
-            fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase",
-            textDecoration: "none", whiteSpace: "nowrap",
-          }}
-        >
-          <Mail size={14} />
-          Connect Gmail
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      flexWrap: "wrap", gap: 12,
-      padding: "14px 20px", borderRadius: 10,
-      background: "rgba(6,16,10,0.95)",
-      border: "1px solid rgba(34,197,94,0.25)",
-      marginBottom: 20,
+    <nav style={{
+      position: "sticky", top: 0, zIndex: 50,
+      borderBottom: `1px solid ${C.borderSubtle}`,
+      background: "rgba(9,9,11,0.85)",
+      backdropFilter: "blur(20px)",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: "50%",
-          background: "#4ade80",
-          boxShadow: "0 0 8px rgba(74,222,128,0.7)",
-          animation: "glow-pulse 2s ease-in-out infinite",
-        }} />
-        <div>
-          <span style={{
-            fontFamily: "Space Grotesk, sans-serif", fontWeight: 700,
-            fontSize: 13, color: "#4ade80",
+      <div style={{
+        maxWidth: 960, margin: "0 auto", padding: "0 24px",
+        height: 56, display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        {/* logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 7,
+            background: C.text, display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            Gmail connected
-          </span>
+            <Zap size={15} color={C.bg} strokeWidth={2.5} />
+          </div>
           <span style={{
-            fontFamily: "Inter, sans-serif", fontSize: 12,
-            color: "rgba(255,255,255,0.4)", marginLeft: 8,
-          }}>
-            {auth.email}
-          </span>
+            fontFamily: F.display, fontWeight: 700, fontSize: 15,
+            color: C.text, letterSpacing: "-0.02em",
+          }}>LeadForge</span>
         </div>
+
+        {/* gmail status */}
+        {auth?.connected ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.green }} />
+              <span style={{ fontFamily: F.body, fontSize: 12, color: C.textMuted }}>
+                {auth.email}
+              </span>
+            </div>
+            <button
+              onClick={onDisconnect}
+              data-testid="button-disconnect-gmail"
+              style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "5px 12px", borderRadius: 6,
+                background: "transparent", border: `1px solid ${C.border}`,
+                color: C.textMuted, fontFamily: F.body, fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              <LogOut size={11} />
+              Disconnect
+            </button>
+          </div>
+        ) : (
+          <a
+            href="/api/auth/google"
+            data-testid="button-connect-gmail"
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "7px 16px", borderRadius: 7,
+              background: C.text, border: "none",
+              color: C.bg, fontFamily: F.display, fontWeight: 600,
+              fontSize: 13, textDecoration: "none", letterSpacing: "-0.01em",
+            }}
+          >
+            <Mail size={13} />
+            Connect Gmail
+          </a>
+        )}
       </div>
-      <button
-        onClick={onDisconnect}
-        data-testid="button-disconnect-gmail"
-        style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "7px 14px", borderRadius: 6,
-          background: "rgba(239,68,68,0.1)",
-          border: "1px solid rgba(239,68,68,0.2)",
-          color: "rgba(252,165,165,0.8)",
-          fontFamily: "Space Grotesk, sans-serif", fontWeight: 600,
-          fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase",
-          cursor: "pointer",
-        }}
-      >
-        <LogOut size={12} />
-        Disconnect
-      </button>
-    </div>
+    </nav>
   );
 }
 
 /* ─── send results modal ─────────────────────────────────────────── */
-
 function SendResultsPanel({ data, onClose }: { data: SendEmailsResponse; onClose: () => void }) {
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 24,
+      background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     }}>
       <div style={{
-        width: "100%", maxWidth: 520, borderRadius: 14,
-        background: "rgba(10,10,20,0.98)",
-        border: "1px solid rgba(99,102,241,0.25)",
-        boxShadow: "0 0 80px rgba(99,102,241,0.1)",
-        overflow: "hidden",
+        width: "100%", maxWidth: 480, borderRadius: 16,
+        background: "#111113", border: `1px solid ${C.border}`,
+        boxShadow: "0 24px 80px rgba(0,0,0,0.6)", overflow: "hidden",
       }}>
-        {/* header */}
         <div style={{
-          padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)",
+          padding: "20px 24px", borderBottom: `1px solid ${C.borderSubtle}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div>
-            <h3 style={{
-              fontFamily: "Space Grotesk, sans-serif", fontWeight: 700,
-              fontSize: 16, color: "#fff", margin: 0,
-            }}>
+            <h3 style={{ fontFamily: F.display, fontWeight: 700, fontSize: 16, color: C.text, margin: 0 }}>
               Send Report
             </h3>
-            <p style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}>
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: C.textMuted, fontFamily: F.body }}>
               {data.sent} sent · {data.failed} failed · {data.total} total
             </p>
           </div>
           <button onClick={onClose} style={{
-            width: 30, height: 30, borderRadius: 6,
-            background: "rgba(255,255,255,0.06)", border: "none",
-            color: "rgba(255,255,255,0.5)", fontSize: 18, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 28, height: 28, borderRadius: 6, background: C.surface,
+            border: `1px solid ${C.border}`, color: C.textMuted, fontSize: 16,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
           }}>×</button>
         </div>
 
-        {/* stats */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr",
-          gap: 12, padding: "16px 24px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}>
-          <div style={{
-            padding: "14px 16px", borderRadius: 8,
-            background: "rgba(34,197,94,0.08)",
-            border: "1px solid rgba(34,197,94,0.2)",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            <CheckCircle size={18} color="#4ade80" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, padding: "16px 24px", borderBottom: `1px solid ${C.borderSubtle}` }}>
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: C.greenBg, border: `1px solid ${C.greenBorder}`, display: "flex", alignItems: "center", gap: 10 }}>
+            <CheckCircle size={18} color={C.green} />
             <div>
-              <div style={{ fontSize: 22, fontFamily: "Space Grotesk, sans-serif", fontWeight: 800, color: "#4ade80" }}>
-                {data.sent}
-              </div>
-              <div style={{ fontSize: 11, color: "rgba(74,222,128,0.6)", fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Sent
-              </div>
+              <div style={{ fontSize: 22, fontFamily: F.display, fontWeight: 700, color: C.green }}>{data.sent}</div>
+              <div style={{ fontSize: 11, color: "rgba(34,197,94,0.6)", fontFamily: F.display, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Sent</div>
             </div>
           </div>
-          <div style={{
-            padding: "14px 16px", borderRadius: 8,
-            background: data.failed > 0 ? "rgba(239,68,68,0.08)" : "rgba(99,102,241,0.06)",
-            border: data.failed > 0 ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(99,102,241,0.12)",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            {data.failed > 0 ? <XCircle size={18} color="#f87171" /> : <CheckCircle size={18} color="#818cf8" />}
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: data.failed > 0 ? C.redBg : C.surface, border: `1px solid ${data.failed > 0 ? C.redBorder : C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+            {data.failed > 0 ? <XCircle size={18} color={C.red} /> : <CheckCircle size={18} color={C.textMuted} />}
             <div>
-              <div style={{ fontSize: 22, fontFamily: "Space Grotesk, sans-serif", fontWeight: 800, color: data.failed > 0 ? "#f87171" : "#818cf8" }}>
-                {data.failed}
-              </div>
-              <div style={{ fontSize: 11, color: data.failed > 0 ? "rgba(248,113,113,0.6)" : "rgba(129,140,248,0.6)", fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Failed
-              </div>
+              <div style={{ fontSize: 22, fontFamily: F.display, fontWeight: 700, color: data.failed > 0 ? C.red : C.textMuted }}>{data.failed}</div>
+              <div style={{ fontSize: 11, color: data.failed > 0 ? "rgba(239,68,68,0.6)" : C.textFaint, fontFamily: F.display, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Failed</div>
             </div>
           </div>
         </div>
 
-        {/* per-email list */}
-        <div style={{ maxHeight: 260, overflowY: "auto", padding: "12px 24px 20px" }}>
+        <div style={{ maxHeight: 240, overflowY: "auto", padding: "12px 24px 20px" }}>
           {data.results.map((r) => (
-            <div key={r.email} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              gap: 10, padding: "8px 0",
-              borderBottom: "1px solid rgba(255,255,255,0.04)",
-            }}>
-              <span style={{ fontSize: 12, fontFamily: "monospace", color: "rgba(255,255,255,0.55)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {r.email}
-              </span>
-              {r.success
-                ? <CheckCircle size={14} color="#4ade80" style={{ flexShrink: 0 }} />
-                : <XCircle size={14} color="#f87171" style={{ flexShrink: 0 }} />}
+            <div key={r.email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "7px 0", borderBottom: `1px solid ${C.borderSubtle}` }}>
+              <span style={{ fontSize: 12, fontFamily: F.mono, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.email}</span>
+              {r.success ? <CheckCircle size={13} color={C.green} style={{ flexShrink: 0 }} /> : <XCircle size={13} color={C.red} style={{ flexShrink: 0 }} />}
             </div>
           ))}
         </div>
@@ -277,14 +217,13 @@ function SendResultsPanel({ data, onClose }: { data: SendEmailsResponse; onClose
 }
 
 /* ─── lead card ──────────────────────────────────────────────────── */
-
 function LeadCard({ lead, index, sending, sendResult }: {
-  lead: Lead; index: number;
-  sending: boolean;
+  lead: Lead; index: number; sending: boolean;
   sendResult?: { success: boolean; error?: string };
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<"email" | "subject" | "body" | null>(null);
+  const [hovered, setHovered] = useState(false);
 
   const copy = async (text: string, key: "email" | "subject" | "body") => {
     await navigator.clipboard.writeText(text);
@@ -293,47 +232,44 @@ function LeadCard({ lead, index, sending, sendResult }: {
   };
 
   const borderColor = sendResult
-    ? sendResult.success ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"
-    : "rgba(99,102,241,0.14)";
+    ? sendResult.success ? C.greenBorder : C.redBorder
+    : hovered ? C.border : C.borderSubtle;
 
   return (
     <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 10, background: "rgba(8,8,14,0.95)",
-        border: `1px solid ${borderColor}`, overflow: "hidden",
-        transition: "border-color 0.25s, box-shadow 0.25s",
-        opacity: sending ? 0.7 : 1,
-      }}
-      onMouseEnter={(e) => {
-        if (!sending) (e.currentTarget as HTMLDivElement).style.borderColor = sendResult ? borderColor : "rgba(99,102,241,0.38)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = borderColor;
+        borderRadius: 12, overflow: "hidden",
+        background: hovered ? C.surfaceHover : C.surface,
+        border: `1px solid ${borderColor}`,
+        transition: "background 0.15s, border-color 0.15s",
+        opacity: sending ? 0.6 : 1,
       }}
     >
-      <div style={{ padding: "20px 22px" }}>
+      <div style={{ padding: "18px 20px" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          {/* left: number + info */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14, minWidth: 0 }}>
             <div style={{
-              width: 38, height: 38, borderRadius: 8,
-              background: "linear-gradient(135deg,rgba(99,102,241,0.22),rgba(168,85,247,0.22))",
-              border: "1px solid rgba(99,102,241,0.22)",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-              fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 12, color: "#a5b4fc",
+              width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+              background: C.pill, border: `1px solid ${C.pillBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: F.display, fontWeight: 700, fontSize: 11, color: C.textFaint,
             }}>
               {String(index + 1).padStart(2, "0")}
             </div>
-            <div>
-              <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: 15, color: "#ffffff", lineHeight: 1.3 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 15, color: C.text, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
                 {lead.companyName}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{lead.contactName}</span>
+                <span style={{ fontSize: 13, color: C.textMuted, fontFamily: F.body }}>{lead.contactName}</span>
                 {lead.title && (
                   <>
-                    <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 12 }}>·</span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "rgba(167,139,250,0.7)", fontFamily: "Inter, sans-serif" }}>
-                      <Briefcase size={10} color="rgba(167,139,250,0.6)" />
+                    <span style={{ color: C.textFaint, fontSize: 11 }}>·</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: C.textFaint, fontFamily: F.body }}>
+                      <Briefcase size={10} color={C.textFaint} />
                       {lead.title}
                     </span>
                   </>
@@ -342,87 +278,109 @@ function LeadCard({ lead, index, sending, sendResult }: {
             </div>
           </div>
 
-          {/* send status + source badges */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {sending && <Loader2 size={14} color="#818cf8" style={{ animation: "spin-slow 1s linear infinite" }} />}
+          {/* right: status badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {sending && <Loader2 size={13} color={C.textMuted} style={{ animation: "spin-slow 1s linear infinite" }} />}
             {sendResult && (
               sendResult.success
-                ? <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80", padding: "3px 9px", borderRadius: 5, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.2)" }}>
-                    <CheckCircle size={11} /> Sent
+                ? <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontFamily: F.display, fontWeight: 600, color: C.green, padding: "3px 9px", borderRadius: 99, background: C.greenBg, border: `1px solid ${C.greenBorder}` }}>
+                    <CheckCircle size={10} /> Sent
                   </span>
-                : <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#f87171", padding: "3px 9px", borderRadius: 5, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                    <XCircle size={11} /> Failed
+                : <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontFamily: F.display, fontWeight: 600, color: C.red, padding: "3px 9px", borderRadius: 99, background: C.redBg, border: `1px solid ${C.redBorder}` }}>
+                    <XCircle size={10} /> Failed
                   </span>
             )}
             {!sendResult && !sending && (
-              <span style={{ fontSize: 10, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 10px", borderRadius: 6, background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>
-                New Lead
+              <span style={{ fontSize: 10, fontFamily: F.display, fontWeight: 600, color: C.textFaint, padding: "3px 9px", borderRadius: 99, background: C.pill, border: `1px solid ${C.pillBorder}`, letterSpacing: "0.05em" }}>
+                New
               </span>
             )}
           </div>
         </div>
 
-        {/* chips */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+        {/* detail chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14 }}>
           <button
             onClick={() => copy(lead.email, "email")}
-            title="Click to copy"
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 6, background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace", cursor: "pointer" }}
+            title="Copy email"
             data-testid={`button-copy-email-${lead.id}`}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 6, background: C.pill, border: `1px solid ${C.pillBorder}`, color: C.textMuted, fontSize: 12, fontFamily: F.mono, cursor: "pointer" }}
           >
-            <Mail size={12} color="#818cf8" />
+            <Mail size={11} color={C.textFaint} />
             {lead.email}
-            {copied === "email" ? <CheckCheck size={12} color="#4ade80" style={{ marginLeft: 4 }} /> : <Copy size={11} color="rgba(255,255,255,0.25)" style={{ marginLeft: 4 }} />}
+            {copied === "email" ? <CheckCheck size={11} color={C.green} style={{ marginLeft: 3 }} /> : <Copy size={10} color={C.textFaint} style={{ marginLeft: 3 }} />}
           </button>
           {lead.phone && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 6, background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "monospace" }}>
-              <Phone size={12} color="#818cf8" />{lead.phone}
+            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 6, background: C.pill, border: `1px solid ${C.pillBorder}`, color: C.textMuted, fontSize: 12, fontFamily: F.mono }}>
+              <Phone size={11} color={C.textFaint} />{lead.phone}
             </div>
           )}
           {lead.website && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 6, background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "monospace", overflow: "hidden", maxWidth: 200 }}>
-              <Globe size={12} color="#818cf8" />
+            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 6, background: C.pill, border: `1px solid ${C.pillBorder}`, color: C.textMuted, fontSize: 12, fontFamily: F.mono, maxWidth: 200, overflow: "hidden" }}>
+              <Globe size={11} color={C.textFaint} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lead.website}</span>
             </div>
           )}
         </div>
 
-        {/* expand email */}
+        {/* expand email toggle */}
         <button
           onClick={() => setOpen(!open)}
-          style={{ marginTop: 14, width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 7, background: open ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.16)", cursor: "pointer", transition: "background 0.2s" }}
           data-testid={`button-expand-email-${lead.id}`}
+          style={{
+            marginTop: 12, width: "100%", display: "flex", alignItems: "center",
+            justifyContent: "space-between", padding: "9px 13px", borderRadius: 8,
+            background: open ? "rgba(255,255,255,0.04)" : "transparent",
+            border: `1px solid ${open ? C.border : C.borderSubtle}`,
+            cursor: "pointer", transition: "all 0.15s",
+          }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Sparkles size={13} color="#c084fc" />
-            <span style={{ fontSize: 11, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.65)" }}>AI Cold Email</span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>— {lead.emailSubject}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <Sparkles size={12} color={C.textFaint} />
+            <span style={{ fontSize: 11, fontFamily: F.display, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: C.textMuted }}>Cold Email</span>
+            <span style={{ fontSize: 12, color: C.textFaint, fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>— {lead.emailSubject}</span>
           </div>
-          {open ? <ChevronUp size={15} color="rgba(255,255,255,0.35)" /> : <ChevronDown size={15} color="rgba(255,255,255,0.35)" />}
+          {open ? <ChevronUp size={14} color={C.textFaint} /> : <ChevronDown size={14} color={C.textFaint} />}
         </button>
       </div>
 
+      {/* expanded email view */}
       {open && (
-        <div style={{ borderTop: "1px solid rgba(99,102,241,0.1)" }}>
-          <div style={{ padding: "14px 22px", background: "rgba(99,102,241,0.07)", borderBottom: "1px solid rgba(99,102,241,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ borderTop: `1px solid ${C.borderSubtle}` }}>
+          {/* subject */}
+          <div style={{
+            padding: "14px 20px", background: "rgba(255,255,255,0.015)",
+            borderBottom: `1px solid ${C.borderSubtle}`,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+          }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)", marginBottom: 4 }}>Subject</div>
-              <div style={{ fontSize: 14, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#ffffff" }}>{lead.emailSubject}</div>
+              <div style={{ fontSize: 10, fontFamily: F.display, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint, marginBottom: 4 }}>Subject</div>
+              <div style={{ fontSize: 14, fontFamily: F.display, fontWeight: 600, color: C.text, letterSpacing: "-0.01em" }}>{lead.emailSubject}</div>
             </div>
-            <button onClick={() => copy(lead.emailSubject, "subject")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, background: "rgba(99,102,241,0.18)", border: "none", color: copied === "subject" ? "#4ade80" : "#a5b4fc", fontSize: 12, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, cursor: "pointer" }} data-testid={`button-copy-subject-${lead.id}`}>
-              {copied === "subject" ? <CheckCheck size={13} /> : <Copy size={13} />}
-              {copied === "subject" ? "Copied!" : "Copy"}
+            <button
+              onClick={() => copy(lead.emailSubject, "subject")}
+              data-testid={`button-copy-subject-${lead.id}`}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 6, background: C.pill, border: `1px solid ${C.pillBorder}`, color: copied === "subject" ? C.green : C.textMuted, fontSize: 12, fontFamily: F.display, fontWeight: 600, cursor: "pointer" }}
+            >
+              {copied === "subject" ? <CheckCheck size={12} /> : <Copy size={12} />}
+              {copied === "subject" ? "Copied" : "Copy"}
             </button>
           </div>
-          <div style={{ padding: "18px 22px", background: "rgba(4,4,10,0.9)" }}>
+
+          {/* body */}
+          <div style={{ padding: "18px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 10, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Email Body</div>
-              <button onClick={() => copy(lead.emailBody, "body")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, background: "rgba(99,102,241,0.18)", border: "none", color: copied === "body" ? "#4ade80" : "#a5b4fc", fontSize: 12, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, cursor: "pointer" }} data-testid={`button-copy-body-${lead.id}`}>
-                {copied === "body" ? <CheckCheck size={13} /> : <Copy size={13} />}
-                {copied === "body" ? "Copied!" : "Copy"}
+              <div style={{ fontSize: 10, fontFamily: F.display, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint }}>Email Body</div>
+              <button
+                onClick={() => copy(lead.emailBody, "body")}
+                data-testid={`button-copy-body-${lead.id}`}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 6, background: C.pill, border: `1px solid ${C.pillBorder}`, color: copied === "body" ? C.green : C.textMuted, fontSize: 12, fontFamily: F.display, fontWeight: 600, cursor: "pointer" }}
+              >
+                {copied === "body" ? <CheckCheck size={12} /> : <Copy size={12} />}
+                {copied === "body" ? "Copied" : "Copy"}
               </button>
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.8, color: "rgba(255,255,255,0.72)", whiteSpace: "pre-line", fontFamily: "Inter, sans-serif" }}>
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: C.textMuted, whiteSpace: "pre-line", fontFamily: F.body }}>
               {lead.emailBody}
             </div>
           </div>
@@ -432,65 +390,65 @@ function LeadCard({ lead, index, sending, sendResult }: {
   );
 }
 
-/* ─── loading state ──────────────────────────────────────────────── */
-
+/* ─── loading indicator ──────────────────────────────────────────── */
 function LoadingIndicator() {
-  const steps = ["Scanning business directory...", "Identifying top prospects...", "Analyzing company profiles...", "Crafting personalized emails...", "Finalizing lead intelligence..."];
+  const steps = ["Scanning market data...", "Identifying prospects...", "Profiling companies...", "Writing cold emails...", "Finalizing report..."];
   const [step, setStep] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setStep((s) => (s < steps.length - 1 ? s + 1 : s)), 2000);
     return () => clearInterval(id);
   }, []);
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 24px", gap: 28 }}>
-      <div style={{ position: "relative", width: 72, height: 72 }}>
-        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(10,10,22,0.9)", border: "1px solid rgba(99,102,241,0.35)", boxShadow: "0 0 40px rgba(99,102,241,0.25), inset 0 0 20px rgba(99,102,241,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Zap size={26} color="#818cf8" />
-        </div>
-        <div style={{ position: "absolute", inset: -12, borderRadius: "50%", border: "1px solid rgba(168,85,247,0.3)", animation: "spin-slow 6s linear infinite" }} />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 24px", gap: 24 }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%",
+        border: `1px solid ${C.border}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: C.surface,
+      }}>
+        <Loader2 size={20} color={C.textMuted} style={{ animation: "spin-slow 1s linear infinite" }} />
       </div>
-      <div key={step} style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textAlign: "center" }}>
+      <div key={step} style={{ fontFamily: F.body, fontSize: 13, color: C.textMuted, textAlign: "center" }}>
         {steps[step]}
       </div>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "flex", gap: 5 }}>
         {steps.map((_, i) => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: i <= step ? "#6366f1" : "rgba(99,102,241,0.2)", boxShadow: i <= step ? "0 0 6px rgba(99,102,241,0.7)" : "none", transition: "all 0.4s ease" }} />
+          <div key={i} style={{
+            width: i === step ? 16 : 4, height: 4, borderRadius: 99,
+            background: i <= step ? C.text : C.surface,
+            transition: "all 0.4s ease",
+          }} />
         ))}
       </div>
     </div>
   );
 }
 
-/* ─── main page ──────────────────────────────────────────────────── */
-
+/* ─── main dashboard ─────────────────────────────────────────────── */
 export default function Dashboard() {
   const [businessType, setBusinessType] = useState("");
   const [location, setLocation] = useState("");
   const [result, setResult] = useState<LeadsResponse | null>(null);
   const [sendData, setSendData] = useState<SendEmailsResponse | null>(null);
-  const [sendingIndex, setSendingIndex] = useState<number | null>(null);
   const [sendResults, setSendResults] = useState<Record<number, { success: boolean; error?: string }>>({});
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Check OAuth status on load + after redirect
   const { data: auth } = useQuery<AuthStatus>({
     queryKey: ["/api/auth/status"],
     refetchInterval: false,
   });
 
-  // Handle redirect params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("connected") === "true") {
-      toast({ title: "Gmail Connected!", description: "Your Gmail account is now linked." });
+      toast({ title: "Gmail connected", description: "You can now send emails directly from your inbox." });
       window.history.replaceState({}, "", "/");
       queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
     }
     if (params.get("error")) {
-      toast({ title: "Connection Failed", description: "Could not connect Gmail. Please try again.", variant: "destructive" });
+      toast({ title: "Connection failed", description: "Could not connect Gmail. Try again.", variant: "destructive" });
       window.history.replaceState({}, "", "/");
     }
   }, []);
@@ -515,7 +473,7 @@ export default function Dashboard() {
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     },
     onError: (err: any) => {
-      toast({ title: "Generation Failed", description: err.message || "Please try again.", variant: "destructive" });
+      toast({ title: "Generation failed", description: err.message || "Please try again.", variant: "destructive" });
     },
   });
 
@@ -526,24 +484,21 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       setSendData(data);
-      // apply per-card results
       const map: Record<number, { success: boolean; error?: string }> = {};
       if (result) {
-        data.results.forEach((r, i) => {
-          map[result.leads[i]?.id] = r;
-        });
+        data.results.forEach((r, i) => { map[result.leads[i]?.id] = r; });
       }
       setSendResults(map);
     },
     onError: (err: any) => {
-      toast({ title: "Send Failed", description: err.message, variant: "destructive" });
+      toast({ title: "Send failed", description: err.message, variant: "destructive" });
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessType.trim() || !location.trim()) {
-      toast({ title: "Missing Info", description: "Enter a business type and location.", variant: "destructive" });
+      toast({ title: "Missing fields", description: "Enter a business type and location.", variant: "destructive" });
       return;
     }
     generateMutation.mutate({ businessType: businessType.trim(), location: location.trim() });
@@ -557,82 +512,99 @@ export default function Dashboard() {
   const copyAllEmails = async () => {
     if (!result) return;
     await navigator.clipboard.writeText(result.leads.map((l) => l.email).join(", "));
-    toast({ title: "Copied!", description: "All 10 email addresses copied." });
+    toast({ title: "Copied", description: "All 10 email addresses copied to clipboard." });
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#000000", color: "#ffffff", position: "relative", overflowX: "hidden" }}>
-      <GridBg />
-      <GlowBlob top={-160} left={-160} color="radial-gradient(circle, rgba(99,102,241,0.7) 0%, transparent 70%)" size={600} opacity={0.22} />
-      <GlowBlob top={-100} right={-100} color="radial-gradient(circle, rgba(168,85,247,0.7) 0%, transparent 70%)" size={420} opacity={0.16} />
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
+      <BgMesh />
 
-      {/* send results modal */}
       {sendData && <SendResultsPanel data={sendData} onClose={() => setSendData(null)} />}
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 860, margin: "0 auto", padding: "0 24px 120px" }}>
+      {/* nav */}
+      <TopNav auth={auth} onDisconnect={() => disconnectMutation.mutate()} />
 
-        {/* ── HERO ───────────────────────────────────────────────── */}
-        <section style={{ textAlign: "center", paddingTop: 100, paddingBottom: 60 }}>
-          {/* badge */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 999, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.28)", marginBottom: 36 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#818cf8", boxShadow: "0 0 8px rgba(99,102,241,0.9)", animation: "glow-pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "#a5b4fc" }}>
-              AI Sales Intelligence
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 960, margin: "0 auto", padding: "0 24px 120px" }}>
+
+        {/* ── hero ─────────────────────────────────────────────────── */}
+        <section style={{ textAlign: "center", paddingTop: 96, paddingBottom: 72 }}>
+
+          {/* pill badge */}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 14px", borderRadius: 99, background: C.pill, border: `1px solid ${C.pillBorder}`, marginBottom: 32 }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.text }} />
+            <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textMuted }}>
+              AI Sales Agent
             </span>
           </div>
 
-          <h1 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 800, fontSize: "clamp(42px, 7vw, 76px)", lineHeight: 1.05, letterSpacing: "-0.02em", margin: "0 0 24px", color: "#ffffff" }}>
-            Find Your Next{" "}
-            <span style={{ background: "linear-gradient(135deg, #818cf8 0%, #a78bfa 45%, #c084fc 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              10 Clients
-            </span>
+          <h1 style={{
+            fontFamily: F.display, fontWeight: 800,
+            fontSize: "clamp(48px, 8vw, 88px)", lineHeight: 1.0,
+            letterSpacing: "-0.04em", margin: "0 0 24px", color: C.text,
+          }}>
+            Find your next<br />
+            <span style={{ color: C.textMuted }}>10 clients.</span>
           </h1>
 
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: "clamp(15px, 2vw, 18px)", lineHeight: 1.7, color: "rgba(255,255,255,0.48)", maxWidth: 520, margin: "0 auto 48px" }}>
-            Enter a business type and city. Our AI finds 10 real prospects
-            and writes a personalized cold email for each one — instantly.
+          <p style={{
+            fontFamily: F.body, fontSize: "clamp(15px, 2vw, 17px)",
+            lineHeight: 1.7, color: C.textMuted, maxWidth: 460,
+            margin: "0 auto 56px",
+          }}>
+            Type a business category and city. We find 10 real prospects and write a personalized cold email for every one — in seconds.
           </p>
 
-          {/* ── GMAIL BAR ─────────────────────────────────────── */}
-          {auth && <GmailBar auth={auth} onDisconnect={() => disconnectMutation.mutate()} />}
-
-          {/* ── FORM CARD ─────────────────────────────────────── */}
-          <div style={{ borderRadius: 16, background: "rgba(10,10,18,0.92)", border: "1px solid rgba(99,102,241,0.22)", boxShadow: "0 0 80px rgba(99,102,241,0.07)", padding: "36px 36px 28px", backdropFilter: "blur(20px)", textAlign: "left" }}>
+          {/* ── search form ──────────────────────────────────────── */}
+          <div style={{
+            borderRadius: 16, background: C.surface, border: `1px solid ${C.border}`,
+            padding: "28px 28px 24px", textAlign: "left",
+            backdropFilter: "blur(12px)",
+          }}>
             <form onSubmit={handleSubmit}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }} className="form-grid">
-                {/* business */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }} className="form-grid">
                 <div>
-                  <label style={{ display: "block", fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.38)", marginBottom: 8 }}>
+                  <label style={{ display: "block", fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint, marginBottom: 7 }}>
                     Business Type
                   </label>
                   <div style={{ position: "relative" }}>
-                    <Building2 size={15} color="#6366f1" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
+                    <Building2 size={14} color={C.textFaint} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
                     <input
                       value={businessType}
                       onChange={(e) => setBusinessType(e.target.value)}
                       placeholder="e.g. plumbers, dentists, HVAC..."
                       data-testid="input-business-type"
-                      style={{ width: "100%", padding: "12px 14px 12px 38px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(99,102,241,0.18)", color: "#ffffff", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.18)")}
+                      style={{
+                        width: "100%", padding: "11px 12px 11px 36px",
+                        borderRadius: 8, background: "rgba(255,255,255,0.03)",
+                        border: `1px solid ${C.border}`, color: C.text,
+                        fontSize: 14, fontFamily: F.body, outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
                     />
                   </div>
                 </div>
-                {/* location */}
                 <div>
-                  <label style={{ display: "block", fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.38)", marginBottom: 8 }}>
+                  <label style={{ display: "block", fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint, marginBottom: 7 }}>
                     Location
                   </label>
                   <div style={{ position: "relative" }}>
-                    <MapPin size={15} color="#6366f1" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
+                    <MapPin size={14} color={C.textFaint} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
                     <input
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       placeholder="e.g. Houston, TX or Chicago..."
                       data-testid="input-location"
-                      style={{ width: "100%", padding: "12px 14px 12px 38px", borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(99,102,241,0.18)", color: "#ffffff", fontSize: 14, fontFamily: "Inter, sans-serif", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s" }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.5)")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(99,102,241,0.18)")}
+                      style={{
+                        width: "100%", padding: "11px 12px 11px 36px",
+                        borderRadius: 8, background: "rgba(255,255,255,0.03)",
+                        border: `1px solid ${C.border}`, color: C.text,
+                        fontSize: 14, fontFamily: F.body, outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
                     />
                   </div>
                 </div>
@@ -642,26 +614,36 @@ export default function Dashboard() {
                 type="submit"
                 disabled={generateMutation.isPending}
                 data-testid="button-generate-leads"
-                style={{ width: "100%", padding: "15px 24px", borderRadius: 9, background: generateMutation.isPending ? "rgba(99,102,241,0.3)" : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", border: "1px solid rgba(99,102,241,0.45)", boxShadow: generateMutation.isPending ? "none" : "0 0 40px rgba(99,102,241,0.35), 0 0 80px rgba(168,85,247,0.12)", color: "#ffffff", fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "0.06em", textTransform: "uppercase", cursor: generateMutation.isPending ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all 0.3s ease" }}
+                style={{
+                  width: "100%", padding: "13px 20px", borderRadius: 9,
+                  background: generateMutation.isPending ? "rgba(255,255,255,0.1)" : C.text,
+                  border: "none", color: generateMutation.isPending ? C.textMuted : C.bg,
+                  fontFamily: F.display, fontWeight: 700, fontSize: 14,
+                  letterSpacing: "-0.01em", cursor: generateMutation.isPending ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  transition: "background 0.15s, color 0.15s",
+                }}
               >
-                {generateMutation.isPending ? (
-                  <><Zap size={17} style={{ animation: "spin-slow 2s linear infinite" }} />Generating Intelligence...</>
-                ) : (
-                  <><Zap size={17} />Generate 10 Leads + Emails<ArrowRight size={16} /></>
-                )}
+                {generateMutation.isPending
+                  ? <><Loader2 size={15} style={{ animation: "spin-slow 1s linear infinite" }} /> Generating leads...</>
+                  : <><Zap size={15} /> Generate 10 leads + emails <ArrowRight size={14} /></>}
               </button>
             </form>
 
             {/* quick start */}
-            <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: 10 }}>Quick Start</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ marginTop: 18, paddingTop: 18, borderTop: `1px solid ${C.borderSubtle}` }}>
+              <span style={{ fontFamily: F.display, fontWeight: 600, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint, marginRight: 10 }}>Try:</span>
+              <div style={{ display: "inline-flex", flexWrap: "wrap", gap: 6 }}>
                 {EXAMPLE_SEARCHES.map((ex) => (
                   <button
                     key={ex.business}
                     onClick={() => { setBusinessType(ex.business); setLocation(ex.location); }}
                     data-testid={`button-example-${ex.business.replace(/\s+/g, "-")}`}
-                    style={{ padding: "6px 13px", borderRadius: 6, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.16)", color: "rgba(165,180,252,0.8)", fontSize: 12, fontFamily: "Inter, sans-serif", cursor: "pointer" }}
+                    style={{
+                      padding: "5px 12px", borderRadius: 99,
+                      background: "transparent", border: `1px solid ${C.pillBorder}`,
+                      color: C.textMuted, fontSize: 12, fontFamily: F.body, cursor: "pointer",
+                    }}
                   >
                     {ex.business} · {ex.location}
                   </button>
@@ -670,20 +652,18 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* how it works */}
+          {/* how it works — only before first search */}
           {!result && !generateMutation.isPending && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 40 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 32 }}>
               {[
-                { icon: Search, label: "1. Search", desc: "Enter any business category and city" },
-                { icon: Sparkles, label: "2. Generate", desc: "AI finds 10 prospects and writes each a cold email" },
-                { icon: Mail, label: "3. Send", desc: "Connect Gmail and send all emails in one click" },
+                { icon: MapPin, label: "Search", desc: "Enter any business category and city" },
+                { icon: Sparkles, label: "Generate", desc: "AI finds 10 prospects and writes cold emails" },
+                { icon: Mail, label: "Send", desc: "Connect Gmail and send all in one click" },
               ].map(({ icon: Icon, label, desc }) => (
-                <div key={label} style={{ padding: "22px 20px", borderRadius: 10, background: "rgba(8,8,14,0.7)", border: "1px solid rgba(99,102,241,0.1)", textAlign: "center" }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 9, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                    <Icon size={18} color="rgba(129,140,248,0.7)" />
-                  </div>
-                  <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 6 }}>{label}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}>{desc}</div>
+                <div key={label} style={{ padding: "20px", borderRadius: 12, background: C.surface, border: `1px solid ${C.borderSubtle}`, textAlign: "left" }}>
+                  <Icon size={16} color={C.textFaint} style={{ marginBottom: 12 }} />
+                  <div style={{ fontFamily: F.display, fontWeight: 600, fontSize: 13, color: C.text, marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.6, fontFamily: F.body }}>{desc}</div>
                 </div>
               ))}
             </div>
@@ -693,99 +673,101 @@ export default function Dashboard() {
         {/* loading */}
         {generateMutation.isPending && <LoadingIndicator />}
 
-        {/* results */}
+        {/* ── results ──────────────────────────────────────────────── */}
         {result && !generateMutation.isPending && (
           <div ref={resultsRef}>
-            {/* stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }}>
+            {/* stat row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 24 }}>
               {[
-                { icon: Users, label: "Leads Found", value: result.leads.length },
-                { icon: Mail, label: "Emails Written", value: result.leads.length },
-                { icon: Target, label: "Business", value: result.businessType },
+                { icon: Users, label: "Leads", value: String(result.leads.length) },
+                { icon: Mail, label: "Emails", value: String(result.leads.length) },
+                { icon: Target, label: "Industry", value: result.businessType },
                 { icon: MapPin, label: "Location", value: result.location },
               ].map(({ icon: Icon, label, value }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 8, background: "rgba(15,15,22,0.9)", border: "1px solid rgba(99,102,241,0.18)" }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 7, background: "rgba(99,102,241,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon size={16} color="#818cf8" />
-                  </div>
+                <div key={label} style={{
+                  padding: "14px 16px", borderRadius: 10,
+                  background: C.surface, border: `1px solid ${C.borderSubtle}`,
+                  display: "flex", alignItems: "center", gap: 10,
+                }}>
+                  <Icon size={14} color={C.textFaint} style={{ flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", lineHeight: 1, marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 16, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, color: "#ffffff", lineHeight: 1 }}>{value}</div>
+                    <div style={{ fontSize: 9, fontFamily: F.display, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textFaint, marginBottom: 2 }}>{label}</div>
+                    <div style={{ fontSize: 14, fontFamily: F.display, fontWeight: 700, color: C.text, lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>{value}</div>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* action bar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
               <div>
-                <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 20, color: "#ffffff", margin: "0 0 4px" }}>Lead Intelligence Report</h2>
-                <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}>
-                  {result.leads.length} prospects · <span style={{ color: "#818cf8" }}>{result.businessType}</span> in <span style={{ color: "#c084fc" }}>{result.location}</span>
+                <h2 style={{ fontFamily: F.display, fontWeight: 700, fontSize: 18, color: C.text, margin: "0 0 3px", letterSpacing: "-0.02em" }}>
+                  Lead Report
+                </h2>
+                <p style={{ margin: 0, fontSize: 13, color: C.textMuted, fontFamily: F.body }}>
+                  {result.leads.length} prospects — {result.businessType} in {result.location}
                 </p>
               </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
                   onClick={copyAllEmails}
                   data-testid="button-copy-all-emails"
-                  style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 7, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.22)", color: "#a5b4fc", fontSize: 12, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, cursor: "pointer", letterSpacing: "0.05em" }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 7, background: "transparent", border: `1px solid ${C.border}`, color: C.textMuted, fontSize: 12, fontFamily: F.display, fontWeight: 600, cursor: "pointer" }}
                 >
-                  <Copy size={13} />Copy All Emails
+                  <Copy size={12} /> Copy all emails
                 </button>
 
-                {/* send all button */}
                 {auth?.connected ? (
                   <button
                     onClick={handleSendAll}
                     disabled={sendMutation.isPending}
                     data-testid="button-send-all-emails"
                     style={{
-                      display: "flex", alignItems: "center", gap: 8,
-                      padding: "9px 18px", borderRadius: 7,
-                      background: sendMutation.isPending ? "rgba(34,197,94,0.2)" : "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                      border: "1px solid rgba(34,197,94,0.35)",
-                      boxShadow: sendMutation.isPending ? "none" : "0 0 20px rgba(34,197,94,0.2)",
-                      color: "#ffffff", fontSize: 12, fontFamily: "Space Grotesk, sans-serif",
-                      fontWeight: 700, cursor: sendMutation.isPending ? "not-allowed" : "pointer",
-                      letterSpacing: "0.05em", textTransform: "uppercase",
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "8px 16px", borderRadius: 7,
+                      background: sendMutation.isPending ? C.surface : C.text,
+                      border: `1px solid ${sendMutation.isPending ? C.border : "transparent"}`,
+                      color: sendMutation.isPending ? C.textMuted : C.bg,
+                      fontSize: 12, fontFamily: F.display, fontWeight: 700,
+                      cursor: sendMutation.isPending ? "not-allowed" : "pointer",
                     }}
                   >
                     {sendMutation.isPending
-                      ? <><Loader2 size={13} style={{ animation: "spin-slow 1s linear infinite" }} />Sending...</>
-                      : <><Send size={13} />Send All via Gmail</>}
+                      ? <><Loader2 size={12} style={{ animation: "spin-slow 1s linear infinite" }} /> Sending...</>
+                      : <><Send size={12} /> Send all via Gmail</>}
                   </button>
                 ) : (
                   <a
                     href="/api/auth/google"
                     data-testid="button-connect-gmail-results"
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 7, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "#a5b4fc", fontSize: 12, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, textDecoration: "none", letterSpacing: "0.05em", textTransform: "uppercase" }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 7, background: C.text, border: "none", color: C.bg, fontSize: 12, fontFamily: F.display, fontWeight: 700, textDecoration: "none" }}
                   >
-                    <Mail size={13} />Connect Gmail to Send
+                    <Mail size={12} /> Connect Gmail to send
                   </a>
                 )}
 
                 <button
                   onClick={() => generateMutation.mutate({ businessType, location })}
-                  style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 7, background: "transparent", border: "1px solid rgba(99,102,241,0.15)", color: "rgba(165,180,252,0.55)", fontSize: 12, fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, cursor: "pointer", letterSpacing: "0.05em" }}
                   data-testid="button-regenerate"
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 7, background: "transparent", border: `1px solid ${C.borderSubtle}`, color: C.textFaint, fontSize: 12, fontFamily: F.display, fontWeight: 600, cursor: "pointer" }}
                 >
-                  <Sparkles size={13} />New Batch
+                  <Sparkles size={12} /> Regenerate
                 </button>
               </div>
             </div>
 
             {/* not connected warning */}
             {!auth?.connected && (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 8, background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.18)", marginBottom: 20 }}>
-                <AlertCircle size={15} color="#fbbf24" style={{ flexShrink: 0 }} />
-                <p style={{ margin: 0, fontSize: 13, color: "rgba(251,191,36,0.8)", fontFamily: "Inter, sans-serif" }}>
-                  Connect your Gmail account above to send emails directly from your inbox.
+              <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 14px", borderRadius: 8, background: C.amberBg, border: `1px solid ${C.amberBorder}`, marginBottom: 16 }}>
+                <AlertCircle size={13} color={C.amber} style={{ flexShrink: 0 }} />
+                <p style={{ margin: 0, fontSize: 13, color: "rgba(245,158,11,0.75)", fontFamily: F.body }}>
+                  Connect Gmail above to send emails directly from your inbox with one click.
                 </p>
               </div>
             )}
 
             {/* lead cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {result.leads.map((lead, i) => (
                 <LeadCard
                   key={lead.id}
@@ -802,7 +784,8 @@ export default function Dashboard() {
 
       <style>{`
         @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr !important; } }
-        input::placeholder { color: rgba(255,255,255,0.2); }
+        input::placeholder { color: rgba(255,255,255,0.18); }
+        input { transition: border-color 0.15s; }
       `}</style>
     </div>
   );
