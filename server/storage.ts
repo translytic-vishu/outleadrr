@@ -1,38 +1,41 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { Pool } from "pg";
+import type { User } from "@shared/schema";
 
-// modify the interface with any CRUD methods
-// you might need
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUserById(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(email: string, passwordHash: string): Promise<User>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+function rowToUser(row: any): User {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.password_hash,
+    createdAt: row.created_at?.toISOString(),
+  };
+}
 
-  constructor() {
-    this.users = new Map();
+class DbStorage implements IStorage {
+  async getUserById(id: number): Promise<User | undefined> {
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    return result.rows[0] ? rowToUser(result.rows[0]) : undefined;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+    return result.rows[0] ? rowToUser(result.rows[0]) : undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+  async createUser(email: string, passwordHash: string): Promise<User> {
+    const result = await pool.query(
+      "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING *",
+      [email.toLowerCase(), passwordHash]
     );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    return rowToUser(result.rows[0]);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DbStorage();

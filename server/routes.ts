@@ -1,10 +1,12 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import OpenAI from "openai";
-import { generateLeadsSchema } from "@shared/schema";
+import bcrypt from "bcrypt";
+import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
 import { getAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
+import { storage } from "./storage";
 import { z } from "zod";
 
 const openai = new OpenAI({
@@ -14,6 +16,7 @@ const openai = new OpenAI({
 
 declare module "express-session" {
   interface SessionData {
+    userId?: number;
     gmailAccessToken?: string;
     gmailRefreshToken?: string;
     gmailEmail?: string;
@@ -23,10 +26,15 @@ declare module "express-session" {
 
 const MemStore = MemoryStore(session);
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
+/* ─── auth middleware ─────────────────────────────────────────────── */
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  next();
+}
+
+export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "ai-sales-agent-secret-key",
@@ -40,9 +48,61 @@ export async function registerRoutes(
     })
   );
 
+  /* ─── User auth ─────────────────────────────────────────────────── */
+
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    const parsed = signupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    const { email, password } = parsed.data;
+    const existing = await storage.getUserByEmail(email);
+    if (existing) {
+      return res.status(409).json({ error: "An account with this email already exists" });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await storage.createUser(email, passwordHash);
+    req.session.userId = user.id;
+    return res.status(201).json({ id: user.id, email: user.email });
+  });
+
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+    const { email, password } = parsed.data;
+    const user = await storage.getUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+    req.session.userId = user.id;
+    return res.json({ id: user.id, email: user.email });
+  });
+
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy(() => {});
+    res.json({ success: true });
+  });
+
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const user = await storage.getUserById(req.session.userId);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+    return res.json({ id: user.id, email: user.email });
+  });
+
   /* ─── Google OAuth ─────────────────────────────────────────────── */
 
-  app.get("/api/auth/google", (_req: Request, res: Response) => {
+  app.get("/api/auth/google", (req: Request, res: Response) => {
     const url = getAuthUrl();
     res.redirect(url);
   });
@@ -50,7 +110,7 @@ export async function registerRoutes(
   app.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     const { code } = req.query;
     if (!code || typeof code !== "string") {
-      return res.redirect("/?error=oauth_failed");
+      return res.redirect("/app?error=oauth_failed");
     }
     try {
       const oauth2Client = getOAuthClient();
@@ -62,10 +122,10 @@ export async function registerRoutes(
       req.session.gmailRefreshToken = refreshToken;
       req.session.gmailEmail = userInfo.email || "";
       req.session.gmailName = userInfo.name || "";
-      res.redirect("/?connected=true");
+      res.redirect("/app?connected=true");
     } catch (err) {
       console.error("OAuth callback error:", err);
-      res.redirect("/?error=oauth_failed");
+      res.redirect("/app?error=oauth_failed");
     }
   });
 
@@ -78,13 +138,16 @@ export async function registerRoutes(
   });
 
   app.post("/api/auth/disconnect", (req: Request, res: Response) => {
-    req.session.destroy(() => {});
+    req.session.gmailAccessToken = undefined;
+    req.session.gmailRefreshToken = undefined;
+    req.session.gmailEmail = undefined;
+    req.session.gmailName = undefined;
     res.json({ success: true });
   });
 
-  /* ─── Generate Leads ───────────────────────────────────────────── */
+  /* ─── Generate Leads (protected) ──────────────────────────────── */
 
-  app.post("/api/generate-leads", async (req: Request, res: Response) => {
+  app.post("/api/generate-leads", requireAuth, async (req: Request, res: Response) => {
     try {
       const parsed = generateLeadsSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -155,7 +218,7 @@ Requirements:
     }
   });
 
-  /* ─── Send All Emails via Gmail ────────────────────────────────── */
+  /* ─── Send All Emails via Gmail (protected) ─────────────────────── */
 
   const sendEmailsSchema = z.object({
     leads: z.array(
@@ -169,7 +232,7 @@ Requirements:
     ),
   });
 
-  app.post("/api/send-emails", async (req: Request, res: Response) => {
+  app.post("/api/send-emails", requireAuth, async (req: Request, res: Response) => {
     if (!req.session.gmailAccessToken) {
       return res.status(401).json({ error: "Not authenticated with Gmail" });
     }

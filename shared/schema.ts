@@ -1,5 +1,34 @@
 import { z } from "zod";
 
+/* ─── user ────────────────────────────────────────────────────────── */
+export const userSchema = z.object({
+  id: z.number(),
+  email: z.string().email(),
+  passwordHash: z.string(),
+  createdAt: z.string().optional(),
+});
+
+export const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const meResponseSchema = z.object({
+  id: z.number(),
+  email: z.string(),
+});
+
+export type User = z.infer<typeof userSchema>;
+export type SignupInput = z.infer<typeof signupSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type MeResponse = z.infer<typeof meResponseSchema>;
+
+/* ─── leads ───────────────────────────────────────────────────────── */
 export const generateLeadsSchema = z.object({
   businessType: z.string().min(1),
   location: z.string().min(1),
@@ -50,3 +79,6 @@ export type LeadsResponse = z.infer<typeof leadsResponseSchema>;
 export type AuthStatus = z.infer<typeof authStatusSchema>;
 export type SendResult = z.infer<typeof sendResultSchema>;
 export type SendEmailsResponse = z.infer<typeof sendEmailsResponseSchema>;
+
+/* Legacy — kept to avoid TS errors in storage.ts until rewritten */
+export type InsertUser = { email: string; passwordHash: string };
