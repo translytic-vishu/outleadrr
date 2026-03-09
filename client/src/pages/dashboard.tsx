@@ -25,9 +25,7 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  ShieldCheck,
   Briefcase,
-  Database,
 } from "lucide-react";
 
 const EXAMPLE_SEARCHES = [
@@ -369,16 +367,11 @@ function LeadCard({ lead, index, sending, sendResult }: {
           <button
             onClick={() => copy(lead.email, "email")}
             title="Click to copy"
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 6, background: lead.emailVerified ? "rgba(34,197,94,0.07)" : "rgba(99,102,241,0.07)", border: `1px solid ${lead.emailVerified ? "rgba(34,197,94,0.18)" : "rgba(99,102,241,0.12)"}`, color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace", cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 6, background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace", cursor: "pointer" }}
             data-testid={`button-copy-email-${lead.id}`}
           >
-            {lead.emailVerified
-              ? <ShieldCheck size={12} color="#4ade80" />
-              : <Mail size={12} color="#818cf8" />}
+            <Mail size={12} color="#818cf8" />
             {lead.email}
-            {lead.emailVerified && (
-              <span style={{ fontSize: 9, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#4ade80", marginLeft: 2 }}>✓</span>
-            )}
             {copied === "email" ? <CheckCheck size={12} color="#4ade80" style={{ marginLeft: 4 }} /> : <Copy size={11} color="rgba(255,255,255,0.25)" style={{ marginLeft: 4 }} />}
           </button>
           {lead.phone && (
@@ -726,25 +719,9 @@ export default function Dashboard() {
             {/* action bar */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 20, color: "#ffffff", margin: 0 }}>Lead Intelligence Report</h2>
-                  {result.source === "apollo" ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#34d399", padding: "3px 9px", borderRadius: 5, background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)" }}>
-                      <Database size={10} /> Apollo.io
-                    </span>
-                  ) : (
-                    <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#818cf8", padding: "3px 9px", borderRadius: 5, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)" }}>
-                      <Sparkles size={10} /> AI Generated
-                    </span>
-                  )}
-                </div>
+                <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: 20, color: "#ffffff", margin: "0 0 4px" }}>Lead Intelligence Report</h2>
                 <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}>
                   {result.leads.length} prospects · <span style={{ color: "#818cf8" }}>{result.businessType}</span> in <span style={{ color: "#c084fc" }}>{result.location}</span>
-                  {result.source === "apollo" && (
-                    <span style={{ marginLeft: 8, color: "rgba(52,211,153,0.6)", fontSize: 12 }}>
-                      · {result.leads.filter((l) => l.emailVerified).length} verified emails
-                    </span>
-                  )}
                 </p>
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

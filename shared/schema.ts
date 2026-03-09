@@ -16,8 +16,6 @@ export const leadSchema = z.object({
   industry: z.string(),
   emailSubject: z.string(),
   emailBody: z.string(),
-  emailVerified: z.boolean().optional(),
-  apolloId: z.string().optional(),
   status: z.enum(["new", "contacted", "replied", "closed"]).default("new"),
 });
 
@@ -25,7 +23,6 @@ export const leadsResponseSchema = z.object({
   leads: z.array(leadSchema),
   businessType: z.string(),
   location: z.string(),
-  source: z.enum(["apollo", "ai"]).optional(),
 });
 
 export const authStatusSchema = z.object({
