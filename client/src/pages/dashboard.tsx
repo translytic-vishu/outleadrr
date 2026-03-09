@@ -1,70 +1,307 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 /* ─── type tokens ────────────────────────────────────────────────── */
-const T = {
-  serif: "'Playfair Display', Georgia, serif",
-  sans: "'Inter', 'Helvetica Neue', sans-serif",
-  mono: "'JetBrains Mono', 'Fira Code', monospace",
-  white: "#ffffff",
-  dim: "rgba(255,255,255,0.38)",
-  faint: "rgba(255,255,255,0.14)",
-  rule: "rgba(255,255,255,0.1)",
-};
+const F = "'Fraunces', Georgia, serif";
+const S = "'Inter', 'Helvetica Neue', sans-serif";
+const M = "'JetBrains Mono', monospace";
 
-const HR = () => (
-  <div style={{ height: 1, background: T.rule, width: "100%" }} />
-);
+/* ─── global CSS injected once ───────────────────────────────────── */
+const GLOBAL_CSS = `
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; cursor: none !important; }
+  html, body { background: #000; color: #fff; overflow-x: hidden; }
 
-const Label = ({ children, style }: { children: string; style?: React.CSSProperties }) => (
-  <span style={{
-    fontFamily: T.sans, fontSize: 9, fontWeight: 400,
-    letterSpacing: "0.22em", textTransform: "uppercase",
-    color: T.dim, ...style,
-  }}>{children}</span>
-);
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+  @keyframes drawLine {
+    from { width: 0%; opacity: 0; }
+    to   { width: 100%; opacity: 1; }
+  }
+  @keyframes pageFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes grain {
+    0%,100%{ transform:translate(0,0)     }
+    10%    { transform:translate(-5%,-10%)}
+    20%    { transform:translate(-15%, 5%)}
+    30%    { transform:translate( 7%,-25%)}
+    40%    { transform:translate(-5%, 25%)}
+    50%    { transform:translate(-15%,10%)}
+    60%    { transform:translate(15%, 0%) }
+    70%    { transform:translate(0%,  15%)}
+    80%    { transform:translate(3%,  35%)}
+    90%    { transform:translate(-10%,10%)}
+  }
 
-/* ─── send results overlay ───────────────────────────────────────── */
+  .page-wrap { animation: pageFade 1.2s ease forwards; }
+
+  .char-animate {
+    display: inline-block;
+    opacity: 0;
+    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+
+  .draw-line {
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+    width: 0;
+    opacity: 0;
+    animation: drawLine 1.6s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+
+  .grain-layer {
+    position: fixed; inset: -50%; z-index: 1; pointer-events: none;
+    width: 200%; height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    opacity: 0.038;
+    mix-blend-mode: screen;
+    animation: grain 0.6s steps(2) infinite;
+  }
+
+  #cursor-dot {
+    position: fixed; top: 0; left: 0; z-index: 9999;
+    width: 8px; height: 8px;
+    border-radius: 50%; background: #fff;
+    pointer-events: none;
+    transition: transform 0.08s, width 0.3s, height 0.3s, opacity 0.3s;
+    will-change: transform;
+    mix-blend-mode: difference;
+  }
+  #cursor-ring {
+    position: fixed; top: 0; left: 0; z-index: 9998;
+    width: 36px; height: 36px;
+    border-radius: 50%; border: 1px solid rgba(255,255,255,0.28);
+    pointer-events: none;
+    will-change: transform;
+    mix-blend-mode: difference;
+  }
+
+  .lf-input {
+    display: block; width: 100%;
+    background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.12);
+    border-radius: 0; padding: 0 0 14px;
+    font-family: ${S}; font-size: 15px; font-weight: 200;
+    color: #fff; outline: none;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+  .lf-input::placeholder { color: rgba(255,255,255,0.18); font-weight: 200; }
+  .lf-input:focus {
+    border-bottom-color: rgba(255,255,255,0.7);
+    box-shadow: 0 2px 0 0 rgba(255,255,255,0.08);
+  }
+
+  .lf-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    padding: 16px 40px; border: 1px solid rgba(255,255,255,0.55);
+    background: transparent; color: #fff;
+    font-family: ${S}; font-size: 9px; font-weight: 500;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    cursor: none; transition: border-color 0.4s; border-radius: 0;
+  }
+  .lf-btn:disabled { opacity: 0.3; cursor: none; }
+  .lf-btn-fill {
+    position: absolute; inset: 0;
+    background: #fff;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.55s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+  .lf-btn:not(:disabled):hover .lf-btn-fill { transform: scaleX(1); }
+  .lf-btn-label {
+    position: relative; z-index: 1;
+    transition: color 0.25s 0.15s;
+    color: #fff;
+  }
+  .lf-btn:not(:disabled):hover .lf-btn-label { color: #000; }
+  .lf-btn:not(:disabled):hover { border-color: #fff; }
+
+  .lf-ghost-btn {
+    background: none; border: none; padding: 0;
+    font-family: ${S}; font-size: 9px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.3); cursor: none;
+    transition: color 0.2s;
+  }
+  .lf-ghost-btn:hover { color: rgba(255,255,255,0.7); }
+
+  .lead-row { border-bottom: 1px solid rgba(255,255,255,0.07); transition: background 0.2s; }
+  .lead-row:hover { background: rgba(255,255,255,0.018); }
+
+  .email-link {
+    font-family: ${M}; font-size: 12px; color: rgba(255,255,255,0.35);
+    background: none; border: none; padding: 0; cursor: none;
+    letter-spacing: -0.01em; transition: color 0.2s; text-align: left;
+  }
+  .email-link:hover { color: rgba(255,255,255,0.75); }
+
+  .expand-btn {
+    font-family: ${S}; font-size: 9px; font-weight: 400;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.2); background: none; border: none;
+    cursor: none; transition: color 0.2s; white-space: nowrap;
+  }
+  .expand-btn:hover { color: rgba(255,255,255,0.6); }
+
+  .hr { height: 1px; background: rgba(255,255,255,0.1); width: 100%; }
+
+  @media (max-width: 680px) {
+    .form-row { flex-direction: column !important; gap: 36px !important; }
+    .lead-grid { grid-template-columns: 32px 1fr auto !important; }
+    .lead-grid-contact { display: none !important; }
+    .email-expanded { padding-left: 0 !important; }
+  }
+  @media (max-width: 520px) {
+    .outer { padding-left: 24px !important; padding-right: 24px !important; }
+  }
+`;
+
+/* ─── magnetic cursor ─────────────────────────────────────────────── */
+function MagneticCursor() {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const pos = useRef({ x: -100, y: -100, rx: -100, ry: -100 });
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      pos.current.x = e.clientX;
+      pos.current.y = e.clientY;
+    };
+    window.addEventListener("mousemove", onMove);
+
+    let raf: number;
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const tick = () => {
+      pos.current.rx = lerp(pos.current.rx, pos.current.x, 0.1);
+      pos.current.ry = lerp(pos.current.ry, pos.current.y, 0.1);
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate(${pos.current.x - 4}px, ${pos.current.y - 4}px)`;
+      }
+      if (ringRef.current) {
+        ringRef.current.style.transform = `translate(${pos.current.rx - 18}px, ${pos.current.ry - 18}px)`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <>
+      <div id="cursor-dot" ref={dotRef} />
+      <div id="cursor-ring" ref={ringRef} />
+    </>
+  );
+}
+
+/* ─── animated headline text ──────────────────────────────────────── */
+function AnimatedText({ text, delay = 0, style }: {
+  text: string; delay?: number; style?: React.CSSProperties;
+}) {
+  const chars = text.split("");
+  return (
+    <span style={style}>
+      {chars.map((ch, i) => (
+        <span
+          key={i}
+          className="char-animate"
+          style={{ animationDelay: `${delay + i * 0.028}s` }}
+        >
+          {ch === " " ? "\u00a0" : ch}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* ─── animated rule ───────────────────────────────────────────────── */
+function AnimatedRule({ delay = 0 }: { delay?: number }) {
+  return (
+    <div
+      className="draw-line"
+      style={{ animationDelay: `${delay}s` }}
+    />
+  );
+}
+
+/* ─── label ───────────────────────────────────────────────────────── */
+function Lbl({ children, style }: { children: string; style?: React.CSSProperties }) {
+  return (
+    <span style={{
+      fontFamily: S, fontSize: 9, fontWeight: 500,
+      letterSpacing: "0.24em", textTransform: "uppercase",
+      color: "rgba(255,255,255,0.28)", ...style,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+/* ─── liquid button ───────────────────────────────────────────────── */
+function LiquidBtn({
+  children, onClick, type = "button", disabled = false, style, testid,
+}: {
+  children: React.ReactNode; onClick?: () => void;
+  type?: "button" | "submit"; disabled?: boolean;
+  style?: React.CSSProperties; testid?: string;
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      data-testid={testid}
+      className="lf-btn"
+      style={style}
+    >
+      <span className="lf-btn-fill" />
+      <span className="lf-btn-label">{children}</span>
+    </button>
+  );
+}
+
+/* ─── send results overlay ────────────────────────────────────────── */
 function SendResultsPanel({ data, onClose }: { data: SendEmailsResponse; onClose: () => void }) {
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(0,0,0,0.92)",
+      position: "fixed", inset: 0, zIndex: 200,
+      background: "rgba(0,0,0,0.96)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: "40px 28px",
     }}>
-      <div style={{ width: "100%", maxWidth: 520 }}>
-        {/* header */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 36 }}>
+      <div style={{ width: "100%", maxWidth: 560 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 48 }}>
           <div>
-            <p style={{ margin: "0 0 8px", fontFamily: T.sans, fontSize: 9, fontWeight: 400, letterSpacing: "0.22em", textTransform: "uppercase", color: T.dim }}>
-              Report
-            </p>
-            <h2 style={{ margin: 0, fontFamily: T.serif, fontSize: 36, fontWeight: 400, color: T.white, letterSpacing: "-0.02em", lineHeight: 1 }}>
-              {data.sent} of {data.total}<br />
-              <em>emails sent.</em>
+            <Lbl style={{ display: "block", marginBottom: 14 }}>Send report</Lbl>
+            <h2 style={{ fontFamily: F, fontWeight: 900, fontStyle: "italic", fontSize: "clamp(36px,6vw,64px)", color: "#fff", letterSpacing: "-0.03em", lineHeight: 0.95 }}>
+              {data.sent} of {data.total}<br />sent.
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            style={{ fontFamily: T.sans, fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: T.dim, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          >
-            Close
-          </button>
+          <button onClick={onClose} className="lf-ghost-btn" data-testid="button-close-results">Close ×</button>
         </div>
-        <HR />
+        <div className="hr" />
         <div style={{ marginTop: 0 }}>
-          {data.results.map((r, i) => (
-            <div key={r.email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 0", borderBottom: `1px solid ${T.rule}` }}>
-              <span style={{ fontFamily: T.mono, fontSize: 12, color: r.success ? T.dim : "rgba(255,255,255,0.2)", letterSpacing: "-0.01em" }}>
+          {data.results.map((r) => (
+            <div key={r.email} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <span style={{ fontFamily: M, fontSize: 12, color: r.success ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.18)", letterSpacing: "-0.01em" }}>
                 {r.email}
               </span>
-              <span style={{ fontFamily: T.sans, fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: r.success ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)", flexShrink: 0 }}>
-                {r.success ? "Sent" : r.error || "Failed"}
-              </span>
+              <Lbl style={{ color: r.success ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.18)" }}>
+                {r.success ? "Sent" : "Failed"}
+              </Lbl>
             </div>
           ))}
         </div>
@@ -73,7 +310,7 @@ function SendResultsPanel({ data, onClose }: { data: SendEmailsResponse; onClose
   );
 }
 
-/* ─── lead row ───────────────────────────────────────────────────── */
+/* ─── lead row ────────────────────────────────────────────────────── */
 function LeadRow({ lead, index, sending, sendResult }: {
   lead: Lead; index: number; sending: boolean;
   sendResult?: { success: boolean; error?: string };
@@ -88,118 +325,78 @@ function LeadRow({ lead, index, sending, sendResult }: {
   };
 
   return (
-    <div style={{ borderBottom: `1px solid ${T.rule}` }}>
-      {/* main row */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "44px 1fr 1fr auto",
-        gap: "0 28px",
-        padding: "24px 0",
-        alignItems: "start",
-        opacity: sending ? 0.35 : 1,
-        transition: "opacity 0.2s",
-      }}
-        className="lead-row-grid"
+    <div className="lead-row" style={{ opacity: sending ? 0.3 : 1, transition: "opacity 0.3s" }}>
+      <div
+        className="lead-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "52px 1fr 1fr auto",
+          gap: "0 32px",
+          padding: "22px 0",
+          alignItems: "start",
+        }}
       >
-        {/* index */}
-        <div style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 400, color: T.faint, paddingTop: 2, letterSpacing: "0.04em" }}>
+        {/* number */}
+        <div style={{ fontFamily: F, fontSize: 13, fontWeight: 300, color: "rgba(255,255,255,0.18)", paddingTop: 2, fontVariantNumeric: "tabular-nums" }}>
           {String(index + 1).padStart(2, "0")}
         </div>
 
-        {/* company + contact */}
+        {/* company */}
         <div>
-          <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 400, color: T.white, letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: 6 }}>
+          <div style={{ fontFamily: F, fontSize: 19, fontWeight: 500, color: "#fff", letterSpacing: "-0.025em", lineHeight: 1.2, marginBottom: 5 }}>
             {lead.companyName}
           </div>
-          <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 300, color: T.dim, letterSpacing: "0.01em" }}>
+          <div style={{ fontFamily: S, fontSize: 12, fontWeight: 200, color: "rgba(255,255,255,0.38)", letterSpacing: "0.01em" }}>
             {lead.contactName}{lead.title ? ` — ${lead.title}` : ""}
           </div>
         </div>
 
         {/* email */}
-        <div>
-          <button
-            onClick={() => copy(lead.email, "email")}
-            data-testid={`button-copy-email-${lead.id}`}
-            title="Copy email"
-            style={{
-              fontFamily: T.mono, fontSize: 12, color: T.dim,
-              background: "none", border: "none", cursor: "pointer",
-              padding: 0, textAlign: "left", letterSpacing: "-0.01em",
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = T.white; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = T.dim; }}
-          >
+        <div className="lead-grid-contact">
+          <button className="email-link" onClick={() => copy(lead.email, "email")} data-testid={`button-copy-email-${lead.id}`} title="Copy">
             {copied === "email" ? "Copied ✓" : lead.email}
           </button>
           {lead.phone && (
-            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.faint, marginTop: 5, letterSpacing: "-0.01em" }}>{lead.phone}</div>
+            <div style={{ fontFamily: M, fontSize: 11, color: "rgba(255,255,255,0.18)", marginTop: 5 }}>{lead.phone}</div>
           )}
         </div>
 
-        {/* status + expand */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10, paddingTop: 2 }}>
-          {sendResult ? (
-            <Label style={{ color: sendResult.success ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)" }}>
+        {/* actions */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, paddingTop: 3 }}>
+          {sendResult && (
+            <Lbl style={{ color: sendResult.success ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.2)" }}>
               {sendResult.success ? "Sent" : "Failed"}
-            </Label>
-          ) : sending ? (
-            <Label>Sending</Label>
-          ) : null}
-          <button
-            onClick={() => setOpen(!open)}
-            data-testid={`button-expand-email-${lead.id}`}
-            style={{
-              fontFamily: T.sans, fontSize: 9, fontWeight: 400,
-              letterSpacing: "0.18em", textTransform: "uppercase",
-              color: T.faint, background: "none", border: "none",
-              cursor: "pointer", padding: 0,
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = T.white; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = T.faint; }}
-          >
+            </Lbl>
+          )}
+          {sending && <Lbl>Sending</Lbl>}
+          <button className="expand-btn" onClick={() => setOpen(!open)} data-testid={`button-expand-email-${lead.id}`}>
             {open ? "Close" : "Email →"}
           </button>
         </div>
       </div>
 
-      {/* expanded email */}
       {open && (
-        <div style={{ paddingBottom: 32, paddingLeft: 72 }} className="lead-email-expanded">
-          {/* subject */}
-          <div style={{ marginBottom: 20 }}>
-            <Label style={{ display: "block", marginBottom: 10 }}>Subject</Label>
+        <div className="email-expanded" style={{ paddingLeft: 84, paddingBottom: 32 }}>
+          <div style={{ marginBottom: 18 }}>
+            <Lbl style={{ display: "block", marginBottom: 10 }}>Subject</Lbl>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-              <p style={{ margin: 0, fontFamily: T.serif, fontSize: 17, fontWeight: 400, color: T.white, letterSpacing: "-0.01em", lineHeight: 1.4, maxWidth: "70%" }}>
+              <p style={{ fontFamily: F, fontSize: 17, fontWeight: 400, color: "#fff", letterSpacing: "-0.01em", lineHeight: 1.45, maxWidth: "72%", margin: 0 }}>
                 {lead.emailSubject}
               </p>
-              <button
-                onClick={() => copy(lead.emailSubject, "subject")}
-                data-testid={`button-copy-subject-${lead.id}`}
-                style={{ fontFamily: T.sans, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: copied === "subject" ? T.dim : T.faint, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-              >
+              <button className="lf-ghost-btn" onClick={() => copy(lead.emailSubject, "subject")} data-testid={`button-copy-subject-${lead.id}`}>
                 {copied === "subject" ? "Copied" : "Copy"}
               </button>
             </div>
           </div>
-
-          <HR />
-
-          {/* body */}
-          <div style={{ marginTop: 20 }}>
+          <div className="hr" style={{ marginBottom: 18 }} />
+          <div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-              <Label>Email body</Label>
-              <button
-                onClick={() => copy(lead.emailBody, "body")}
-                data-testid={`button-copy-body-${lead.id}`}
-                style={{ fontFamily: T.sans, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: copied === "body" ? T.dim : T.faint, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-              >
+              <Lbl>Email body</Lbl>
+              <button className="lf-ghost-btn" onClick={() => copy(lead.emailBody, "body")} data-testid={`button-copy-body-${lead.id}`}>
                 {copied === "body" ? "Copied" : "Copy"}
               </button>
             </div>
-            <p style={{ margin: 0, fontFamily: T.sans, fontSize: 14, fontWeight: 300, lineHeight: 1.9, color: T.dim, whiteSpace: "pre-line", maxWidth: 580 }}>
+            <p style={{ fontFamily: S, fontSize: 14, fontWeight: 200, lineHeight: 1.9, color: "rgba(255,255,255,0.4)", whiteSpace: "pre-line", maxWidth: 580, margin: 0 }}>
               {lead.emailBody}
             </p>
           </div>
@@ -209,30 +406,28 @@ function LeadRow({ lead, index, sending, sendResult }: {
   );
 }
 
-/* ─── loading ────────────────────────────────────────────────────── */
+/* ─── loading ─────────────────────────────────────────────────────── */
 function LoadingView() {
-  const phrases = [
-    "Scanning the market.",
-    "Identifying prospects.",
-    "Profiling companies.",
-    "Writing cold emails.",
-    "Finalising your report.",
-  ];
+  const steps = ["Scanning the market.", "Identifying prospects.", "Profiling companies.", "Writing cold emails.", "Finalising your report."];
   const [i, setI] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setI((n) => (n < phrases.length - 1 ? n + 1 : n)), 2200);
+    const id = setInterval(() => setI((n) => (n < steps.length - 1 ? n + 1 : n)), 2400);
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={{ padding: "80px 0 100px", textAlign: "center" }}>
-      <p style={{ margin: 0, fontFamily: T.serif, fontSize: 32, fontWeight: 400, fontStyle: "italic", color: T.dim, letterSpacing: "-0.01em" }}>
-        {phrases[i]}
+    <div style={{ padding: "72px 0 100px", textAlign: "center" }}>
+      <p key={i} style={{
+        margin: 0, fontFamily: F, fontSize: "clamp(24px,4vw,38px)",
+        fontWeight: 300, fontStyle: "italic",
+        color: "rgba(255,255,255,0.35)", letterSpacing: "-0.01em",
+        animation: "pageFade 0.6s ease forwards",
+      }}>
+        {steps[i]}
       </p>
     </div>
   );
 }
 
-/* ─── quick examples ─────────────────────────────────────────────── */
 const EXAMPLES = [
   { business: "plumbers", location: "Houston, TX" },
   { business: "dentists", location: "Los Angeles, CA" },
@@ -241,37 +436,7 @@ const EXAMPLES = [
   { business: "real estate agents", location: "Miami, FL" },
 ];
 
-/* ─── line input ─────────────────────────────────────────────────── */
-function LineInput({ label, value, onChange, placeholder, testid }: {
-  label: string; value: string; onChange: (v: string) => void;
-  placeholder: string; testid: string;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div style={{ flex: 1 }}>
-      <Label style={{ display: "block", marginBottom: 16 }}>{label}</Label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        data-testid={testid}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{
-          display: "block", width: "100%",
-          background: "none", border: "none",
-          borderBottom: `1px solid ${focused ? "rgba(255,255,255,0.5)" : T.rule}`,
-          borderRadius: 0, padding: "0 0 14px",
-          fontFamily: T.sans, fontSize: 15, fontWeight: 300,
-          color: T.white, outline: "none", boxSizing: "border-box",
-          transition: "border-color 0.2s",
-        }}
-      />
-    </div>
-  );
-}
-
-/* ─── dashboard ──────────────────────────────────────────────────── */
+/* ─── dashboard ───────────────────────────────────────────────────── */
 export default function Dashboard() {
   const [businessType, setBusinessType] = useState("");
   const [location, setLocation] = useState("");
@@ -352,272 +517,225 @@ export default function Dashboard() {
     toast({ title: "Copied." });
   };
 
+  /* headline character counts for stagger timing */
+  const line1 = "Find your";
+  const line2 = "next 10 clients.";
+
   return (
-    <div style={{ minHeight: "100vh", background: "#000", color: T.white }}>
+    <>
+      <style>{GLOBAL_CSS}</style>
+      <MagneticCursor />
+      <div className="grain-layer" aria-hidden />
+
       {sendData && <SendResultsPanel data={sendData} onClose={() => setSendData(null)} />}
 
-      {/* ── nav ───────────────────────────────────────────────────── */}
-      <header style={{ borderBottom: `1px solid ${T.rule}` }}>
-        <div style={{
-          maxWidth: 1080, margin: "0 auto", padding: "0 48px",
-          height: 56, display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <span style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 400, letterSpacing: "-0.01em", color: T.white }}>
-            LeadForge
-          </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-            {auth?.connected ? (
-              <>
-                <span style={{ fontFamily: T.sans, fontSize: 10, fontWeight: 300, letterSpacing: "0.1em", textTransform: "uppercase", color: T.faint }}>
-                  {auth.email}
-                </span>
-                <button
-                  onClick={() => disconnectMutation.mutate()}
-                  data-testid="button-disconnect-gmail"
-                  style={{ fontFamily: T.sans, fontSize: 9, fontWeight: 400, letterSpacing: "0.18em", textTransform: "uppercase", color: T.faint, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  Disconnect
-                </button>
-              </>
-            ) : (
-              <a
-                href="/api/auth/google"
-                data-testid="button-connect-gmail"
-                style={{ fontFamily: T.sans, fontSize: 9, fontWeight: 400, letterSpacing: "0.22em", textTransform: "uppercase", color: T.dim, textDecoration: "none" }}
-              >
-                Connect Gmail →
-              </a>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* ── main ──────────────────────────────────────────────────── */}
-      <main style={{ maxWidth: 1080, margin: "0 auto", padding: "0 48px 160px" }}>
-
-        {/* ── hero ───────────────────────────────────────────────── */}
-        <section style={{ paddingTop: 96, paddingBottom: 80 }}>
-          <Label style={{ display: "block", marginBottom: 32 }}>AI Sales Intelligence</Label>
-
-          <h1 style={{
-            margin: "0 0 0",
-            fontFamily: T.serif, fontWeight: 300,
-            fontSize: "clamp(64px, 10vw, 128px)",
-            lineHeight: 0.95, letterSpacing: "-0.03em",
-            color: T.white,
-          }}>
-            Find your
-          </h1>
-          <h1 style={{
-            margin: "0 0 48px",
-            fontFamily: T.serif, fontWeight: 400, fontStyle: "italic",
-            fontSize: "clamp(64px, 10vw, 128px)",
-            lineHeight: 0.95, letterSpacing: "-0.03em",
-            color: T.white,
-          }}>
-            next 10 clients.
-          </h1>
-
-          <p style={{
-            margin: "0 0 72px",
-            fontFamily: T.sans, fontWeight: 300, fontSize: 16,
-            lineHeight: 1.8, color: T.dim,
-            maxWidth: 440, letterSpacing: "0.01em",
-          }}>
-            Enter a business category and city. We surface ten qualified prospects and write each a personalised cold email — in seconds.
-          </p>
-
-          <HR />
-
-          {/* ── form ─────────────────────────────────────────────── */}
-          <form onSubmit={handleSubmit} style={{ paddingTop: 40 }}>
-            <div style={{ display: "flex", gap: 48, marginBottom: 48 }} className="form-row">
-              <LineInput
-                label="Business Type"
-                value={businessType}
-                onChange={setBusinessType}
-                placeholder="plumbers, dentists, HVAC…"
-                testid="input-business-type"
-              />
-              <LineInput
-                label="Location"
-                value={location}
-                onChange={setLocation}
-                placeholder="Houston, TX or Chicago…"
-                testid="input-location"
-              />
-            </div>
-
-            {/* examples */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 40, alignItems: "center" }}>
-              <Label style={{ marginRight: 8 }}>Try —</Label>
-              {EXAMPLES.map((ex) => (
-                <button
-                  key={ex.business}
-                  type="button"
-                  onClick={() => { setBusinessType(ex.business); setLocation(ex.location); }}
-                  data-testid={`button-example-${ex.business.replace(/\s+/g, "-")}`}
-                  style={{
-                    fontFamily: T.sans, fontSize: 10, fontWeight: 300,
-                    letterSpacing: "0.04em", color: T.faint,
-                    background: "none", border: "none", cursor: "pointer",
-                    padding: "2px 0",
-                    textDecoration: "underline",
-                    textDecorationColor: T.rule,
-                    textUnderlineOffset: "3px",
-                    transition: "color 0.15s",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = T.dim; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = T.faint; }}
-                >
-                  {ex.business}, {ex.location}
-                </button>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <button
-              type="submit"
-              disabled={generateMutation.isPending}
-              data-testid="button-generate-leads"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 12,
-                padding: "16px 36px",
-                background: generateMutation.isPending ? "transparent" : T.white,
-                border: `1px solid ${generateMutation.isPending ? T.rule : T.white}`,
-                color: generateMutation.isPending ? T.faint : "#000",
-                fontFamily: T.sans, fontSize: 9, fontWeight: 400,
-                letterSpacing: "0.28em", textTransform: "uppercase",
-                cursor: generateMutation.isPending ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-                borderRadius: 0,
-              }}
-            >
-              {generateMutation.isPending ? "Generating…" : "Generate 10 leads"}
-            </button>
-          </form>
-        </section>
-
-        {/* loading */}
-        {generateMutation.isPending && <LoadingView />}
-
-        {/* ── results ────────────────────────────────────────────── */}
-        {result && !generateMutation.isPending && (
-          <section ref={resultsRef}>
-            <HR />
-
-            {/* results header */}
-            <div style={{
-              display: "flex", alignItems: "baseline",
-              justifyContent: "space-between", flexWrap: "wrap",
-              gap: 16, padding: "28px 0",
-            }}>
-              <div>
-                <Label style={{ display: "block", marginBottom: 8 }}>Results</Label>
-                <p style={{ margin: 0, fontFamily: T.serif, fontSize: 22, fontWeight: 400, color: T.white, letterSpacing: "-0.02em" }}>
-                  {result.leads.length} prospects —{" "}
-                  <em>{result.businessType}</em> in {result.location}
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
-                <button
-                  onClick={copyAllEmails}
-                  data-testid="button-copy-all-emails"
-                  style={{ fontFamily: T.sans, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: T.faint, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  Copy all emails
-                </button>
-                <button
-                  onClick={() => generateMutation.mutate({ businessType, location })}
-                  data-testid="button-regenerate"
-                  style={{ fontFamily: T.sans, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: T.faint, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  Regenerate
-                </button>
-                {auth?.connected ? (
-                  <button
-                    onClick={() => sendMutation.mutate(result.leads)}
-                    disabled={sendMutation.isPending}
-                    data-testid="button-send-all-emails"
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 10,
-                      padding: "12px 28px",
-                      background: sendMutation.isPending ? "transparent" : T.white,
-                      border: `1px solid ${sendMutation.isPending ? T.rule : T.white}`,
-                      color: sendMutation.isPending ? T.faint : "#000",
-                      fontFamily: T.sans, fontSize: 9, fontWeight: 400,
-                      letterSpacing: "0.24em", textTransform: "uppercase",
-                      cursor: sendMutation.isPending ? "not-allowed" : "pointer",
-                      borderRadius: 0, transition: "all 0.2s",
-                    }}
-                  >
-                    {sendMutation.isPending ? "Sending…" : "Send all via Gmail"}
+      <div className="page-wrap">
+        {/* ── nav ───────────────────────────────────────────────── */}
+        <header style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div
+            className="outer"
+            style={{
+              maxWidth: 1100, margin: "0 auto", padding: "0 56px",
+              height: 54, display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}
+          >
+            <span style={{ fontFamily: F, fontSize: 17, fontWeight: 400, letterSpacing: "-0.02em", color: "#fff" }}>
+              LeadForge
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+              {auth?.connected ? (
+                <>
+                  <span style={{ fontFamily: S, fontSize: 10, fontWeight: 200, letterSpacing: "0.08em", color: "rgba(255,255,255,0.28)" }}>
+                    {auth.email}
+                  </span>
+                  <button className="lf-ghost-btn" onClick={() => disconnectMutation.mutate()} data-testid="button-disconnect-gmail">
+                    Disconnect
                   </button>
-                ) : (
-                  <a
-                    href="/api/auth/google"
-                    data-testid="button-connect-gmail-results"
-                    style={{
-                      display: "inline-flex", alignItems: "center",
-                      padding: "12px 28px",
-                      background: T.white, border: `1px solid ${T.white}`,
-                      color: "#000", fontFamily: T.sans, fontSize: 9, fontWeight: 400,
-                      letterSpacing: "0.24em", textTransform: "uppercase",
-                      cursor: "pointer", borderRadius: 0, textDecoration: "none",
-                    }}
-                  >
-                    Connect Gmail to send
-                  </a>
-                )}
+                </>
+              ) : (
+                <a
+                  href="/api/auth/google"
+                  data-testid="button-connect-gmail"
+                  style={{ fontFamily: S, fontSize: 9, fontWeight: 500, letterSpacing: "0.24em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)", textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.8)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.35)"; }}
+                >
+                  Connect Gmail →
+                </a>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* ── main ──────────────────────────────────────────────── */}
+        <main className="outer" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 56px 160px" }}>
+
+          {/* ── hero ─────────────────────────────────────────────── */}
+          <section style={{ paddingTop: 100, paddingBottom: 80 }}>
+            <Lbl style={{ display: "block", marginBottom: 36, animation: "pageFade 1s ease 0.2s both" }}>
+              AI Sales Intelligence
+            </Lbl>
+
+            {/* headline */}
+            <div style={{ marginBottom: 0 }}>
+              <h1 style={{
+                fontFamily: F, fontWeight: 100,
+                fontSize: "clamp(62px, 10vw, 130px)",
+                lineHeight: 0.95, letterSpacing: "-0.04em", color: "#fff",
+                marginBottom: "0.04em",
+              }}>
+                <AnimatedText text={line1} delay={0.3} />
+              </h1>
+              <h1 style={{
+                fontFamily: F, fontWeight: 800, fontStyle: "italic",
+                fontSize: "clamp(62px, 10vw, 130px)",
+                lineHeight: 0.95, letterSpacing: "-0.04em", color: "#fff",
+                marginBottom: 44,
+              }}>
+                <AnimatedText text={line2} delay={0.3 + line1.length * 0.028 + 0.06} />
+              </h1>
+            </div>
+
+            <p style={{
+              fontFamily: S, fontWeight: 200, fontSize: 15,
+              lineHeight: 1.85, color: "rgba(255,255,255,0.38)",
+              maxWidth: 400, marginBottom: 64, letterSpacing: "0.01em",
+              animation: `pageFade 0.8s ease ${0.3 + (line1.length + line2.length) * 0.028 + 0.2}s both`,
+            }}>
+              Enter a business category and city. Surface ten qualified prospects, each with a personalised cold email — generated in seconds.
+            </p>
+
+            <AnimatedRule delay={0.5 + (line1.length + line2.length) * 0.028} />
+
+            {/* ── form ─────────────────────────────────────────────── */}
+            <form onSubmit={handleSubmit} style={{ paddingTop: 44 }}>
+              <div className="form-row" style={{ display: "flex", gap: 56, marginBottom: 44 }}>
+                {[
+                  { label: "Business Type", value: businessType, set: setBusinessType, placeholder: "plumbers, dentists, HVAC…", testid: "input-business-type" },
+                  { label: "Location",      value: location,     set: setLocation,     placeholder: "Houston, TX or Chicago…",  testid: "input-location" },
+                ].map(({ label, value, set, placeholder, testid }) => (
+                  <div key={label} style={{ flex: 1 }}>
+                    <Lbl style={{ display: "block", marginBottom: 14 }}>{label}</Lbl>
+                    <input
+                      className="lf-input"
+                      value={value}
+                      onChange={(e) => set(e.target.value)}
+                      placeholder={placeholder}
+                      data-testid={testid}
+                    />
+                  </div>
+                ))}
               </div>
-            </div>
 
-            <HR />
+              {/* examples */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 44 }}>
+                <Lbl style={{ marginRight: 6 }}>Try —</Lbl>
+                {EXAMPLES.map((ex) => (
+                  <button
+                    key={ex.business}
+                    type="button"
+                    onClick={() => { setBusinessType(ex.business); setLocation(ex.location); }}
+                    data-testid={`button-example-${ex.business.replace(/\s+/g, "-")}`}
+                    style={{
+                      fontFamily: S, fontSize: 10, fontWeight: 200,
+                      color: "rgba(255,255,255,0.28)",
+                      background: "none", border: "none",
+                      textDecoration: "underline",
+                      textDecorationColor: "rgba(255,255,255,0.1)",
+                      textUnderlineOffset: "4px",
+                      letterSpacing: "0.02em",
+                      cursor: "none", transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.6)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.28)"; }}
+                  >
+                    {ex.business}, {ex.location}
+                  </button>
+                ))}
+              </div>
 
-            {/* column headers */}
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "44px 1fr 1fr auto",
-              gap: "0 28px",
-              padding: "14px 0",
-              borderBottom: `1px solid ${T.rule}`,
-            }} className="lead-row-grid">
-              <Label>#</Label>
-              <Label>Company</Label>
-              <Label>Contact</Label>
-              <Label></Label>
-            </div>
-
-            {/* lead rows */}
-            {result.leads.map((lead, i) => (
-              <LeadRow
-                key={lead.id}
-                lead={lead}
-                index={i}
-                sending={sendMutation.isPending && !sendResults[lead.id]}
-                sendResult={sendResults[lead.id]}
-              />
-            ))}
-
-            <div style={{ height: 40 }} />
-            <HR />
+              <LiquidBtn type="submit" disabled={generateMutation.isPending} testid="button-generate-leads">
+                {generateMutation.isPending ? "Generating…" : "Generate 10 leads"}
+              </LiquidBtn>
+            </form>
           </section>
-        )}
-      </main>
 
-      <style>{`
-        input::placeholder { color: rgba(255,255,255,0.15); font-weight: 300; font-family: 'Inter', sans-serif; }
-        @media (max-width: 680px) {
-          .form-row { flex-direction: column !important; gap: 32px !important; }
-          .lead-row-grid { grid-template-columns: 32px 1fr auto !important; }
-          .lead-row-grid > *:nth-child(3) { display: none; }
-          .lead-email-expanded { padding-left: 0 !important; }
-        }
-        @media (max-width: 460px) {
-          main { padding-left: 24px !important; padding-right: 24px !important; }
-          header > div { padding-left: 24px !important; padding-right: 24px !important; }
-        }
-      `}</style>
-    </div>
+          {/* loading */}
+          {generateMutation.isPending && <LoadingView />}
+
+          {/* ── results ────────────────────────────────────────────── */}
+          {result && !generateMutation.isPending && (
+            <section ref={resultsRef}>
+              <div className="hr" />
+
+              {/* results header */}
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 16, padding: "30px 0" }}>
+                <div>
+                  <Lbl style={{ display: "block", marginBottom: 10 }}>Results</Lbl>
+                  <p style={{ fontFamily: F, fontSize: "clamp(18px,3vw,26px)", fontWeight: 400, color: "#fff", letterSpacing: "-0.025em", margin: 0 }}>
+                    {result.leads.length} prospects —{" "}
+                    <em style={{ fontWeight: 300 }}>{result.businessType}</em> in {result.location}
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
+                  <button className="lf-ghost-btn" onClick={copyAllEmails} data-testid="button-copy-all-emails">
+                    Copy all emails
+                  </button>
+                  <button className="lf-ghost-btn" onClick={() => generateMutation.mutate({ businessType, location })} data-testid="button-regenerate">
+                    Regenerate
+                  </button>
+                  {auth?.connected ? (
+                    <LiquidBtn
+                      onClick={() => sendMutation.mutate(result.leads)}
+                      disabled={sendMutation.isPending}
+                      testid="button-send-all-emails"
+                      style={{ padding: "13px 30px" }}
+                    >
+                      {sendMutation.isPending ? "Sending…" : "Send all via Gmail"}
+                    </LiquidBtn>
+                  ) : (
+                    <a
+                      href="/api/auth/google"
+                      data-testid="button-connect-gmail-results"
+                      className="lf-btn"
+                      style={{ padding: "13px 30px", textDecoration: "none" }}
+                    >
+                      <span className="lf-btn-fill" />
+                      <span className="lf-btn-label">Connect Gmail to send</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="hr" />
+
+              {/* column headers */}
+              <div
+                className="lead-grid"
+                style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr auto", gap: "0 32px", padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <Lbl>#</Lbl>
+                <Lbl>Company</Lbl>
+                <Lbl className="lead-grid-contact">Contact</Lbl>
+                <span />
+              </div>
+
+              {result.leads.map((lead, i) => (
+                <LeadRow
+                  key={lead.id}
+                  lead={lead}
+                  index={i}
+                  sending={sendMutation.isPending && !sendResults[lead.id]}
+                  sendResult={sendResults[lead.id]}
+                />
+              ))}
+
+              <div style={{ height: 48 }} />
+              <div className="hr" />
+            </section>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
