@@ -20,6 +20,14 @@ A futuristic dark-themed AI sales agent web app that generates 10 qualified lead
 - Staggered card animations on lead generation
 - Loading state with progressive step indicators
 
+## Gmail OAuth (Google Login)
+- Users connect their own Gmail via Google OAuth (not a shared account)
+- The Gmail connector integration was dismissed — using GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET secrets instead
+- OAuth flow: GET /api/auth/google → Google → /api/auth/google/callback → session stored
+- Redirect URI must be set in Google Cloud Console: https://<domain>/api/auth/google/callback
+- Sessions stored in memory (memorystore) with SESSION_SECRET
+- Once connected, "Send All via Gmail" button sends all 10 emails from the user's own Gmail account
+
 ## Architecture
 
 - **Frontend**: React + TypeScript + Wouter + TanStack Query

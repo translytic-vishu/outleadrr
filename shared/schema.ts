@@ -24,6 +24,28 @@ export const leadsResponseSchema = z.object({
   location: z.string(),
 });
 
+export const authStatusSchema = z.object({
+  connected: z.boolean(),
+  email: z.string().optional(),
+  name: z.string().optional(),
+});
+
+export const sendResultSchema = z.object({
+  email: z.string(),
+  success: z.boolean(),
+  error: z.string().optional(),
+});
+
+export const sendEmailsResponseSchema = z.object({
+  results: z.array(sendResultSchema),
+  sent: z.number(),
+  failed: z.number(),
+  total: z.number(),
+});
+
 export type Lead = z.infer<typeof leadSchema>;
 export type GenerateLeadsInput = z.infer<typeof generateLeadsSchema>;
 export type LeadsResponse = z.infer<typeof leadsResponseSchema>;
+export type AuthStatus = z.infer<typeof authStatusSchema>;
+export type SendResult = z.infer<typeof sendResultSchema>;
+export type SendEmailsResponse = z.infer<typeof sendEmailsResponseSchema>;

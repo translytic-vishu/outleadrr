@@ -1,18 +1,98 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import session from "express-session";
+import MemoryStore from "memorystore";
 import OpenAI from "openai";
 import { generateLeadsSchema } from "@shared/schema";
+import { getAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
+import { z } from "zod";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+declare module "express-session" {
+  interface SessionData {
+    gmailAccessToken?: string;
+    gmailRefreshToken?: string;
+    gmailEmail?: string;
+    gmailName?: string;
+  }
+}
+
+const MemStore = MemoryStore(session);
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  app.post("/api/generate-leads", async (req, res) => {
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "ai-sales-agent-secret-key",
+      resave: false,
+      saveUninitialized: false,
+      store: new MemStore({ checkPeriod: 86400000 }),
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      },
+    })
+  );
+
+  /* ─── Google OAuth ─────────────────────────────────────────────── */
+
+  app.get("/api/auth/google", (_req: Request, res: Response) => {
+    const url = getAuthUrl();
+    res.redirect(url);
+  });
+
+  app.get("/api/auth/google/callback", async (req: Request, res: Response) => {
+    const { code } = req.query;
+    if (!code || typeof code !== "string") {
+      return res.redirect("/?error=oauth_failed");
+    }
+
+    try {
+      const oauth2Client = getOAuthClient();
+      const { tokens } = await oauth2Client.getToken(code);
+      const accessToken = tokens.access_token!;
+      const refreshToken = tokens.refresh_token || "";
+
+      const userInfo = await getUserInfo(accessToken, refreshToken);
+
+      req.session.gmailAccessToken = accessToken;
+      req.session.gmailRefreshToken = refreshToken;
+      req.session.gmailEmail = userInfo.email || "";
+      req.session.gmailName = userInfo.name || "";
+
+      res.redirect("/?connected=true");
+    } catch (err) {
+      console.error("OAuth callback error:", err);
+      res.redirect("/?error=oauth_failed");
+    }
+  });
+
+  app.get("/api/auth/status", (req: Request, res: Response) => {
+    if (req.session.gmailAccessToken) {
+      res.json({
+        connected: true,
+        email: req.session.gmailEmail,
+        name: req.session.gmailName,
+      });
+    } else {
+      res.json({ connected: false });
+    }
+  });
+
+  app.post("/api/auth/disconnect", (req: Request, res: Response) => {
+    req.session.destroy(() => {});
+    res.json({ success: true });
+  });
+
+  /* ─── Generate Leads ───────────────────────────────────────────── */
+
+  app.post("/api/generate-leads", async (req: Request, res: Response) => {
     try {
       const parsed = generateLeadsSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -67,22 +147,74 @@ Requirements:
         return res.status(500).json({ error: "No response from AI" });
       }
 
-      const parsed2 = JSON.parse(content);
-      const leads = parsed2.leads.map((lead: any, idx: number) => ({
+      const data = JSON.parse(content);
+      const leads = data.leads.map((lead: any, idx: number) => ({
         ...lead,
         id: idx + 1,
         status: "new",
       }));
 
-      return res.json({
-        leads,
-        businessType,
-        location,
-      });
+      return res.json({ leads, businessType, location });
     } catch (error: any) {
       console.error("Error generating leads:", error);
       return res.status(500).json({ error: "Failed to generate leads", message: error.message });
     }
+  });
+
+  /* ─── Send All Emails via Gmail ────────────────────────────────── */
+
+  const sendEmailsSchema = z.object({
+    leads: z.array(
+      z.object({
+        email: z.string(),
+        emailSubject: z.string(),
+        emailBody: z.string(),
+        companyName: z.string(),
+        contactName: z.string(),
+      })
+    ),
+  });
+
+  app.post("/api/send-emails", async (req: Request, res: Response) => {
+    if (!req.session.gmailAccessToken) {
+      return res.status(401).json({ error: "Not authenticated with Gmail" });
+    }
+
+    const parsed = sendEmailsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid request body" });
+    }
+
+    const { leads } = parsed.data;
+    const from = req.session.gmailEmail!;
+    const accessToken = req.session.gmailAccessToken!;
+    const refreshToken = req.session.gmailRefreshToken || "";
+
+    const results: { email: string; success: boolean; error?: string }[] = [];
+
+    for (const lead of leads) {
+      try {
+        await sendEmailViaGmail(
+          accessToken,
+          refreshToken,
+          from,
+          lead.email,
+          lead.emailSubject,
+          lead.emailBody
+        );
+        results.push({ email: lead.email, success: true });
+        // small delay to avoid rate limiting
+        await new Promise((r) => setTimeout(r, 300));
+      } catch (err: any) {
+        console.error(`Failed to send to ${lead.email}:`, err.message);
+        results.push({ email: lead.email, success: false, error: err.message });
+      }
+    }
+
+    const sent = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
+
+    return res.json({ results, sent, failed, total: leads.length });
   });
 
   return httpServer;
