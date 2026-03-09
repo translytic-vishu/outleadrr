@@ -543,7 +543,14 @@ export default function Dashboard() {
             <img
               src={logoSrc}
               alt="Outleadr"
-              style={{ height: 80, width: "auto", display: "block", marginLeft: -16 }}
+              style={{
+                height: 100,
+                width: "auto",
+                display: "block",
+                marginLeft: -22,
+                marginRight: -22,
+                filter: "grayscale(1) brightness(1.4) contrast(1.2)",
+              }}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
               {auth?.connected ? (
