@@ -147,8 +147,8 @@ function SocialProof() {
 function HowItWorks() {
   const steps = [
     { n: "01", icon: "🎯", title: "Enter your target", desc: "Type the business category and city you want to reach. Plumbers in Dallas, lawyers in Chicago — any niche, any location." },
-    { n: "02", icon: "🤖", title: "AI finds 10 leads", desc: "Our AI scans the market and surfaces 10 real, qualified prospects complete with company name, contact, email, and job title." },
-    { n: "03", icon: "✉️", title: "Send emails instantly", desc: "Each lead gets a personalised cold email written by GPT. Connect your Gmail and send all 10 with a single click." },
+    { n: "02", icon: "🤖", title: "AI finds qualified leads", desc: "Our AI scans the market and surfaces real, qualified prospects complete with company name, contact, email, and job title — instantly." },
+    { n: "03", icon: "✉️", title: "Send emails instantly", desc: "Each prospect gets a personalised cold email written by GPT. Connect your Gmail and hit send — your next clients are one click away." },
   ];
   return (
     <div style={{ background: WHITE, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
@@ -178,7 +178,7 @@ function Features() {
   const cards = [
     { icon: "🔍", title: "Find Real Leads", desc: "No fake data, no scraped lists. Every lead is a real business with a real decision-maker — name, email, title, and all." },
     { icon: "✍️", title: "AI-Written Emails", desc: "Each cold email is personalised to the prospect's company and role. Written in seconds by GPT. Ready to send immediately." },
-    { icon: "📨", title: "One-Click Send", desc: "Connect your Gmail account and send all 10 emails directly from your own inbox with one click. No copy-pasting, no tools." },
+    { icon: "📨", title: "One-Click Send", desc: "Connect your Gmail and send every personalised email directly from your own inbox in one click. No copy-pasting, no tools." },
   ];
   return (
     <Sec>
@@ -405,13 +405,13 @@ export default function Dashboard() {
       <section style={{ textAlign: "center", padding: "96px 32px 72px", maxWidth: 740, margin: "0 auto" }}>
         <div className="hero-fade" style={{ animationDelay: "0.05s", display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 99, background: WHITE, border: `1px solid ${BORDER}`, fontSize: 12, fontWeight: 500, color: INK2, marginBottom: 28, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-          AI-Powered · 10 Leads in Seconds
+          AI-Powered · Qualified Leads in Seconds
         </div>
         <h1 className="hero-up" style={{ animationDelay: "0.1s", fontSize: "clamp(38px,6vw,68px)", fontWeight: 800, color: INK, letterSpacing: "-0.04em", lineHeight: 1.05, marginBottom: 22 }}>
           The #1 AI Sales Tool<br />for Finding Clients
         </h1>
         <p className="hero-up" style={{ animationDelay: "0.2s", fontSize: 18, color: INK2, lineHeight: 1.65, maxWidth: 500, margin: "0 auto 36px" }}>
-          Enter a business type and city. Get 10 real qualified prospects with personalised cold emails — ready to send from your Gmail in one click.
+          Enter a business type and city. Find qualified prospects with personalised cold emails — ready to send from your Gmail in one click.
         </p>
         <div className="hero-up" style={{ animationDelay: "0.28s", display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
           <a href="/signup" className="pill-btn" style={{ padding: "15px 38px", fontSize: 15, textDecoration: "none" }} data-testid="button-hero-cta">

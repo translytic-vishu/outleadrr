@@ -317,7 +317,7 @@ export default function App() {
       <div style={{ borderBottom: `1px solid ${BORDER}`, background: WHITE }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 32px" }}>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: INK, letterSpacing: "-0.03em", marginBottom: 4 }}>Lead Generator</h1>
-          <p style={{ fontSize: 14, color: INK2 }}>Enter a business type and city to generate 10 qualified prospects with personalised cold emails.</p>
+          <p style={{ fontSize: 14, color: INK2 }}>Enter a business type and city to find qualified prospects with personalised cold emails — ready to send in seconds.</p>
         </div>
       </div>
 
@@ -336,7 +336,7 @@ export default function App() {
               </div>
               <button type="submit" className="pill-btn" disabled={generateMutation.isPending} data-testid="button-generate-leads"
                 style={{ padding: "13px 28px", fontSize: 14, whiteSpace: "nowrap", height: 48 }}>
-                {generateMutation.isPending ? "Generating…" : "Generate 10 leads →"}
+                {generateMutation.isPending ? "Finding prospects…" : "Find prospects →"}
               </button>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14 }}>
