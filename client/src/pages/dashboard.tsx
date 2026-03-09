@@ -155,7 +155,7 @@ function HowItWorks() {
       <Sec>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <SectionLabel>How it works</SectionLabel>
-          <SectionHeading center>Three steps to your next 10 clients</SectionHeading>
+          <SectionHeading center>Three steps to your next clients</SectionHeading>
           <p style={{ fontSize: 16, color: INK2, maxWidth: 460, margin: "0 auto" }}>Simple enough to start in 30 seconds. Powerful enough to replace your entire outbound process.</p>
         </div>
         <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
