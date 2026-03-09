@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import logoSrc from "@assets/outleadr_1773094917545.png";
 
 /* ─── type tokens ────────────────────────────────────────────────── */
 const F = "'Fraunces', Georgia, serif";
@@ -539,9 +540,11 @@ export default function Dashboard() {
               height: 54, display: "flex", alignItems: "center", justifyContent: "space-between",
             }}
           >
-            <span style={{ fontFamily: F, fontSize: 17, fontWeight: 400, letterSpacing: "-0.02em", color: "#fff" }}>
-              LeadForge
-            </span>
+            <img
+              src={logoSrc}
+              alt="Outleadr"
+              style={{ height: 28, width: "auto", display: "block" }}
+            />
             <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
               {auth?.connected ? (
                 <>
