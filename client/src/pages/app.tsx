@@ -289,6 +289,7 @@ export default function App() {
   const [businessType, setBusinessType] = useState("");
   const [location, setLocation] = useState("");
   const [result, setResult] = useState<LeadsResponse | null>(null);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
   const [sendData, setSendData] = useState<SendEmailsResponse | null>(null);
   const [sendResults, setSendResults] = useState<Record<number, { success: boolean; error?: string }>>({});
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -343,17 +344,29 @@ export default function App() {
       if (!res.ok) {
         if (res.status === 401) { navigate("/login"); throw new Error("Not authenticated"); }
         const body = await res.json();
-        throw new Error(body.error || "Failed to generate leads");
+        if (res.status === 503) {
+          const err: any = new Error(body.message || body.error);
+          err.isApiKeyMissing = true;
+          throw err;
+        }
+        throw new Error(body.message || body.error || "Failed to generate leads");
       }
       return res.json() as Promise<LeadsResponse>;
     },
     onSuccess: (data) => {
+      setApiKeyMissing(false);
       setResult(data);
       setSendData(null);
       setSendResults({});
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
     },
-    onError: (err: any) => { toast({ title: "Generation failed.", description: err.message, variant: "destructive" }); },
+    onError: (err: any) => {
+      if (err.isApiKeyMissing) {
+        setApiKeyMissing(true);
+      } else {
+        toast({ title: "Generation failed.", description: err.message, variant: "destructive" });
+      }
+    },
   });
 
   const sendMutation = useMutation({
@@ -465,6 +478,24 @@ export default function App() {
           </form>
         </div>
       </div>
+
+      {/* api key missing banner */}
+      {apiKeyMissing && (
+        <div style={{ maxWidth: 1100, margin: "20px auto 0", padding: "0 32px" }}>
+          <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 14, padding: "20px 24px", display: "flex", gap: 16, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>🔑</span>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#854d0e", marginBottom: 6 }}>Google Places API key required</div>
+              <p style={{ fontSize: 13, color: "#92400e", lineHeight: 1.6, margin: 0 }}>
+                To pull real business data, add your <code style={{ fontFamily: "monospace", background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 4 }}>GOOGLE_PLACES_API_KEY</code> to your Replit Secrets (the 🔒 lock icon in the sidebar).
+                You can get a key from{" "}
+                <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" style={{ color: "#854d0e", fontWeight: 600 }}>Google Cloud Console</a>
+                {" "}→ APIs &amp; Services → enable <strong>Places API</strong> → Create API key.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* loading */}
       {generateMutation.isPending && <LoadingView />}

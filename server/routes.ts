@@ -177,120 +177,104 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const { businessType, location } = parsed.data;
 
-      /* ── 1. Fetch real businesses from Google Places ─────────────── */
-      let placeDetails: PlaceDetails[] = [];
-      let usedPlaces = false;
-
-      if (process.env.GOOGLE_PLACES_API_KEY) {
-        try {
-          const searchResults = await searchPlaces(`${businessType} in ${location}`);
-          placeDetails = await Promise.all(searchResults.map(p => getPlaceDetails(p.placeId)));
-          usedPlaces = placeDetails.length > 0;
-        } catch (placesErr: any) {
-          console.warn("Places API error, falling back to AI-only:", placesErr.message);
-        }
+      /* ── 1. Require Google Places API key ────────────────────────── */
+      if (!process.env.GOOGLE_PLACES_API_KEY) {
+        return res.status(503).json({
+          error: "Google Places API key not configured",
+          message: "Add GOOGLE_PLACES_API_KEY to your environment secrets to enable lead generation.",
+        });
       }
 
-      /* ── 2. Build OpenAI prompt ──────────────────────────────────── */
-      let userPrompt: string;
+      /* ── 2. Search Google Places for real businesses ─────────────── */
+      const searchResults = await searchPlaces(`${businessType} in ${location}`);
 
-      if (usedPlaces) {
-        const businessList = placeDetails.map((p, i) => {
-          const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
-          const domain = domainMatch?.[1] || "";
-          return [
-            `${i + 1}. Name: "${p.name}"`,
-            `   Address: ${p.address || "N/A"}`,
-            `   Phone: ${p.phone || "N/A"}`,
-            `   Website: ${p.website || "N/A"}`,
-            `   Domain: ${domain || "N/A"}`,
-            `   Rating: ${p.rating || "N/A"} (${p.reviewCount} reviews)`,
-          ].join("\n");
-        }).join("\n\n");
-
-        userPrompt = `For each of these real ${businessType} businesses in ${location}, generate outreach data.
-
-REAL BUSINESSES:
-${businessList}
-
-For each business return:
-- "contactName": a realistic owner or decision-maker full name
-- "title": a realistic job title (Owner, CEO, Founder, Operations Manager, etc.)
-- "email": a professional email. If a domain is available, use it (e.g. firstname@domain.com). Otherwise invent a plausible one from the business name.
-- "emailSubject": a compelling, specific cold email subject line
-- "emailBody": 150-200 word personalized cold email referencing the company name, location, and business type. Professional but warm. Clear value proposition and call to action.
-
-Return JSON exactly:
-{
-  "leads": [
-    { "id": 1, "companyName": "...", "contactName": "...", "title": "...", "email": "...", "emailSubject": "...", "emailBody": "..." }
-  ]
-}
-Return ONLY valid JSON.`;
-      } else {
-        userPrompt = `Generate exactly 10 realistic sales leads for ${businessType} businesses in ${location}.
-Return JSON:
-{
-  "leads": [
-    { "id": 1, "companyName": "...", "contactName": "...", "title": "...", "email": "...", "phone": "(555) 000-0000", "website": "www.example.com", "industry": "${businessType}", "emailSubject": "...", "emailBody": "..." }
-  ]
-}
-Requirements:
-- Realistic company names with local flair from ${location}
-- Professional email formats (firstname@domain.com)
-- Websites match company names
-- Each cold email unique, personalized, 150-200 words
-- Include realistic job titles (Owner, CEO, Operations Manager, etc.)
-- Return ONLY valid JSON`;
+      if (searchResults.length === 0) {
+        return res.status(404).json({
+          error: "No businesses found",
+          message: `No ${businessType} businesses found in ${location}. Try a broader search.`,
+        });
       }
 
-      const systemPrompt = usedPlaces
-        ? "You are a B2B sales intelligence assistant. Generate personalized cold outreach data based on real business information provided."
-        : "You are an expert B2B sales intelligence system. Generate realistic sales leads with highly personalized cold emails.";
+      /* ── 3. Fetch place details in parallel ──────────────────────── */
+      const placeDetails = await Promise.all(
+        searchResults.map(p => getPlaceDetails(p.placeId))
+      );
 
+      /* ── 4. Build context list for OpenAI (contact + email only) ─── */
+      const businessList = placeDetails.map((p, i) => {
+        const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
+        const domain = domainMatch?.[1] || "";
+        return [
+          `${i + 1}. Business: "${p.name}"`,
+          `   Location: ${p.address || location}`,
+          `   Phone: ${p.phone || "not listed"}`,
+          `   Website domain: ${domain || "none"}`,
+          `   Rating: ${p.rating > 0 ? `${p.rating}/5 (${p.reviewCount} reviews)` : "not rated yet"}`,
+        ].join("\n");
+      }).join("\n\n");
+
+      /* ── 5. Use OpenAI only for contact person + cold email ──────── */
       const completion = await openai.chat.completions.create({
         model: "gpt-5.1",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          {
+            role: "system",
+            content: "You are a B2B sales assistant. For each real business provided, generate a plausible decision-maker contact and a personalised cold email. Do not invent business names, addresses, or phone numbers — those are already provided.",
+          },
+          {
+            role: "user",
+            content: `Here are ${placeDetails.length} real ${businessType} businesses in ${location}. For each, generate:
+- "contactName": a realistic owner/decision-maker full name
+- "title": a realistic job title (Owner, CEO, Founder, General Manager, etc.)
+- "email": if a website domain is available use firstname@domain (e.g. sarah@torresplumbing.com); otherwise construct a plausible one from the business name
+- "emailSubject": a compelling, specific cold email subject line (do NOT use generic phrases like "Quick question")
+- "emailBody": 150-200 word personalized cold email. Reference the actual business name and city. Professional, warm tone. Include a clear value proposition and specific call to action.
+
+BUSINESSES:
+${businessList}
+
+Return JSON:
+{
+  "contacts": [
+    { "contactName": "...", "title": "...", "email": "...", "emailSubject": "...", "emailBody": "..." }
+  ]
+}
+Return ONLY valid JSON. The "contacts" array must have exactly ${placeDetails.length} items in the same order as the businesses listed.`,
+          },
         ],
         response_format: { type: "json_object" },
         max_completion_tokens: 8192,
       });
 
-      const content = completion.choices[0]?.message?.content;
-      if (!content) return res.status(500).json({ error: "No response from AI" });
+      const aiContent = completion.choices[0]?.message?.content;
+      if (!aiContent) return res.status(500).json({ error: "No response from AI" });
 
-      const aiData = JSON.parse(content);
+      const aiData = JSON.parse(aiContent);
+      const contacts: any[] = aiData.contacts || [];
 
-      /* ── 3. Merge Places data + calculate scores ─────────────────── */
-      const leads = (aiData.leads as any[]).map((lead: any, idx: number) => {
-        const place = placeDetails[idx];
-        const scoring = place
-          ? scorePlace(place, businessType)
-          : {
-              score: 62,
-              scoreLabel: "Good Lead",
-              scoreBreakdown: {
-                industryFit: 70,
-                businessSize: 50,
-                reachability: lead.phone && lead.website ? 100 : lead.phone || lead.website ? 60 : 20,
-                opportunity: 75,
-                reviewHealth: 50,
-              },
-            };
+      /* ── 6. Merge real Places data with AI contact/email data ─────── */
+      const leads = placeDetails.map((place, idx) => {
+        const contact = contacts[idx] || {};
+        const scoring = scorePlace(place, businessType);
 
         return {
-          ...lead,
           id: idx + 1,
-          companyName: place?.name || lead.companyName,
-          phone: place?.phone || lead.phone || "",
-          website: place?.website || lead.website || "",
-          address: place?.address || "",
-          rating: place?.rating ?? undefined,
-          reviewCount: place?.reviewCount ?? undefined,
+          /* ── real data from Google Places ── */
+          companyName: place.name,
+          address:     place.address,
+          phone:       place.phone,
+          website:     place.website,
+          rating:      place.rating > 0 ? place.rating : undefined,
+          reviewCount: place.reviewCount > 0 ? place.reviewCount : undefined,
+          /* ── AI-generated contact + outreach ── */
+          contactName:  contact.contactName  || "",
+          title:        contact.title        || "",
+          email:        contact.email        || "",
+          emailSubject: contact.emailSubject || "",
+          emailBody:    contact.emailBody    || "",
+          /* ── metadata ── */
           industry: businessType,
-          status: "new",
+          status:   "new" as const,
           ...scoring,
         };
       });

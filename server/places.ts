@@ -15,7 +15,7 @@ export async function searchPlaces(query: string): Promise<{ placeId: string; na
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) throw new Error("GOOGLE_PLACES_API_KEY not configured");
 
-  const url = `${PLACES_BASE}/textsearch/json?query=${encodeURIComponent(query)}&type=establishment&key=${key}`;
+  const url = `${PLACES_BASE}/textsearch/json?query=${encodeURIComponent(query)}&key=${key}`;
   const res = await fetch(url);
   const data = (await res.json()) as any;
 
