@@ -146,27 +146,84 @@ function SocialProof() {
 /* ─── how it works ───────────────────────────────────────────────── */
 function HowItWorks() {
   const steps = [
-    { n: "01", icon: "🎯", title: "Enter your target", desc: "Type the business category and city you want to reach. Plumbers in Dallas, lawyers in Chicago — any niche, any location." },
-    { n: "02", icon: "🤖", title: "AI finds qualified leads", desc: "Our AI scans the market and surfaces real, qualified prospects complete with company name, contact, email, and job title — instantly." },
-    { n: "03", icon: "✉️", title: "Send emails instantly", desc: "Each prospect gets a personalised cold email written by GPT. Connect your Gmail and hit send — your next clients are one click away." },
+    {
+      n: 1,
+      icon: "🎯",
+      title: "Enter your target",
+      desc: "Type the business category and city you want to reach. Plumbers in Dallas, lawyers in Chicago — any niche, any location.",
+      cardBg: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
+      iconBg: "rgba(99,102,241,0.12)",
+      accentColor: "#6366f1",
+    },
+    {
+      n: 2,
+      icon: "🤖",
+      title: "AI finds qualified leads",
+      desc: "Our AI scans the market and surfaces real, qualified prospects — company name, contact, email, and job title — instantly.",
+      cardBg: "linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%)",
+      iconBg: "rgba(168,85,247,0.12)",
+      accentColor: "#a855f7",
+    },
+    {
+      n: 3,
+      icon: "✉️",
+      title: "Send emails instantly",
+      desc: "Each prospect gets a personalised cold email written by GPT. Connect your Gmail and hit send — your next clients are one click away.",
+      cardBg: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+      iconBg: "rgba(34,197,94,0.12)",
+      accentColor: "#22c55e",
+    },
   ];
+  const ARROW = (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <path d="M6 16 C12 14, 20 18, 26 16" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        <path d="M22 12 L27 16 L22 20" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+      </svg>
+    </div>
+  );
   return (
     <div style={{ background: WHITE, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
       <Sec>
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <SectionLabel>How it works</SectionLabel>
+        <div style={{ textAlign: "center", marginBottom: 64 }}>
           <SectionHeading center>Three steps to your next clients</SectionHeading>
-          <p style={{ fontSize: 16, color: INK2, maxWidth: 460, margin: "0 auto" }}>Simple enough to start in 30 seconds. Powerful enough to replace your entire outbound process.</p>
+          <p style={{ fontSize: 16, color: INK2, maxWidth: 460, margin: "12px auto 0" }}>Simple enough to start in 30 seconds. Powerful enough to replace your entire outbound process.</p>
         </div>
-        <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
-          {steps.map(s => (
-            <div key={s.n} style={{ textAlign: "center", padding: "8px" }}>
-              <div style={{ fontSize: 36, marginBottom: 16 }}>{s.icon}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: INK3, marginBottom: 10 }}>Step {s.n}</div>
-              <h3 style={{ fontSize: 19, fontWeight: 700, color: INK, letterSpacing: "-0.025em", marginBottom: 10 }}>{s.title}</h3>
-              <p style={{ fontSize: 14, color: INK2, lineHeight: 1.7 }}>{s.desc}</p>
-            </div>
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 48px 1fr 48px 1fr", gap: 0, alignItems: "start" }}>
+          {steps.flatMap((s, i) => {
+            const card = (
+              <div key={`step-${s.n}`} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                {/* Visual card */}
+                <div style={{ background: s.cardBg, borderRadius: 20, padding: "40px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, border: "1px solid rgba(0,0,0,0.05)" }}>
+                  <div style={{ background: s.iconBg, borderRadius: 18, width: 72, height: 72, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, marginBottom: 20 }}>
+                    {s.icon}
+                  </div>
+                  <div style={{ width: "68%", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ height: 7, borderRadius: 99, background: "rgba(0,0,0,0.1)", width: "100%" }} />
+                    <div style={{ height: 7, borderRadius: 99, background: "rgba(0,0,0,0.07)", width: "75%" }} />
+                    <div style={{ height: 7, borderRadius: 99, background: "rgba(0,0,0,0.05)", width: "50%" }} />
+                  </div>
+                </div>
+                {/* Text below */}
+                <div>
+                  <h3 style={{ fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-0.03em", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: s.accentColor }}>{s.n}</span>
+                    {s.title}
+                  </h3>
+                  <p style={{ fontSize: 14, color: INK2, lineHeight: 1.75 }}>{s.desc}</p>
+                </div>
+              </div>
+            );
+            const arrow = i < steps.length - 1 ? (
+              <div key={`arrow-${i}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 90 }}>
+                <svg width="36" height="24" viewBox="0 0 36 24" fill="none">
+                  <path d="M2 12 Q10 8, 18 12 Q26 16, 34 12" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M28 7 L34 12 L28 17" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                </svg>
+              </div>
+            ) : null;
+            return arrow ? [card, arrow] : [card];
+          })}
         </div>
       </Sec>
     </div>
