@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import logoSrc from "@assets/outleadr_1773094917545.png";
+import logoSrc from "@assets/outleadr_1773257073565.png";
 
 const S = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 const BG = "#F5F5F5";

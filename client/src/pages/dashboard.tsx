@@ -1,4 +1,4 @@
-import logoSrc from "@assets/outleadr_1773094917545.png";
+import logoSrc from "@assets/outleadr_1773257073565.png";
 import { useState } from "react";
 
 const S = "'Inter', 'Helvetica Neue', Arial, sans-serif";

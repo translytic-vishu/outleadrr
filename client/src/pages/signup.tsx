@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import logoSrc from "@assets/outleadr_1773094917545.png";
+import logoSrc from "@assets/outleadr_1773257073565.png";
 
 const S = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 const INK = "#0f0f0f";
