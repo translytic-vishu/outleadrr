@@ -143,45 +143,120 @@ function SocialProof() {
   );
 }
 
-/* ─── how it works ───────────────────────────────────────────────── */
+/* ─── how it works ─ ui mockup helpers ──────────────────────────── */
+const MockChrome = ({ children, accent }: { children: React.ReactNode; accent: string }) => (
+  <div style={{ borderRadius: 14, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: "1px solid rgba(0,0,0,0.08)", background: "#fff" }}>
+    {/* browser chrome bar */}
+    <div style={{ background: "#f3f4f6", padding: "9px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+      <div style={{ display: "flex", gap: 5 }}>
+        <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#f87171" }} />
+        <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#fbbf24" }} />
+        <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#34d399" }} />
+      </div>
+      <div style={{ flex: 1, background: "#e5e7eb", borderRadius: 6, padding: "3px 10px", fontSize: 9, color: "#9ca3af", fontFamily: "monospace" }}>outleadr.app</div>
+    </div>
+    {children}
+  </div>
+);
+
+const Step1Mock = () => (
+  <MockChrome accent="#6366f1">
+    <div style={{ padding: "18px", background: "#fafafa" }}>
+      {/* mini top bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid #f0f0f0" }}>
+        <div style={{ fontWeight: 800, fontSize: 11, color: INK, letterSpacing: "-0.02em" }}>Outleadr</div>
+        <div style={{ fontSize: 9, background: "#f3f4f6", padding: "3px 8px", borderRadius: 99, color: "#6b7280" }}>Free plan</div>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: INK, marginBottom: 10 }}>Find new prospects</div>
+      {/* form fields */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        <div>
+          <div style={{ fontSize: 8, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Business type</div>
+          <div style={{ background: "#fff", border: "1.5px solid #6366f1", borderRadius: 7, padding: "6px 9px", fontSize: 10, color: INK, display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ color: "#6366f1" }}>🔍</span> Plumbers
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 8, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>City / Region</div>
+          <div style={{ background: "#fff", border: "1.5px solid #e5e7eb", borderRadius: 7, padding: "6px 9px", fontSize: 10, color: INK }}>Dallas, TX</div>
+        </div>
+        <div style={{ background: INK, borderRadius: 7, padding: "7px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 4 }}>
+          Find prospects →
+        </div>
+      </div>
+    </div>
+  </MockChrome>
+);
+
+const Step2Mock = () => {
+  const leads = [
+    { name: "Mike Torres", co: "Torres Plumbing", email: "mike@torresplumbing.com", title: "Owner" },
+    { name: "Sarah Chen", co: "DFW Drain Pros", email: "s.chen@dfwdrain.com", title: "CEO" },
+    { name: "James Okafor", co: "Lone Star Pipe", email: "james@lspipe.com", title: "Founder" },
+  ];
+  return (
+    <MockChrome accent="#a855f7">
+      <div style={{ padding: "14px", background: "#fafafa" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: INK }}>10 leads found</div>
+          <div style={{ fontSize: 8, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 99, padding: "2px 7px", fontWeight: 600 }}>✓ AI complete</div>
+        </div>
+        {/* table header */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr 0.7fr", gap: 4, borderBottom: "1px solid #e5e7eb", paddingBottom: 5, marginBottom: 5 }}>
+          {["Name", "Company", "Email", "Title"].map(h => (
+            <div key={h} style={{ fontSize: 7, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
+          ))}
+        </div>
+        {leads.map((l, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr 0.7fr", gap: 4, padding: "5px 0", borderBottom: "1px solid #f3f4f6", alignItems: "center" }}>
+            <div style={{ fontSize: 9, fontWeight: 600, color: INK }}>{l.name}</div>
+            <div style={{ fontSize: 9, color: "#6b7280" }}>{l.co}</div>
+            <div style={{ fontSize: 8, color: "#6366f1" }}>{l.email}</div>
+            <div style={{ fontSize: 8, background: "#f3f4f6", borderRadius: 4, padding: "1px 4px", color: "#374151" }}>{l.title}</div>
+          </div>
+        ))}
+        <div style={{ marginTop: 8, fontSize: 8, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
+          <span>+7 more</span>
+          <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+        </div>
+      </div>
+    </MockChrome>
+  );
+};
+
+const Step3Mock = () => (
+  <MockChrome accent="#22c55e">
+    <div style={{ padding: "14px", background: "#fafafa" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: INK }}>AI-written email</div>
+        <div style={{ fontSize: 8, color: "#9ca3af" }}>Mike Torres</div>
+      </div>
+      {/* email preview card */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px", marginBottom: 9, fontSize: 8, color: "#374151", lineHeight: 1.6 }}>
+        <div style={{ fontSize: 8, fontWeight: 700, color: INK, marginBottom: 4 }}>Subject: Quick question about Torres Plumbing</div>
+        <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 6, color: "#6b7280" }}>
+          Hi Mike,<br /><br />
+          I noticed Torres Plumbing has been serving Dallas for years — impressive reputation.<br /><br />
+          I help plumbing businesses get more commercial contracts using targeted outreach. Would you be open to a quick 10-min call?
+          <br /><br />
+          <span style={{ color: INK, fontWeight: 600 }}>Best, Alex</span>
+        </div>
+      </div>
+      {/* send button */}
+      <div style={{ background: "#16a34a", borderRadius: 7, padding: "7px", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+        <span style={{ fontSize: 9 }}>✓</span>
+        <span style={{ fontSize: 9, fontWeight: 700, color: "#fff" }}>Sent via Gmail</span>
+      </div>
+    </div>
+  </MockChrome>
+);
+
 function HowItWorks() {
   const steps = [
-    {
-      n: 1,
-      icon: "🎯",
-      title: "Enter your target",
-      desc: "Type the business category and city you want to reach. Plumbers in Dallas, lawyers in Chicago — any niche, any location.",
-      cardBg: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
-      iconBg: "rgba(99,102,241,0.12)",
-      accentColor: "#6366f1",
-    },
-    {
-      n: 2,
-      icon: "🤖",
-      title: "AI finds qualified leads",
-      desc: "Our AI scans the market and surfaces real, qualified prospects — company name, contact, email, and job title — instantly.",
-      cardBg: "linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%)",
-      iconBg: "rgba(168,85,247,0.12)",
-      accentColor: "#a855f7",
-    },
-    {
-      n: 3,
-      icon: "✉️",
-      title: "Send emails instantly",
-      desc: "Each prospect gets a personalised cold email written by GPT. Connect your Gmail and hit send — your next clients are one click away.",
-      cardBg: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
-      iconBg: "rgba(34,197,94,0.12)",
-      accentColor: "#22c55e",
-    },
+    { n: 1, title: "Enter your target", desc: "Type the business category and city you want to reach. Plumbers in Dallas, lawyers in Chicago — any niche, any location.", accentColor: "#6366f1", mock: <Step1Mock /> },
+    { n: 2, title: "AI finds qualified leads", desc: "Our AI surfaces real, qualified prospects — company name, contact, email, and job title — instantly.", accentColor: "#a855f7", mock: <Step2Mock /> },
+    { n: 3, title: "Send emails instantly", desc: "Each prospect gets a personalised cold email written by GPT. Connect your Gmail and hit send — one click away.", accentColor: "#22c55e", mock: <Step3Mock /> },
   ];
-  const ARROW = (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <path d="M6 16 C12 14, 20 18, 26 16" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-        <path d="M22 12 L27 16 L22 20" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      </svg>
-    </div>
-  );
   return (
     <div style={{ background: WHITE, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
       <Sec>
@@ -189,25 +264,14 @@ function HowItWorks() {
           <SectionHeading center>Three steps to your next clients</SectionHeading>
           <p style={{ fontSize: 16, color: INK2, maxWidth: 460, margin: "12px auto 0" }}>Simple enough to start in 30 seconds. Powerful enough to replace your entire outbound process.</p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 48px 1fr 48px 1fr", gap: 0, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr 40px 1fr", gap: 0, alignItems: "start" }}>
           {steps.flatMap((s, i) => {
-            const card = (
-              <div key={`step-${s.n}`} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                {/* Visual card */}
-                <div style={{ background: s.cardBg, borderRadius: 20, padding: "40px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, border: "1px solid rgba(0,0,0,0.05)" }}>
-                  <div style={{ background: s.iconBg, borderRadius: 18, width: 72, height: 72, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, marginBottom: 20 }}>
-                    {s.icon}
-                  </div>
-                  <div style={{ width: "68%", display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ height: 7, borderRadius: 99, background: "rgba(0,0,0,0.1)", width: "100%" }} />
-                    <div style={{ height: 7, borderRadius: 99, background: "rgba(0,0,0,0.07)", width: "75%" }} />
-                    <div style={{ height: 7, borderRadius: 99, background: "rgba(0,0,0,0.05)", width: "50%" }} />
-                  </div>
-                </div>
-                {/* Text below */}
+            const col = (
+              <div key={`step-${s.n}`} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {s.mock}
                 <div>
-                  <h3 style={{ fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-0.03em", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 22, fontWeight: 800, color: s.accentColor }}>{s.n}</span>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: INK, letterSpacing: "-0.03em", marginBottom: 8, display: "flex", alignItems: "center", gap: 9 }}>
+                    <span style={{ fontSize: 20, fontWeight: 800, color: s.accentColor }}>{s.n}</span>
                     {s.title}
                   </h3>
                   <p style={{ fontSize: 14, color: INK2, lineHeight: 1.75 }}>{s.desc}</p>
@@ -215,14 +279,14 @@ function HowItWorks() {
               </div>
             );
             const arrow = i < steps.length - 1 ? (
-              <div key={`arrow-${i}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 90 }}>
-                <svg width="36" height="24" viewBox="0 0 36 24" fill="none">
-                  <path d="M2 12 Q10 8, 18 12 Q26 16, 34 12" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                  <path d="M28 7 L34 12 L28 17" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <div key={`arrow-${i}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+                <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
+                  <path d="M1 10 Q8 5, 16 10 Q24 15, 31 10" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  <path d="M26 6 L31 10 L26 14" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 </svg>
               </div>
             ) : null;
-            return arrow ? [card, arrow] : [card];
+            return arrow ? [col, arrow] : [col];
           })}
         </div>
       </Sec>
