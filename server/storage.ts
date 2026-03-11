@@ -6,14 +6,16 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(email: string, passwordHash: string): Promise<User>;
+  createGoogleUser(email: string, googleId: string): Promise<User>;
 }
 
 function rowToUser(row: any): User {
   return {
     id: row.id,
     email: row.email,
-    passwordHash: row.password_hash,
+    passwordHash: row.password_hash ?? "",
     createdAt: row.created_at?.toISOString(),
   };
 }
@@ -29,10 +31,23 @@ class DbStorage implements IStorage {
     return result.rows[0] ? rowToUser(result.rows[0]) : undefined;
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const result = await pool.query("SELECT * FROM users WHERE google_id = $1", [googleId]);
+    return result.rows[0] ? rowToUser(result.rows[0]) : undefined;
+  }
+
   async createUser(email: string, passwordHash: string): Promise<User> {
     const result = await pool.query(
       "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING *",
       [email.toLowerCase(), passwordHash]
+    );
+    return rowToUser(result.rows[0]);
+  }
+
+  async createGoogleUser(email: string, googleId: string): Promise<User> {
+    const result = await pool.query(
+      "INSERT INTO users (email, google_id) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET google_id = $2 RETURNING *",
+      [email.toLowerCase(), googleId]
     );
     return rowToUser(result.rows[0]);
   }

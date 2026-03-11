@@ -25,6 +25,17 @@ export function getAuthUrl() {
     access_type: "offline",
     scope: SCOPES,
     prompt: "consent",
+    state: "gmail",
+  });
+}
+
+export function getLoginAuthUrl() {
+  const oauth2Client = getOAuthClient();
+  return oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["openid", "email", "profile"],
+    prompt: "select_account",
+    state: "login",
   });
 }
 

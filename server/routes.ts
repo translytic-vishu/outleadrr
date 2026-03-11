@@ -5,7 +5,7 @@ import MemoryStore from "memorystore";
 import OpenAI from "openai";
 import bcrypt from "bcrypt";
 import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
-import { getAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
+import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
 import { storage } from "./storage";
 import { z } from "zod";
 
@@ -102,15 +102,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   /* ─── Google OAuth ─────────────────────────────────────────────── */
 
-  app.get("/api/auth/google", (req: Request, res: Response) => {
-    const url = getAuthUrl();
-    res.redirect(url);
+  app.get("/api/auth/google", (_req: Request, res: Response) => {
+    res.redirect(getAuthUrl());
+  });
+
+  app.get("/api/auth/google-login", (_req: Request, res: Response) => {
+    res.redirect(getLoginAuthUrl());
   });
 
   app.get("/api/auth/google/callback", async (req: Request, res: Response) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
     if (!code || typeof code !== "string") {
-      return res.redirect("/app?error=oauth_failed");
+      const dest = state === "login" ? "/login" : "/app";
+      return res.redirect(`${dest}?error=oauth_failed`);
     }
     try {
       const oauth2Client = getOAuthClient();
@@ -118,14 +122,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const accessToken = tokens.access_token!;
       const refreshToken = tokens.refresh_token || "";
       const userInfo = await getUserInfo(accessToken, refreshToken);
-      req.session.gmailAccessToken = accessToken;
-      req.session.gmailRefreshToken = refreshToken;
-      req.session.gmailEmail = userInfo.email || "";
-      req.session.gmailName = userInfo.name || "";
-      res.redirect("/app?connected=true");
+
+      if (state === "login") {
+        /* ── Google sign-in / sign-up ─────────────────────────── */
+        if (!userInfo.id || !userInfo.email) {
+          return res.redirect("/login?error=oauth_failed");
+        }
+        let user = await storage.getUserByGoogleId(userInfo.id);
+        if (!user) {
+          user = await storage.createGoogleUser(userInfo.email, userInfo.id);
+        }
+        req.session.userId = user.id;
+        return res.redirect("/app");
+      } else {
+        /* ── Gmail connect ────────────────────────────────────── */
+        req.session.gmailAccessToken = accessToken;
+        req.session.gmailRefreshToken = refreshToken;
+        req.session.gmailEmail = userInfo.email || "";
+        req.session.gmailName = userInfo.name || "";
+        return res.redirect("/app?connected=true");
+      }
     } catch (err) {
       console.error("OAuth callback error:", err);
-      res.redirect("/app?error=oauth_failed");
+      const dest = state === "login" ? "/login" : "/app";
+      return res.redirect(`${dest}?error=oauth_failed`);
     }
   });
 
