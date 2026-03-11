@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import bcrypt from "bcrypt";
 import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
+import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places";
 import { storage } from "./storage";
 import { z } from "zod";
 
@@ -176,38 +177,76 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const { businessType, location } = parsed.data;
 
-      const systemPrompt = `You are an expert B2B sales intelligence system. Generate realistic, fictional leads for sales prospecting. Create believable company names, professional email addresses, and highly personalized cold emails that feel genuine and research-based. The emails should be concise, compelling, and not spammy.`;
+      /* ── 1. Fetch real businesses from Google Places ─────────────── */
+      let placeDetails: PlaceDetails[] = [];
+      let usedPlaces = false;
 
-      const userPrompt = `Generate exactly 10 realistic sales leads for ${businessType} businesses in ${location}.
+      if (process.env.GOOGLE_PLACES_API_KEY) {
+        try {
+          const searchResults = await searchPlaces(`${businessType} in ${location}`);
+          placeDetails = await Promise.all(searchResults.map(p => getPlaceDetails(p.placeId)));
+          usedPlaces = placeDetails.length > 0;
+        } catch (placesErr: any) {
+          console.warn("Places API error, falling back to AI-only:", placesErr.message);
+        }
+      }
 
-Return a JSON object with this exact structure:
+      /* ── 2. Build OpenAI prompt ──────────────────────────────────── */
+      let userPrompt: string;
+
+      if (usedPlaces) {
+        const businessList = placeDetails.map((p, i) => {
+          const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
+          const domain = domainMatch?.[1] || "";
+          return [
+            `${i + 1}. Name: "${p.name}"`,
+            `   Address: ${p.address || "N/A"}`,
+            `   Phone: ${p.phone || "N/A"}`,
+            `   Website: ${p.website || "N/A"}`,
+            `   Domain: ${domain || "N/A"}`,
+            `   Rating: ${p.rating || "N/A"} (${p.reviewCount} reviews)`,
+          ].join("\n");
+        }).join("\n\n");
+
+        userPrompt = `For each of these real ${businessType} businesses in ${location}, generate outreach data.
+
+REAL BUSINESSES:
+${businessList}
+
+For each business return:
+- "contactName": a realistic owner or decision-maker full name
+- "title": a realistic job title (Owner, CEO, Founder, Operations Manager, etc.)
+- "email": a professional email. If a domain is available, use it (e.g. firstname@domain.com). Otherwise invent a plausible one from the business name.
+- "emailSubject": a compelling, specific cold email subject line
+- "emailBody": 150-200 word personalized cold email referencing the company name, location, and business type. Professional but warm. Clear value proposition and call to action.
+
+Return JSON exactly:
 {
   "leads": [
-    {
-      "id": 1,
-      "companyName": "Company Name",
-      "contactName": "Full Name",
-      "title": "Job Title",
-      "email": "firstname.lastname@companydomain.com",
-      "phone": "(555) 123-4567",
-      "website": "www.companydomain.com",
-      "industry": "${businessType}",
-      "emailSubject": "Compelling email subject line",
-      "emailBody": "Full personalized cold email body (3-4 paragraphs, professional but warm tone, references their specific business type and location, includes a clear value proposition and call to action)"
-    }
+    { "id": 1, "companyName": "...", "contactName": "...", "title": "...", "email": "...", "emailSubject": "...", "emailBody": "..." }
   ]
 }
-
+Return ONLY valid JSON.`;
+      } else {
+        userPrompt = `Generate exactly 10 realistic sales leads for ${businessType} businesses in ${location}.
+Return JSON:
+{
+  "leads": [
+    { "id": 1, "companyName": "...", "contactName": "...", "title": "...", "email": "...", "phone": "(555) 000-0000", "website": "www.example.com", "industry": "${businessType}", "emailSubject": "...", "emailBody": "..." }
+  ]
+}
 Requirements:
-- Make company names realistic and varied (some with local flair from ${location})
-- Use professional email formats: firstname@domain.com or firstname.lastname@domain.com
-- Websites should match company names
-- Each cold email must be unique, personalized, and reference ${location} and the ${businessType} industry
-- Emails should be 150-200 words, professional, conversational
-- Include a clear subject line that would get opened
-- Phone numbers should be real-looking US format
-- Include a realistic job title for each contact (e.g. Owner, CEO, Operations Manager, etc.)
-- Return ONLY valid JSON, nothing else`;
+- Realistic company names with local flair from ${location}
+- Professional email formats (firstname@domain.com)
+- Websites match company names
+- Each cold email unique, personalized, 150-200 words
+- Include realistic job titles (Owner, CEO, Operations Manager, etc.)
+- Return ONLY valid JSON`;
+      }
+
+      const systemPrompt = usedPlaces
+        ? "You are a B2B sales intelligence assistant. Generate personalized cold outreach data based on real business information provided."
+        : "You are an expert B2B sales intelligence system. Generate realistic sales leads with highly personalized cold emails.";
 
       const completion = await openai.chat.completions.create({
         model: "gpt-5.1",
@@ -220,16 +259,41 @@ Requirements:
       });
 
       const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        return res.status(500).json({ error: "No response from AI" });
-      }
+      if (!content) return res.status(500).json({ error: "No response from AI" });
 
-      const data = JSON.parse(content);
-      const leads = data.leads.map((lead: any, idx: number) => ({
-        ...lead,
-        id: idx + 1,
-        status: "new",
-      }));
+      const aiData = JSON.parse(content);
+
+      /* ── 3. Merge Places data + calculate scores ─────────────────── */
+      const leads = (aiData.leads as any[]).map((lead: any, idx: number) => {
+        const place = placeDetails[idx];
+        const scoring = place
+          ? scorePlace(place, businessType)
+          : {
+              score: 62,
+              scoreLabel: "Good Lead",
+              scoreBreakdown: {
+                industryFit: 70,
+                businessSize: 50,
+                reachability: lead.phone && lead.website ? 100 : lead.phone || lead.website ? 60 : 20,
+                opportunity: 75,
+                reviewHealth: 50,
+              },
+            };
+
+        return {
+          ...lead,
+          id: idx + 1,
+          companyName: place?.name || lead.companyName,
+          phone: place?.phone || lead.phone || "",
+          website: place?.website || lead.website || "",
+          address: place?.address || "",
+          rating: place?.rating ?? undefined,
+          reviewCount: place?.reviewCount ?? undefined,
+          industry: businessType,
+          status: "new",
+          ...scoring,
+        };
+      });
 
       return res.json({ leads, businessType, location });
     } catch (error: any) {
