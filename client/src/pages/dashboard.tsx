@@ -347,7 +347,7 @@ function Footer() {
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px 32px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 32, marginBottom: 48 }}>
           <div style={{ maxWidth: 260 }}>
-            <img src={logoSrc} alt="Outleadr" style={{ height: 72, width: "auto", marginLeft: -16, marginBottom: 4 }} />
+            <img src={logoSrc} alt="Outleadr" style={{ height: 120, width: "auto", marginLeft: -26 }} />
             <p style={{ fontSize: 13, color: INK2, lineHeight: 1.6 }}>AI-powered lead generation and cold email outreach. Find your next 10 clients in seconds.</p>
           </div>
           <div style={{ display: "flex", gap: 56, flexWrap: "wrap" }}>
@@ -388,7 +388,7 @@ export default function Dashboard() {
       <header style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href="/" style={{ textDecoration: "none" }}>
-            <img src={logoSrc} alt="Outleadr" style={{ height: 80, width: "auto", marginLeft: -18 }} />
+            <img src={logoSrc} alt="Outleadr" style={{ height: 120, width: "auto", marginLeft: -26, marginRight: -26 }} />
           </a>
           <nav style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {["Features", "Pricing", "FAQ"].map(l => (

@@ -292,7 +292,7 @@ export default function App() {
       <header style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           <a href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-            <img src={logoSrc} alt="Outleadr" style={{ height: 76, width: "auto", marginLeft: -16 }} />
+            <img src={logoSrc} alt="Outleadr" style={{ height: 120, width: "auto", marginLeft: -26, marginRight: -26 }} />
           </a>
           <nav style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, color: INK3 }} data-testid="text-user-email">{me.email}</span>

@@ -69,7 +69,7 @@ export default function Signup() {
       {/* Navbar */}
       <header style={{ background: WHITE, borderBottom: `1px solid ${BORDER}`, height: 60, display: "flex", alignItems: "center", padding: "0 32px" }}>
         <a href="/" style={{ textDecoration: "none" }}>
-          <img src={logoSrc} alt="Outleadr" style={{ height: 72, width: "auto", marginLeft: -14 }} />
+          <img src={logoSrc} alt="Outleadr" style={{ height: 120, width: "auto", marginLeft: -26, marginRight: -26 }} />
         </a>
       </header>
 
