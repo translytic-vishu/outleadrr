@@ -12,7 +12,7 @@ const G4  = "#f8fafc";
 const G5  = "#f1f5f9";
 const BDR = "rgba(15,23,42,0.08)";
 const IND = "#6366f1";
-const GOLD = "#f59e0b";
+const INDL = "rgba(99,102,241,0.12)";
 
 /* ─── Global CSS ─────────────────────────────────────────────────── */
 const CSS = `
@@ -23,28 +23,33 @@ const CSS = `
 
   @keyframes fadeUp   { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
   @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
-  @keyframes floatA   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-12px)} }
-  @keyframes floatB   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-9px)} }
-  @keyframes floatC   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-14px)} }
+  @keyframes floatA   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-13px)} }
+  @keyframes floatB   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }
+  @keyframes floatC   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-15px)} }
+  @keyframes floatD   { 0%,100%{transform:translateY(0px) rotate(-2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
+  @keyframes floatE   { 0%,100%{transform:translateY(0px) rotate(1deg)} 50%{transform:translateY(-11px) rotate(-1deg)} }
   @keyframes marquee  { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-  @keyframes pdot     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
+  @keyframes revScroll{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  @keyframes pdot     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.35;transform:scale(0.7)} }
   @keyframes gradshift{ 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-  @keyframes rowIn    { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
-  @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes rowIn    { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes shimKeyA { 0%,100%{transform:translateY(0px) rotate(-6deg)} 50%{transform:translateY(-18px) rotate(-4deg)} }
+  @keyframes shimKeyB { 0%,100%{transform:translateY(0px) rotate(8deg)} 50%{transform:translateY(-14px) rotate(10deg)} }
+  @keyframes shimKeyC { 0%,100%{transform:translateY(0px) rotate(-3deg)} 50%{transform:translateY(-20px) rotate(-1deg)} }
 
   .h-up { animation: fadeUp 1s cubic-bezier(0.16,1,0.3,1) both; }
   .h-in { animation: fadeIn 0.7s ease both; }
-  .fa   { animation: floatA 5s ease-in-out infinite; }
-  .fb   { animation: floatB 6s 0.8s ease-in-out infinite; }
-  .fc   { animation: floatC 4.5s 1.6s ease-in-out infinite; }
-  .pdot { animation: pdot 2.4s ease-in-out infinite; }
+  .fa { animation: floatA 5s ease-in-out infinite; }
+  .fb { animation: floatB 6s 0.7s ease-in-out infinite; }
+  .fc { animation: floatC 4.5s 1.4s ease-in-out infinite; }
+  .pdot { animation: pdot 2.2s ease-in-out infinite; }
 
   .anim { opacity:0; transform:translateY(36px); transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1); }
   .anim.visible { opacity:1; transform:translateY(0); }
   .d1{transition-delay:0.08s} .d2{transition-delay:0.16s} .d3{transition-delay:0.24s} .d4{transition-delay:0.32s}
 
   .grad-text {
-    background: linear-gradient(135deg, ${IND} 0%, #8b5cf6 45%, #a855f7 100%);
+    background: linear-gradient(135deg, ${IND} 0%, #8b5cf6 50%, #a855f7 100%);
     background-size: 200% 200%;
     -webkit-background-clip: text; background-clip: text; color: transparent;
     animation: gradshift 5s ease infinite;
@@ -57,8 +62,7 @@ const CSS = `
     font-family:${F};font-weight:700;font-size:15px;letter-spacing:-0.01em;
     cursor:pointer;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);text-decoration:none;
   }
-  .btn-primary:hover { background:#1e293b; transform:translateY(-2px); box-shadow:0 12px 40px rgba(0,0,0,0.22); }
-  .btn-primary:active { transform:translateY(0); }
+  .btn-primary:hover { background:#1e293b; transform:translateY(-2px); box-shadow:0 14px 40px rgba(0,0,0,0.22); }
 
   .btn-ghost {
     display:inline-flex;align-items:center;gap:8px;
@@ -67,7 +71,7 @@ const CSS = `
     font-family:${F};font-weight:500;font-size:15px;
     cursor:pointer;transition:all 0.18s;text-decoration:none;
   }
-  .btn-ghost:hover { background:${G5};color:${G1};border-color:rgba(15,23,42,0.15); }
+  .btn-ghost:hover { background:${G5};color:${G1};border-color:rgba(15,23,42,0.18); }
 
   .btn-nav {
     display:inline-flex;align-items:center;
@@ -82,16 +86,20 @@ const CSS = `
   .nav-link:hover { color:${G1};background:${G5}; }
 
   .card { transition:transform 0.3s cubic-bezier(0.16,1,0.3,1),box-shadow 0.3s ease; }
-  .card:hover { transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.09) !important; }
+  .card:hover { transform:translateY(-4px); box-shadow:0 20px 56px rgba(0,0,0,0.1) !important; }
 
   .faq-item { border-bottom:1px solid ${BDR}; }
-  .faq-btn  { width:100%;display:flex;justify-content:space-between;align-items:center;padding:24px 0;background:none;border:none;cursor:pointer;text-align:left;gap:16px; }
+  .faq-btn { width:100%;display:flex;justify-content:space-between;align-items:center;padding:24px 0;background:none;border:none;cursor:pointer;text-align:left;gap:16px; }
   .faq-body { overflow:hidden;transition:max-height 0.38s cubic-bezier(0.16,1,0.3,1),opacity 0.3s ease; }
-  .faq-body.open   { max-height:300px;opacity:1; }
+  .faq-body.open { max-height:300px;opacity:1; }
   .faq-body.closed { max-height:0;opacity:0; }
 
   .mq-track { display:flex;gap:0;animation:marquee 40s linear infinite;width:max-content; }
-  .mq-wrap  { overflow:hidden;mask:linear-gradient(to right,transparent,black 6%,black 94%,transparent); }
+  .mq-wrap { overflow:hidden;mask:linear-gradient(to right,transparent,black 6%,black 94%,transparent); }
+
+  .rev-track { display:flex;gap:20px;animation:revScroll 38s linear infinite;width:max-content; }
+  .rev-track:hover { animation-play-state:paused; }
+  .rev-wrap { overflow:hidden;mask:linear-gradient(to right,transparent,black 5%,black 95%,transparent); }
 
   .comp-row { transition:background 0.15s; }
   .comp-row:hover { background:rgba(255,255,255,0.04) !important; }
@@ -99,8 +107,17 @@ const CSS = `
   .hero-glow {
     position:absolute;top:-15%;left:50%;transform:translateX(-50%);
     width:100vw;max-width:1100px;height:700px;
-    background:radial-gradient(ellipse at center, rgba(99,102,241,0.05) 0%, rgba(139,92,246,0.03) 40%, transparent 70%);
+    background:radial-gradient(ellipse at center, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.03) 40%, transparent 70%);
     pointer-events:none;z-index:0;
+  }
+
+  /* Neumorphic key shapes for CTA section */
+  .neu-key {
+    border-radius: 24px;
+    background: linear-gradient(145deg, #ebe8ff, #d8d4f5);
+    box-shadow: 6px 6px 16px rgba(99,102,241,0.18), -4px -4px 12px rgba(255,255,255,0.9);
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.7);
   }
 
   @media(max-width:1024px){
@@ -109,16 +126,16 @@ const CSS = `
     .three-col { grid-template-columns:1fr 1fr !important; }
     .steps-row { grid-template-columns:1fr !important; }
     .nav-links { display:none !important; }
+    .hero-cards { display:none !important; }
   }
   @media(max-width:680px){
     .three-col { grid-template-columns:1fr !important; }
     .stats-row { grid-template-columns:repeat(2,1fr) !important; }
-    .hero-cards { display:none !important; }
     .comp-cols { display:none !important; }
   }
 `;
 
-/* ─── Scroll-reveal ──────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────────── */
 function useAnim() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -133,8 +150,6 @@ function A({ children, d = 0, style, className = "" }: { children: React.ReactNo
   const ref = useAnim();
   return <div ref={ref} className={`anim ${d ? `d${d}` : ""} ${className}`} style={style}>{children}</div>;
 }
-
-/* ─── Count-up ───────────────────────────────────────────────────── */
 function useCountUp(end: number, suffix = "", dur = 1600) {
   const [val, setVal] = useState("0");
   const ref = useRef<HTMLSpanElement>(null);
@@ -159,13 +174,13 @@ function WaveCanvas({ dark = false }: { dark?: boolean }) {
     const ctx = canvas.getContext("2d")!;
     let raf: number; let t = 0;
     const waves = Array.from({ length: 16 }, (_, i) => ({
-      yFrac: 0.05 + (i / 16) * 0.9,
-      amp: 10 + (i % 4) * 8 + Math.random() * 12,
-      freq: 0.002 + Math.random() * 0.003,
-      speed: 0.15 + Math.random() * 0.22,
+      yFrac: 0.04 + (i / 16) * 0.92,
+      amp: 10 + (i % 4) * 8 + Math.random() * 11,
+      freq: 0.0018 + Math.random() * 0.0028,
+      speed: 0.14 + Math.random() * 0.2,
       phase: Math.random() * Math.PI * 2,
       phase2: Math.random() * Math.PI * 2,
-      opacity: dark ? (0.06 + Math.random() * 0.1) : (0.045 + Math.random() * 0.065),
+      opacity: dark ? (0.055 + Math.random() * 0.09) : (0.04 + Math.random() * 0.058),
     }));
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -178,12 +193,12 @@ function WaveCanvas({ dark = false }: { dark?: boolean }) {
       waves.forEach(w => {
         ctx.beginPath();
         ctx.strokeStyle = dark ? `rgba(255,255,255,${w.opacity})` : `rgba(15,23,42,${w.opacity})`;
-        ctx.lineWidth = 0.85;
+        ctx.lineWidth = 0.8;
         for (let x = 0; x <= W; x += 3) {
           const y = H * w.yFrac
             + Math.sin(x * w.freq + t * w.speed + w.phase) * w.amp
-            + Math.sin(x * w.freq * 2.3 + t * w.speed * 1.6 + w.phase2) * (w.amp * 0.35)
-            + Math.sin(x * w.freq * 0.55 + t * w.speed * 0.6 + w.phase + 1.5) * (w.amp * 0.22);
+            + Math.sin(x * w.freq * 2.2 + t * w.speed * 1.5 + w.phase2) * (w.amp * 0.34)
+            + Math.sin(x * w.freq * 0.55 + t * w.speed * 0.6 + w.phase + 1.4) * (w.amp * 0.2);
           x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -203,27 +218,30 @@ function WaveCanvas({ dark = false }: { dark?: boolean }) {
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
+    const fn = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", fn);
     return () => window.removeEventListener("scroll", fn);
   }, []);
   return (
     <header style={{
       position: "sticky", top: 0, zIndex: 100,
-      background: scrolled ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.85)",
-      backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+      background: "rgba(255,255,255,0.92)",
+      backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
       borderBottom: scrolled ? `1px solid ${BDR}` : "1px solid transparent",
-      transition: "all 0.3s ease",
+      transition: "border-color 0.3s ease",
     }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px", height: 66, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
-          <img src={logoSrc} alt="Outleadrr" style={{ height: 30, width: "auto" }} />
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Logo */}
+        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
+          <img src={logoSrc} alt="Outleadrr" style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }} />
         </a>
-        <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {/* Nav links */}
+        <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 0 }}>
           {[["Features", "#features"], ["Pricing", "#pricing"], ["FAQ", "#faq"]].map(([l, h]) => (
             <a key={l} href={h} className="nav-link">{l}</a>
           ))}
         </nav>
+        {/* CTA group */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <a href="/login" className="nav-link">Log in</a>
           <a href="/signup" className="btn-nav">Get started free →</a>
@@ -233,7 +251,7 @@ function Navbar() {
   );
 }
 
-/* ─── App mockup (hero) ──────────────────────────────────────────── */
+/* ─── Hero mockup ────────────────────────────────────────────────── */
 function MockupContent() {
   const rows = [
     { n: "01", co: "RiverCity Plumbing Co.", name: "James Holloway · CEO", score: 87, sc: "#22c55e", sb: "rgba(34,197,94,0.12)", label: "Strong" },
@@ -270,7 +288,7 @@ function MockupContent() {
         ))}
       </div>
       {rows.map((r, i) => (
-        <div key={r.n} style={{ padding: "12px 26px", display: "grid", gridTemplateColumns: "28px 1fr 60px 58px", gap: "0 16px", borderBottom: "1px solid rgba(255,255,255,0.025)", alignItems: "center", opacity: i >= 5 ? 0.15 : i >= 4 ? 0.4 : 1 }}>
+        <div key={r.n} style={{ padding: "12px 26px", display: "grid", gridTemplateColumns: "28px 1fr 60px 58px", gap: "0 16px", borderBottom: "1px solid rgba(255,255,255,0.025)", alignItems: "center", opacity: i >= 5 ? 0.15 : i >= 4 ? 0.38 : 1 }}>
           <span style={{ fontSize: 10, color: "rgba(255,255,255,0.15)" }}>{r.n}</span>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: WHT }}>{r.co}</div>
@@ -295,30 +313,30 @@ function Hero() {
     <section style={{ position: "relative", overflow: "hidden", paddingTop: 110, paddingBottom: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div className="hero-glow" />
       <WaveCanvas />
-
-      {/* Content */}
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 900, margin: "0 auto", padding: "0 48px", flex: "none" }}>
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 880, margin: "0 auto", padding: "0 48px", flex: "none" }}>
+        {/* Badge */}
         <div className="h-in" style={{ animationDelay: "0.05s", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 99, background: WHT, border: `1px solid ${BDR}`, fontSize: 12, fontWeight: 500, color: G2, marginBottom: 40, boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
           <span className="pdot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", flexShrink: 0 }} />
           AI-Powered B2B Lead Generation
         </div>
-
-        <h1 className="h-up hero-title" style={{ animationDelay: "0.1s", fontSize: "clamp(54px,7.5vw,96px)", fontWeight: 900, color: G1, letterSpacing: "-0.058em", lineHeight: 0.93, marginBottom: 36 }}>
-          Stop prospecting.<br />
-          <span className="grad-text">Start closing.</span>
+        {/* Headline */}
+        <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(52px,7.2vw,92px)", fontWeight: 900, color: G1, letterSpacing: "-0.058em", lineHeight: 0.93, marginBottom: 32 }}>
+          Your next 10 clients<br />
+          <span className="grad-text">are already on</span><br />
+          Google Maps.
         </h1>
-
-        <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 18, color: G2, lineHeight: 1.72, maxWidth: 500, margin: "0 auto 48px" }}>
-          Type a business type and city. Get 10 qualified leads with personalised cold emails — ready to send from your own Gmail in seconds.
+        {/* Subline */}
+        <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 18, color: G2, lineHeight: 1.72, maxWidth: 480, margin: "0 auto 48px" }}>
+          We find them, write personalised cold emails, and send from your own Gmail — all in under 30 seconds.
         </p>
-
+        {/* CTAs */}
         <div className="h-up" style={{ animationDelay: "0.28s", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <a href="/signup" className="btn-primary">Start for free →</a>
+          <a href="/signup" className="btn-primary">Start for free — no card needed →</a>
           <a href="/login" className="btn-ghost">Log in</a>
         </div>
-
+        {/* Stats */}
         <div className="h-up" style={{ animationDelay: "0.36s", display: "flex", gap: 52, justifyContent: "center", marginTop: 60, flexWrap: "wrap" }}>
-          {[{ n: "2,000+", l: "businesses using it" }, { n: "30 sec", l: "avg to 10 leads" }, { n: "100%", l: "live Google Maps data" }].map(s => (
+          {[{ n: "2,000+", l: "businesses using it" }, { n: "30 sec", l: "to 10 qualified leads" }, { n: "100%", l: "live Google Maps data" }].map(s => (
             <div key={s.n} style={{ textAlign: "center" }}>
               <div style={{ fontSize: 26, fontWeight: 800, color: G1, letterSpacing: "-0.05em" }}>{s.n}</div>
               <div style={{ fontSize: 12, color: G3, marginTop: 3 }}>{s.l}</div>
@@ -326,7 +344,6 @@ function Hero() {
           ))}
         </div>
       </div>
-
       {/* Perspective mockup */}
       <div className="h-up" style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 80, flex: 1, minHeight: 420 }}>
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "58%", background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.9) 55%, #ffffff 100%)", zIndex: 10, pointerEvents: "none" }} />
@@ -337,23 +354,20 @@ function Hero() {
             <MockupContent />
           </div>
         </div>
-
         {/* Floating badges */}
-        <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 600px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.14)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
+        <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 600px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
           <div style={{ fontSize: 10, color: G3, marginBottom: 4 }}>Lead score</div>
           <div style={{ fontSize: 32, fontWeight: 900, color: "#22c55e", letterSpacing: "-0.06em", lineHeight: 1 }}>92</div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#22c55e", marginTop: 3 }}>Strong lead</div>
         </div>
-
-        <div className="hero-cards fb" style={{ position: "absolute", top: "1%", right: "calc(50% - 600px)", background: WHT, borderRadius: 18, padding: "16px 20px", boxShadow: "0 8px 44px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, width: 230, zIndex: 20, pointerEvents: "none" }}>
+        <div className="hero-cards fb" style={{ position: "absolute", top: "1%", right: "calc(50% - 600px)", background: WHT, borderRadius: 18, padding: "16px 20px", boxShadow: "0 8px 44px rgba(0,0,0,0.12)", border: `1px solid ${BDR}`, width: 228, zIndex: 20, pointerEvents: "none" }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: G3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>AI-Written Email</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: G1, marginBottom: 5 }}>Hi James, great work at RiverCity...</div>
-          <div style={{ fontSize: 11, color: G2, lineHeight: 1.55, marginBottom: 12 }}>I noticed RiverCity has been Houston's go-to plumber for years. Are you open to a quick call?</div>
+          <div style={{ fontSize: 11, color: G2, lineHeight: 1.55, marginBottom: 12 }}>I noticed RiverCity has been Houston's go-to plumber for years. Open to a quick call?</div>
           <div style={{ background: BLK, borderRadius: 8, padding: "7px 12px", textAlign: "center" }}>
             <span style={{ fontSize: 11, color: WHT, fontWeight: 600 }}>Sent via Gmail</span>
           </div>
         </div>
-
         <div className="hero-cards fc" style={{ position: "absolute", top: "-3%", left: "50%", transform: "translateX(-50%)", background: BLK, borderRadius: 99, padding: "10px 22px", boxShadow: "0 6px 32px rgba(0,0,0,0.28)", display: "flex", alignItems: "center", gap: 9, zIndex: 20, pointerEvents: "none", whiteSpace: "nowrap" }}>
           <span className="pdot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: WHT }}>10 plumbers found in Houston, TX</span>
@@ -382,7 +396,7 @@ function Marquee() {
   );
 }
 
-/* ─── Features bento ─────────────────────────────────────────────── */
+/* ─── Features ───────────────────────────────────────────────────── */
 function Features() {
   return (
     <section id="features" style={{ padding: "130px 48px", maxWidth: 1400, margin: "0 auto" }}>
@@ -392,22 +406,15 @@ function Features() {
           Everything you need to land new business.
         </h2>
       </A>
-
-      {/* Row 1 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 370px", gap: 16, marginBottom: 16 }}>
-        <A className="card" style={{ background: "#0d0f14", borderRadius: 24, padding: "40px", overflow: "hidden", position: "relative", minHeight: 500, display: "flex", flexDirection: "column", boxShadow: "0 4px 24px rgba(0,0,0,0.1)" }}>
+        <A className="card" style={{ background: "#0d0f14", borderRadius: 24, padding: "40px", overflow: "hidden", position: "relative", minHeight: 480, display: "flex", flexDirection: "column", boxShadow: "0 4px 24px rgba(0,0,0,0.1)" }}>
           <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.22)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>Live data</p>
           <h3 style={{ fontSize: "clamp(20px,2.2vw,28px)", fontWeight: 800, color: WHT, letterSpacing: "-0.03em", lineHeight: 1.15, maxWidth: 300, marginBottom: 32 }}>
             Real businesses pulled live from Google Maps.
           </h3>
           <div style={{ flex: 1, borderRadius: 14, border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", background: "rgba(255,255,255,0.02)" }}>
-            {[
-              { co: "RiverCity Plumbing", score: 87, c: "#22c55e" },
-              { co: "Houston Pipe Masters", score: 74, c: "#f59e0b" },
-              { co: "Lone Star Plumbing", score: 91, c: "#22c55e" },
-              { co: "Bayou City Drain", score: 69, c: "#f59e0b" },
-            ].map((r, i) => (
-              <div key={r.co} style={{ padding: "13px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: i >= 3 ? 0.25 : 1 }}>
+            {[{ co: "RiverCity Plumbing", score: 87, c: "#22c55e" }, { co: "Houston Pipe Masters", score: 74, c: "#f59e0b" }, { co: "Lone Star Plumbing", score: 91, c: "#22c55e" }, { co: "Bayou City Drain", score: 69, c: "#f59e0b" }].map((r, i) => (
+              <div key={r.co} style={{ padding: "13px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", opacity: i >= 3 ? 0.22 : 1 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: WHT }}>{r.co}</span>
                 <div style={{ width: 34, height: 34, borderRadius: "50%", background: `${r.c}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: r.c }}>{r.score}</span>
@@ -420,7 +427,6 @@ function Features() {
             <div style={{ fontSize: 26, fontWeight: 900, color: BLK, lineHeight: 1 }}>10 <span style={{ fontSize: 11, fontWeight: 600, color: "#22c55e" }}>live</span></div>
           </div>
         </A>
-
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <A d={1} className="card" style={{ background: G4, borderRadius: 24, padding: "30px", flex: 1 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: G3, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>Outreach</p>
@@ -449,12 +455,10 @@ function Features() {
           </A>
         </div>
       </div>
-
-      {/* Row 2 */}
       <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
         {[
           { label: "Lead Scoring", title: "Know exactly who to contact first.", desc: "Every prospect gets a 0–100 quality score based on industry fit, online presence, ratings, and reachability.", bg: G4 },
-          { label: "CSV Export", title: "Import into any CRM instantly.", desc: "Download your complete lead list — ready for HubSpot, Airtable, Notion, or Google Sheets in one click.", bg: "#f0fdf4" },
+          { label: "CSV Export", title: "Import into any CRM instantly.", desc: "Download your full lead list — ready for HubSpot, Airtable, Notion, or Google Sheets in one click.", bg: "#f5f3ff" },
           { label: "Speed", title: "10 qualified leads in 30 seconds.", desc: "From typing your niche to having personalised emails ready to send — the whole process takes under a minute.", bg: G4 },
         ].map((c, i) => (
           <A key={c.label} d={i + 1} className="card" style={{ background: c.bg, borderRadius: 24, padding: "32px", border: `1px solid ${BDR}` }}>
@@ -468,12 +472,12 @@ function Features() {
   );
 }
 
-/* ─── Comparison table (dark, InterviewCoder-style) ──────────────── */
+/* ─── Comparison (dark, purple-highlighted) ──────────────────────── */
 function Comparison() {
   const features = [
     { name: "Live Google Maps data", ol: true, ap: false, hu: false, ins: false },
     { name: "AI-written personalised emails", ol: true, ap: false, hu: false, ins: true },
-    { name: "Sends from your own Gmail", ol: true, ap: false, hu: false, ins: false },
+    { name: "Sends from your own Gmail inbox", ol: true, ap: false, hu: false, ins: false },
     { name: "Lead quality scoring (0–100)", ol: true, ap: true, hu: false, ins: false },
     { name: "Real owner contact names", ol: true, ap: false, hu: false, ins: false },
     { name: "Phone numbers included", ol: true, ap: true, hu: false, ins: false },
@@ -482,83 +486,72 @@ function Comparison() {
     { name: "No per-lead credits", ol: true, ap: false, hu: false, ins: false },
     { name: "Setup in under 2 minutes", ol: true, ap: false, hu: false, ins: false },
   ];
-
-  const Yes = () => (
-    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(245,158,11,0.18)", border: "1.5px solid rgba(245,158,11,0.5)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1.5 5L5 8.5L11.5 1.5" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  const Check = ({ active }: { active?: boolean }) => active ? (
+    <div style={{ width: 28, height: 28, borderRadius: "50%", background: INDL, border: `1.5px solid rgba(99,102,241,0.4)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+      <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5L4.5 8L11 1" stroke={IND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    </div>
+  ) : (
+    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" strokeLinecap="round" /></svg>
     </div>
   );
-  const No = () => (
-    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" /></svg>
+  const WeakCheck = () => (
+    <div style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+      <svg width="12" height="9" viewBox="0 0 12 9" fill="none"><path d="M1 4.5L4.5 8L11 1" stroke="rgba(255,255,255,0.3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
     </div>
   );
 
   return (
     <section style={{ padding: "130px 0", background: "#080a0f", position: "relative", overflow: "hidden" }}>
       <WaveCanvas dark />
-
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px", position: "relative", zIndex: 1 }}>
         <A style={{ textAlign: "center", marginBottom: 88 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", marginBottom: 16 }}>Why Outleadrr</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: 16 }}>Why Outleadrr</p>
           <h2 style={{ fontSize: "clamp(32px,5vw,68px)", fontWeight: 900, letterSpacing: "-0.055em", lineHeight: 0.96, color: WHT, marginBottom: 20 }}>
             The proof is in<br />the comparison.
           </h2>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.38)", maxWidth: 420, margin: "0 auto", lineHeight: 1.7 }}>
+          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.35)", maxWidth: 400, margin: "0 auto", lineHeight: 1.7 }}>
             See exactly where Outleadrr wins against every alternative.
           </p>
         </A>
-
         <A style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 4px 80px rgba(0,0,0,0.5)" }}>
-          {/* Header row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(4,160px)", background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 28px" }}>
-            <div style={{ padding: "20px 0 20px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.22)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              Feature
-            </div>
-            {/* Outleadrr col header - highlighted */}
-            <div style={{ padding: "16px 0", textAlign: "center", background: "rgba(245,158,11,0.06)", borderLeft: "1px solid rgba(245,158,11,0.15)", borderRight: "1px solid rgba(245,158,11,0.08)", marginBottom: -1 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: GOLD, letterSpacing: "-0.01em", marginBottom: 2 }}>Outleadrr</div>
-              <div style={{ fontSize: 10, color: "rgba(245,158,11,0.5)", fontWeight: 500 }}>You are here</div>
+          {/* Header */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(4,155px)", background: "rgba(255,255,255,0.02)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 28px" }}>
+            <div style={{ padding: "20px 0", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Feature</div>
+            <div style={{ padding: "16px 0", textAlign: "center", background: `rgba(99,102,241,0.08)`, borderLeft: `1px solid rgba(99,102,241,0.2)`, borderRight: `1px solid rgba(99,102,241,0.08)` }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: IND, letterSpacing: "-0.01em", marginBottom: 2 }}>Outleadrr</div>
+              <div style={{ fontSize: 10, color: "rgba(99,102,241,0.5)", fontWeight: 500 }}>You are here</div>
             </div>
             {[["Apollo.io", "Most popular"], ["Hunter.io", "Email finder"], ["Instantly", "Cold email"]].map(([name, sub]) => (
               <div key={name} style={{ padding: "16px 0", textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.35)" }}>{name}</div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.18)" }}>{sub}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.32)" }}>{name}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.15)" }}>{sub}</div>
               </div>
             ))}
           </div>
-
-          {/* Feature rows */}
+          {/* Rows */}
           {features.map((f, i) => (
-            <div key={f.name} className="comp-row" style={{ display: "grid", gridTemplateColumns: "1fr repeat(4,160px)", padding: "0 28px", borderBottom: i < features.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)", animation: `rowIn 0.5s ${i * 0.04}s both` }}>
-              <div style={{ padding: "16px 0", fontSize: 13, color: "rgba(255,255,255,0.6)", fontWeight: 500, display: "flex", alignItems: "center" }}>{f.name}</div>
-              {/* Outleadrr */}
-              <div style={{ padding: "16px 0", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.04)", borderLeft: "1px solid rgba(245,158,11,0.1)", borderRight: "1px solid rgba(245,158,11,0.06)" }}>
-                {f.ol ? <Yes /> : <No />}
+            <div key={f.name} className="comp-row" style={{ display: "grid", gridTemplateColumns: "1fr repeat(4,155px)", padding: "0 28px", borderBottom: i < features.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.008)" }}>
+              <div style={{ padding: "16px 0", fontSize: 13, color: "rgba(255,255,255,0.55)", fontWeight: 500, display: "flex", alignItems: "center" }}>{f.name}</div>
+              <div style={{ padding: "16px 0", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(99,102,241,0.04)", borderLeft: "1px solid rgba(99,102,241,0.12)", borderRight: "1px solid rgba(99,102,241,0.06)" }}>
+                <Check active={f.ol} />
               </div>
               {[f.ap, f.hu, f.ins].map((v, j) => (
                 <div key={j} style={{ padding: "16px 0", display: "flex", alignItems: "center", justifyContent: "center", borderLeft: "1px solid rgba(255,255,255,0.04)" }}>
-                  {v ? (
-                    <div style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><path d="M1.5 5L5 8.5L11.5 1.5" stroke="rgba(255,255,255,0.35)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    </div>
-                  ) : <No />}
+                  {v ? <WeakCheck /> : <Check active={false} />}
                 </div>
               ))}
             </div>
           ))}
-
           {/* Footer */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(4,160px)", padding: "0 28px", borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr repeat(4,155px)", padding: "0 28px", borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
             <div style={{ padding: "20px 0" }} />
-            <div style={{ padding: "20px 0 20px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(245,158,11,0.06)", borderLeft: "1px solid rgba(245,158,11,0.15)", borderRight: "1px solid rgba(245,158,11,0.08)" }}>
-              <a href="/signup" style={{ display: "inline-flex", alignItems: "center", padding: "9px 20px", borderRadius: 9, background: GOLD, color: BLK, fontSize: 12, fontWeight: 800, textDecoration: "none", letterSpacing: "-0.01em" }}>
-                Start free →
-              </a>
+            <div style={{ padding: "20px 0", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(99,102,241,0.06)", borderLeft: "1px solid rgba(99,102,241,0.18)", borderRight: "1px solid rgba(99,102,241,0.08)" }}>
+              <a href="/signup" style={{ display: "inline-flex", alignItems: "center", padding: "9px 20px", borderRadius: 9, background: IND, color: WHT, fontSize: 12, fontWeight: 800, textDecoration: "none" }}>Start free →</a>
             </div>
             {["From $49/mo", "From $34/mo", "From $37/mo"].map(p => (
               <div key={p} style={{ padding: "20px 0", display: "flex", alignItems: "center", justifyContent: "center", borderLeft: "1px solid rgba(255,255,255,0.04)" }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>{p}</span>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.18)" }}>{p}</span>
               </div>
             ))}
           </div>
@@ -568,48 +561,68 @@ function Comparison() {
   );
 }
 
-/* ─── Steps ──────────────────────────────────────────────────────── */
+/* ─── Steps (improved) ───────────────────────────────────────────── */
 function Steps() {
   const steps = [
     {
-      n: "01", title: "Enter your target.", sub: "Type a business type and city — plumbers in Dallas, dentists in Chicago, any niche, anywhere in the world.",
+      n: "01", color: IND, title: "Enter any business type and city.",
+      sub: "Plumbers in Dallas. Dentists in Chicago. Law firms in Toronto. Any niche, anywhere — if it's on Google Maps, we find it.",
       mock: (
-        <div style={{ background: G4, borderRadius: 16, overflow: "hidden", border: `1px solid ${BDR}` }}>
-          <div style={{ background: G5, padding: "10px 14px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ display: "flex", gap: 4 }}>{["#f87171", "#fbbf24", "#34d399"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />)}</div>
-            <div style={{ flex: 1, height: 20, background: G4, borderRadius: 5 }} />
+        <div style={{ background: WHT, borderRadius: 20, overflow: "hidden", border: `1px solid ${BDR}`, boxShadow: "0 4px 32px rgba(0,0,0,0.07)" }}>
+          <div style={{ background: G4, padding: "12px 16px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", gap: 5 }}>{["#ff5f57", "#febc2e", "#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
+            <div style={{ flex: 1, height: 22, background: G5, borderRadius: 6 }} />
           </div>
-          <div style={{ padding: "18px" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: G1, marginBottom: 12 }}>Find new prospects</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div><div style={{ fontSize: 8, fontWeight: 600, color: G3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Business type</div>
-                <div style={{ background: WHT, border: `1.5px solid ${IND}`, borderRadius: 8, padding: "8px 10px", fontSize: 11, color: G1 }}>Plumbers</div></div>
-              <div><div style={{ fontSize: 8, fontWeight: 600, color: G3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>City</div>
-                <div style={{ background: WHT, border: `1.5px solid ${BDR}`, borderRadius: 8, padding: "8px 10px", fontSize: 11, color: G1 }}>Dallas, TX</div></div>
-              <div style={{ background: BLK, borderRadius: 8, padding: "9px", textAlign: "center", fontSize: 11, fontWeight: 700, color: WHT }}>Find prospects →</div>
+          <div style={{ padding: "22px" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: G1, marginBottom: 16 }}>Find new prospects</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: G3, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>Business type</div>
+                <div style={{ background: WHT, border: `2px solid ${IND}`, borderRadius: 10, padding: "10px 14px", fontSize: 13, color: G1, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  Plumbers
+                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: INDL, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: IND }} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: G3, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 5 }}>City</div>
+                <div style={{ background: G4, border: `1.5px solid ${BDR}`, borderRadius: 10, padding: "10px 14px", fontSize: 13, color: G1 }}>Dallas, TX</div>
+              </div>
+              <div style={{ background: G1, borderRadius: 10, padding: "11px", textAlign: "center", fontSize: 13, fontWeight: 700, color: WHT, marginTop: 4 }}>Find 10 prospects →</div>
             </div>
           </div>
         </div>
       )
     },
     {
-      n: "02", title: "AI finds your leads.", sub: "Real businesses from Google Maps — company, owner contact, email, phone, rating, and a quality score in seconds.",
+      n: "02", color: "#8b5cf6", title: "Get 10 real leads with scores.",
+      sub: "Every prospect comes with the company name, owner name, email, phone, Google rating, review count, and a 0–100 quality score.",
       mock: (
-        <div style={{ background: G4, borderRadius: 16, overflow: "hidden", border: `1px solid ${BDR}` }}>
-          <div style={{ background: G5, padding: "10px 14px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ display: "flex", gap: 4 }}>{["#f87171", "#fbbf24", "#34d399"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />)}</div>
-            <div style={{ flex: 1, height: 20, background: G4, borderRadius: 5 }} />
+        <div style={{ background: WHT, borderRadius: 20, overflow: "hidden", border: `1px solid ${BDR}`, boxShadow: "0 4px 32px rgba(0,0,0,0.07)" }}>
+          <div style={{ background: G4, padding: "12px 16px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", gap: 5 }}>{["#ff5f57", "#febc2e", "#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
+            <div style={{ flex: 1, height: 22, background: G5, borderRadius: 6 }} />
           </div>
-          <div style={{ padding: "14px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: G1 }}>10 leads found</span>
-              <span style={{ fontSize: 9, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 99, padding: "2px 8px", fontWeight: 600 }}>AI complete</span>
+          <div style={{ padding: "18px 22px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: G1 }}>10 leads found</span>
+              <span style={{ fontSize: 10, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 99, padding: "3px 10px", fontWeight: 700 }}>AI complete</span>
             </div>
-            {[{ n: "Mike Torres", co: "Torres Plumbing", score: 88, c: "#22c55e" }, { n: "Sarah Chen", co: "DFW Drain Pros", score: 75, c: "#f59e0b" }, { n: "James Okafor", co: "Lone Star Pipe", score: 91, c: "#22c55e" }].map(r => (
-              <div key={r.n} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.4fr", gap: 6, padding: "7px 0", borderBottom: `1px solid ${BDR}`, alignItems: "center" }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: G1 }}>{r.n}</span>
-                <span style={{ fontSize: 10, color: G2 }}>{r.co}</span>
-                <span style={{ fontSize: 11, fontWeight: 800, color: r.c }}>{r.score}</span>
+            {[
+              { n: "Mike Torres", co: "Torres Plumbing", score: 88, c: "#22c55e", sb: "rgba(34,197,94,0.1)" },
+              { n: "Sarah Chen", co: "DFW Drain Pros", score: 75, c: "#8b5cf6", sb: "rgba(139,92,246,0.1)" },
+              { n: "James Okafor", co: "Lone Star Pipe", score: 91, c: "#22c55e", sb: "rgba(34,197,94,0.1)" },
+              { n: "Rosa Martinez", co: "D-Town Plumbing", score: 67, c: "#f59e0b", sb: "rgba(245,158,11,0.1)" },
+            ].map((r, i) => (
+              <div key={r.n} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: i < 3 ? `1px solid ${BDR}` : "none", opacity: i >= 3 ? 0.35 : 1 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: G1 }}>{r.n}</div>
+                  <div style={{ fontSize: 10, color: G3 }}>{r.co}</div>
+                </div>
+                <div style={{ width: 34, height: 34, borderRadius: "50%", background: r.sb, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: r.c }}>{r.score}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -617,25 +630,33 @@ function Steps() {
       )
     },
     {
-      n: "03", title: "Send emails instantly.", sub: "Each prospect gets a GPT-written personalised email. Connect Gmail and send everything in one click — from your own inbox.",
+      n: "03", color: "#22c55e", title: "Send personalised emails in one click.",
+      sub: "AI writes a tailored cold email for each prospect. Connect Gmail and send all 10 emails from your own inbox — delivered, not filtered.",
       mock: (
-        <div style={{ background: G4, borderRadius: 16, overflow: "hidden", border: `1px solid ${BDR}` }}>
-          <div style={{ background: G5, padding: "10px 14px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ display: "flex", gap: 4 }}>{["#f87171", "#fbbf24", "#34d399"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />)}</div>
-            <div style={{ flex: 1, height: 20, background: G4, borderRadius: 5 }} />
+        <div style={{ background: WHT, borderRadius: 20, overflow: "hidden", border: `1px solid ${BDR}`, boxShadow: "0 4px 32px rgba(0,0,0,0.07)" }}>
+          <div style={{ background: G4, padding: "12px 16px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", gap: 5 }}>{["#ff5f57", "#febc2e", "#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
+            <div style={{ flex: 1, height: 22, background: G5, borderRadius: 6 }} />
           </div>
-          <div style={{ padding: "14px 18px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: G1 }}>AI email ready</span>
-              <span style={{ fontSize: 9, color: G3 }}>Mike Torres</span>
+          <div style={{ padding: "18px 22px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: G1 }}>Email ready</div>
+                <div style={{ fontSize: 10, color: G3 }}>Mike Torres · Torres Plumbing</div>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <div style={{ padding: "4px 10px", borderRadius: 7, background: INDL, fontSize: 10, fontWeight: 700, color: IND }}>Edit</div>
+                <div style={{ padding: "4px 10px", borderRadius: 7, background: "#dcfce7", fontSize: 10, fontWeight: 700, color: "#16a34a" }}>Send</div>
+              </div>
             </div>
-            <div style={{ background: WHT, border: `1px solid ${BDR}`, borderRadius: 10, padding: "10px 12px", marginBottom: 10, fontSize: 10, color: G2, lineHeight: 1.65 }}>
-              <span style={{ fontWeight: 700, color: G1 }}>Subject:</span> Quick win for Torres Plumbing
-              <div style={{ height: 1, background: BDR, margin: "6px 0" }} />
-              Hi Mike,<br /><br />Torres Plumbing's reputation in Dallas is impressive. I help plumbing businesses get more commercial contracts. Would you be open to a 10-min call?
+            <div style={{ background: G4, border: `1px solid ${BDR}`, borderRadius: 12, padding: "12px 14px", fontSize: 11, color: G2, lineHeight: 1.7, marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, color: G1, marginBottom: 4 }}>Subject: Quick win for Torres Plumbing</div>
+              <div style={{ height: 1, background: BDR, margin: "8px 0" }} />
+              Hi Mike,<br /><br />Torres Plumbing's reputation in Dallas is impressive — I can see why you've built such a loyal customer base.<br /><br />I help plumbing companies get more commercial contracts. Are you open to a quick 10-min call this week?
             </div>
-            <div style={{ background: "#22c55e", borderRadius: 8, padding: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: WHT }}>Sent via Gmail</span>
+            <div style={{ background: "#22c55e", borderRadius: 10, padding: "11px", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 2L2 7l4 1.5L12 2zM6 8.5L7.5 12l1.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span style={{ fontSize: 12, fontWeight: 700, color: WHT }}>Sent via Gmail · from your inbox</span>
             </div>
           </div>
         </div>
@@ -647,20 +668,23 @@ function Steps() {
     <section style={{ padding: "130px 48px", maxWidth: 1400, margin: "0 auto" }}>
       <A style={{ textAlign: "center", marginBottom: 88 }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: G3, marginBottom: 16 }}>How it works</p>
-        <h2 style={{ fontSize: "clamp(30px,4vw,58px)", fontWeight: 900, letterSpacing: "-0.048em", lineHeight: 1.0, color: G1, maxWidth: 460, margin: "0 auto" }}>
+        <h2 style={{ fontSize: "clamp(30px,4vw,58px)", fontWeight: 900, letterSpacing: "-0.048em", lineHeight: 1.0, color: G1, maxWidth: 480, margin: "0 auto" }}>
           New clients in 3 steps.
         </h2>
+        <p style={{ fontSize: 16, color: G2, maxWidth: 380, margin: "14px auto 0", lineHeight: 1.72 }}>Simple enough to start in 30 seconds. Powerful enough to replace your whole outbound stack.</p>
       </A>
-      <div className="steps-row" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 28 }}>
+      <div className="steps-row" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32 }}>
         {steps.map((s, i) => (
-          <A key={s.n} d={i + 1} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <A key={s.n} d={i + 1} style={{ display: "flex", flexDirection: "column", gap: 28 }}>
             {s.mock}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: G3, letterSpacing: "0.04em" }}>{s.n}</span>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: G1, letterSpacing: "-0.03em" }}>{s.title}</h3>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: s.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: WHT }}>{s.n}</span>
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: G1, letterSpacing: "-0.02em", lineHeight: 1.2 }}>{s.title}</h3>
               </div>
-              <p style={{ fontSize: 14, color: G2, lineHeight: 1.82 }}>{s.sub}</p>
+              <p style={{ fontSize: 14, color: G2, lineHeight: 1.84 }}>{s.sub}</p>
             </div>
           </A>
         ))}
@@ -680,9 +704,7 @@ function Stats() {
       <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse at 25% 50%, rgba(99,102,241,0.1) 0%, transparent 55%), radial-gradient(ellipse at 75% 50%, rgba(168,85,247,0.07) 0%, transparent 55%)", pointerEvents: "none" }} />
       <div style={{ maxWidth: 1400, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <A style={{ textAlign: "center", marginBottom: 88 }}>
-          <h2 style={{ fontSize: "clamp(30px,4vw,58px)", fontWeight: 900, letterSpacing: "-0.048em", color: WHT, lineHeight: 1.0 }}>
-            Numbers that speak for themselves.
-          </h2>
+          <h2 style={{ fontSize: "clamp(30px,4vw,58px)", fontWeight: 900, letterSpacing: "-0.048em", color: WHT, lineHeight: 1.0 }}>Numbers that speak for themselves.</h2>
         </A>
         <div className="stats-row" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
           {[
@@ -693,8 +715,8 @@ function Stats() {
           ].map((s, i) => (
             <div key={i} style={{ padding: "52px 40px", background: "rgba(255,255,255,0.02)", borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
               <span ref={s.ref} style={{ fontSize: "clamp(40px,4vw,60px)", fontWeight: 900, color: WHT, letterSpacing: "-0.07em", lineHeight: 1, display: "block", marginBottom: 8 }}>{s.val}</span>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.45)", marginBottom: 8 }}>{s.unit}</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", lineHeight: 1.65 }}>{s.desc}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>{s.unit}</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.22)", lineHeight: 1.65 }}>{s.desc}</div>
             </div>
           ))}
         </div>
@@ -703,39 +725,44 @@ function Stats() {
   );
 }
 
-/* ─── Testimonials ───────────────────────────────────────────────── */
+/* ─── Testimonials (scrolling) ───────────────────────────────────── */
 function Testimonials() {
   const reviews = [
     { stars: 5, quote: "I used Outleadrr to find 10 HVAC companies in Phoenix and booked 2 calls within 3 days. The emails were so personalised I had to double-check they weren't written by me.", name: "Marcus T.", role: "Freelance B2B Copywriter", color: IND, init: "M" },
-    { stars: 5, quote: "We replaced our entire cold outreach stack with this. It does in 30 seconds what used to take our team half a day. Incredible ROI.", name: "Priya S.", role: "Founder, Scale Studio", color: "#a855f7", init: "P" },
-    { stars: 5, quote: "The emails don't sound like AI at all. Got a 28% reply rate on my first batch. No other tool has come close to that for cold outreach.", name: "Daniel K.", role: "Sales Director, GrowthPath", color: "#22c55e", init: "D" },
+    { stars: 5, quote: "We replaced our entire cold outreach stack with this. It does in 30 seconds what used to take our team half a day. Incredible ROI.", name: "Priya S.", role: "Founder, Scale Studio", color: "#8b5cf6", init: "P" },
+    { stars: 5, quote: "Got a 28% reply rate on my first batch. No other tool has come close to that for cold outreach. The emails don't sound like AI at all.", name: "Daniel K.", role: "Sales Director, GrowthPath", color: "#22c55e", init: "D" },
+    { stars: 5, quote: "Outleadrr helped me land my first 3 clients in week one. I went from no pipeline to 4 discovery calls booked by Friday.", name: "Sofia R.", role: "Independent Consultant", color: "#a855f7", init: "S" },
+    { stars: 5, quote: "The quality scores are surprisingly accurate. The 'Strong Lead' businesses had much higher reply rates. Smart tool.", name: "Tom W.", role: "Founder, CloserAI", color: "#06b6d4", init: "T" },
+    { stars: 5, quote: "Finally a lead gen tool that doesn't require me to spend hours cleaning a CSV. Just type, generate, send. That's it.", name: "Nia B.", role: "B2B Sales Manager", color: "#ec4899", init: "N" },
   ];
   return (
-    <section style={{ padding: "130px 48px", maxWidth: 1400, margin: "0 auto" }}>
-      <A style={{ textAlign: "center", marginBottom: 88 }}>
+    <section style={{ padding: "130px 0", overflow: "hidden" }}>
+      <A style={{ textAlign: "center", marginBottom: 72, padding: "0 48px" }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: G3, marginBottom: 16 }}>Testimonials</p>
         <h2 style={{ fontSize: "clamp(30px,4vw,56px)", fontWeight: 900, letterSpacing: "-0.048em", color: G1, lineHeight: 1.0 }}>
           Loved by sales teams everywhere.
         </h2>
       </A>
-      <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-        {reviews.map((r, i) => (
-          <A key={r.name} d={i + 1} className="card" style={{ background: G4, borderRadius: 24, padding: "36px", border: `1px solid ${BDR}` }}>
-            <div style={{ display: "flex", gap: 3, marginBottom: 22 }}>
-              {Array.from({ length: r.stars }).map((_, j) => <span key={j} style={{ color: "#f59e0b", fontSize: 16 }}>&#9733;</span>)}
-            </div>
-            <p style={{ fontSize: 14, color: G1, lineHeight: 1.86, marginBottom: 28, fontStyle: "italic" }}>"{r.quote}"</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: "50%", background: r.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 17, fontWeight: 800, color: WHT }}>{r.init}</span>
+      <div className="rev-wrap" style={{ padding: "12px 0" }}>
+        <div className="rev-track">
+          {[...reviews, ...reviews].map((r, i) => (
+            <div key={i} style={{ flexShrink: 0, width: 360, background: G4, borderRadius: 24, padding: "32px", border: `1px solid ${BDR}` }}>
+              <div style={{ display: "flex", gap: 3, marginBottom: 18 }}>
+                {Array.from({ length: r.stars }).map((_, j) => <span key={j} style={{ color: "#f59e0b", fontSize: 15 }}>&#9733;</span>)}
               </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: G1 }}>{r.name}</div>
-                <div style={{ fontSize: 12, color: G3 }}>{r.role}</div>
+              <p style={{ fontSize: 14, color: G1, lineHeight: 1.82, marginBottom: 24 }}>"{r.quote}"</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: "50%", background: r.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: WHT }}>{r.init}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: G1 }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: G3 }}>{r.role}</div>
+                </div>
               </div>
             </div>
-          </A>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -758,11 +785,9 @@ function Pricing() {
         </A>
         <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "start" }}>
           {tiers.map((t, i) => (
-            <A key={t.name} d={i + 1} style={{ background: t.featured ? BLK : WHT, borderRadius: 24, padding: "36px", border: t.featured ? "none" : `1px solid ${BDR}`, position: "relative", boxShadow: t.featured ? "0 0 0 1px rgba(99,102,241,0.3), 0 0 40px rgba(99,102,241,0.1)" : "none" }}>
+            <A key={t.name} d={i + 1} style={{ background: t.featured ? G1 : WHT, borderRadius: 24, padding: "36px", border: t.featured ? "none" : `1px solid ${BDR}`, position: "relative", boxShadow: t.featured ? `0 0 0 1px rgba(99,102,241,0.3), 0 0 48px rgba(99,102,241,0.12)` : "none" }}>
               {t.featured && (
-                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: IND, color: WHT, fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", padding: "5px 18px", borderRadius: 99, whiteSpace: "nowrap", border: `2px solid ${G4}` }}>
-                  Most Popular
-                </div>
+                <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: IND, color: WHT, fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", padding: "5px 18px", borderRadius: 99, whiteSpace: "nowrap", border: `2px solid ${G4}` }}>Most Popular</div>
               )}
               <div style={{ marginBottom: 22 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: t.featured ? "rgba(255,255,255,0.36)" : G3, marginBottom: 8 }}>{t.name}</div>
@@ -775,14 +800,14 @@ function Pricing() {
               <div style={{ height: 1, background: t.featured ? "rgba(255,255,255,0.08)" : BDR, marginBottom: 22 }} />
               <ul style={{ listStyle: "none", marginBottom: 28, display: "flex", flexDirection: "column", gap: 12 }}>
                 {t.features.map(f => (
-                  <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: t.featured ? "rgba(255,255,255,0.75)" : G2 }}>
+                  <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: t.featured ? "rgba(255,255,255,0.72)" : G2 }}>
                     <span style={{ color: t.featured ? "#86efac" : "#22c55e", fontSize: 14, flexShrink: 0 }}>&#10003;</span>{f}
                   </li>
                 ))}
               </ul>
               <a href={t.href} style={t.featured
-                ? { display: "block", textAlign: "center", padding: "14px 20px", borderRadius: 11, background: WHT, color: BLK, fontSize: 14, fontWeight: 700, textDecoration: "none" }
-                : { display: "block", textAlign: "center", padding: "13px 20px", borderRadius: 11, border: `1px solid rgba(0,0,0,0.13)`, color: G1, fontSize: 14, fontWeight: 600, textDecoration: "none" }
+                ? { display: "block", textAlign: "center", padding: "14px 20px", borderRadius: 11, background: WHT, color: G1, fontSize: 14, fontWeight: 700, textDecoration: "none" }
+                : { display: "block", textAlign: "center", padding: "13px 20px", borderRadius: 11, border: `1px solid rgba(15,23,42,0.13)`, color: G1, fontSize: 14, fontWeight: 600, textDecoration: "none" }
               }>{t.cta}</a>
             </A>
           ))}
@@ -807,9 +832,7 @@ function FAQ() {
     <section id="faq" style={{ padding: "130px 48px", maxWidth: 800, margin: "0 auto" }}>
       <A style={{ textAlign: "center", marginBottom: 88 }}>
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: G3, marginBottom: 16 }}>FAQ</p>
-        <h2 style={{ fontSize: "clamp(30px,4vw,56px)", fontWeight: 900, letterSpacing: "-0.048em", color: G1, lineHeight: 1.0 }}>
-          Frequently asked questions.
-        </h2>
+        <h2 style={{ fontSize: "clamp(30px,4vw,56px)", fontWeight: 900, letterSpacing: "-0.048em", color: G1, lineHeight: 1.0 }}>Frequently asked questions.</h2>
       </A>
       {faqs.map((f, i) => (
         <div key={i} className="faq-item">
@@ -826,6 +849,70 @@ function FAQ() {
   );
 }
 
+/* ─── Cluely-style CTA section ───────────────────────────────────── */
+function FinalCTA() {
+  return (
+    <section style={{ padding: "160px 48px", background: "linear-gradient(160deg, #f5f3ff 0%, #ede9fe 40%, #faf5ff 100%)", position: "relative", overflow: "hidden", textAlign: "center" }}>
+      {/* Floating neumorphic key shapes */}
+      <div className="neu-key" style={{ position: "absolute", top: "8%", left: "7%", width: 110, height: 110, animation: "shimKeyA 6s ease-in-out infinite" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: IND, letterSpacing: "-0.06em" }}>10</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(99,102,241,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>leads</div>
+        </div>
+      </div>
+      <div className="neu-key" style={{ position: "absolute", top: "12%", right: "8%", width: 96, height: 96, animation: "shimKeyB 7s 0.5s ease-in-out infinite" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: "#8b5cf6", letterSpacing: "-0.04em" }}>AI</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(139,92,246,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>email</div>
+        </div>
+      </div>
+      <div className="neu-key" style={{ position: "absolute", bottom: "14%", left: "12%", width: 88, height: 88, animation: "shimKeyC 5s 1s ease-in-out infinite" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: "#22c55e", letterSpacing: "-0.02em", lineHeight: 1.3 }}>Gmail<br />sent</div>
+        </div>
+      </div>
+      <div className="neu-key" style={{ position: "absolute", bottom: "10%", right: "10%", width: 104, height: 104, animation: "shimKeyA 6.5s 1.5s ease-in-out infinite" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: IND, letterSpacing: "-0.04em" }}>30s</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(99,102,241,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>total</div>
+        </div>
+      </div>
+      <div className="neu-key" style={{ position: "absolute", top: "42%", left: "4%", width: 76, height: 76, animation: "shimKeyB 8s 2s ease-in-out infinite" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#a855f7", lineHeight: 1.2 }}>CSV<br />out</div>
+        </div>
+      </div>
+      <div className="neu-key" style={{ position: "absolute", top: "38%", right: "4%", width: 80, height: 80, animation: "shimKeyC 7.5s 0.8s ease-in-out infinite" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 900, color: "#06b6d4" }}>92</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(6,182,212,0.5)", textTransform: "uppercase", letterSpacing: "0.05em" }}>score</div>
+        </div>
+      </div>
+
+      {/* Text */}
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 580, margin: "0 auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(99,102,241,0.6)", marginBottom: 20 }}>Get started today</p>
+        <h2 style={{ fontSize: "clamp(36px,5.5vw,66px)", fontWeight: 900, color: G1, letterSpacing: "-0.055em", lineHeight: 0.95, marginBottom: 22 }}>
+          Your next clients<br />are already on<br />Google Maps.
+        </h2>
+        <p style={{ fontSize: 17, color: G2, marginBottom: 48, lineHeight: 1.7, maxWidth: 420, margin: "0 auto 48px" }}>
+          Find them, email them, and close them. Start free today — no credit card required.
+        </p>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+          <a href="/signup" className="btn-primary" style={{ padding: "17px 48px", fontSize: 16 }}>
+            Get started free →
+          </a>
+          <a href="/login" style={{ display: "inline-flex", alignItems: "center", padding: "16px 28px", borderRadius: 12, background: "rgba(99,102,241,0.08)", color: IND, fontSize: 15, fontWeight: 600, textDecoration: "none", border: "1.5px solid rgba(99,102,241,0.2)", transition: "all 0.2s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.14)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.08)"; }}>
+            Log in
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Footer ─────────────────────────────────────────────────────── */
 function Footer() {
   return (
@@ -833,8 +920,8 @@ function Footer() {
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "64px 48px 44px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 48, marginBottom: 64 }}>
           <div style={{ maxWidth: 260 }}>
-            <img src={logoSrc} alt="Outleadrr" style={{ height: 28, width: "auto", marginBottom: 18 }} />
-            <p style={{ fontSize: 13, color: G2, lineHeight: 1.78 }}>AI-powered lead generation and cold email outreach. Find your next 10 clients in seconds.</p>
+            <img src={logoSrc} alt="Outleadrr" style={{ height: 36, width: "auto", objectFit: "contain", marginBottom: 18 }} />
+            <p style={{ fontSize: 13, color: G2, lineHeight: 1.78 }}>AI-powered lead generation and cold email outreach. Your next 10 clients are already on Google Maps.</p>
           </div>
           <div style={{ display: "flex", gap: 64, flexWrap: "wrap" }}>
             {[
@@ -845,9 +932,7 @@ function Footer() {
               <div key={col.heading}>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: G3, marginBottom: 20 }}>{col.heading}</div>
                 <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 14 }}>
-                  {col.links.map(l => (
-                    <li key={l.label}><a href={l.href} style={{ fontSize: 13, color: G2, textDecoration: "none" }}>{l.label}</a></li>
-                  ))}
+                  {col.links.map(l => <li key={l.label}><a href={l.href} style={{ fontSize: 13, color: G2, textDecoration: "none" }}>{l.label}</a></li>)}
                 </ul>
               </div>
             ))}
@@ -878,33 +963,7 @@ export default function Dashboard() {
       <Testimonials />
       <Pricing />
       <FAQ />
-
-      {/* Final CTA */}
-      <section style={{ padding: "160px 48px", background: "#080a0f", position: "relative", overflow: "hidden", textAlign: "center" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse at 60% 40%, rgba(99,102,241,0.18) 0%, transparent 60%), radial-gradient(ellipse at 25% 65%, rgba(168,85,247,0.1) 0%, transparent 55%)", pointerEvents: "none" }} />
-        <WaveCanvas dark />
-        <A style={{ maxWidth: 620, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <h2 style={{ fontSize: "clamp(40px,6vw,72px)", fontWeight: 900, color: WHT, letterSpacing: "-0.058em", lineHeight: 0.94, marginBottom: 24 }}>
-            Ready to fill your pipeline?
-          </h2>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.38)", marginBottom: 52, lineHeight: 1.7 }}>
-            Start for free — no credit card required.
-          </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="/signup" style={{ display: "inline-flex", alignItems: "center", padding: "17px 44px", borderRadius: 13, background: WHT, color: BLK, fontSize: 15, fontWeight: 800, textDecoration: "none", letterSpacing: "-0.01em", transition: "all 0.2s" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(255,255,255,0.18)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}>
-              Create free account →
-            </a>
-            <a href="/login" style={{ display: "inline-flex", alignItems: "center", padding: "16px 36px", borderRadius: 13, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)", fontSize: 15, fontWeight: 500, textDecoration: "none", border: "1.5px solid rgba(255,255,255,0.1)", transition: "all 0.2s" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.8)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.5)"; }}>
-              Log in
-            </a>
-          </div>
-        </A>
-      </section>
-
+      <FinalCTA />
       <Footer />
     </>
   );
