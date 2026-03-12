@@ -323,9 +323,9 @@ function Hero() {
         </div>
         {/* Headline */}
         <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(52px,7.2vw,92px)", fontWeight: 900, color: G1, letterSpacing: "-0.058em", lineHeight: 0.93, marginBottom: 32 }}>
-          10 leads.<br />
-          <span className="grad-text">1 click to send.</span><br />
-          30 seconds.
+          Your next 10 clients.<br />
+          <span className="grad-text">Found and emailed.</span><br />
+          In 30 seconds.
         </h1>
         {/* Subline */}
         <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 18, color: G2, lineHeight: 1.72, maxWidth: 480, margin: "0 auto 48px" }}>
