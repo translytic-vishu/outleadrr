@@ -918,7 +918,9 @@ function Footer() {
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "64px 48px 44px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 48, marginBottom: 64 }}>
           <div style={{ maxWidth: 260 }}>
-            <img src={logoSrc} alt="Outleadrr" style={{ height: 36, width: "auto", objectFit: "contain", marginBottom: 18 }} />
+            <div style={{ height: 32, overflow: "hidden", display: "flex", alignItems: "center", marginBottom: 18 }}>
+              <img src={logoSrc} alt="Outleadrr" style={{ height: 120, width: "auto", objectFit: "contain", marginTop: -44, marginBottom: -44, display: "block" }} />
+            </div>
             <p style={{ fontSize: 13, color: G2, lineHeight: 1.78 }}>AI-powered lead generation and cold email outreach. Your next 10 clients are already on Google Maps.</p>
           </div>
           <div style={{ display: "flex", gap: 64, flexWrap: "wrap" }}>

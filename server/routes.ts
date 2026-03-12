@@ -4,7 +4,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import connectPgSimple from "connect-pg-simple";
 import OpenAI from "openai";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
 import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places";
