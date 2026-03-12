@@ -8,9 +8,17 @@ const SCOPES = [
 ];
 
 export function getOAuthClient() {
-  const redirectUri = process.env.REPLIT_DOMAINS
-    ? `https://${process.env.REPLIT_DOMAINS}/api/auth/google/callback`
-    : "http://localhost:5000/api/auth/google/callback";
+  let redirectUri = "http://localhost:5000/api/auth/google/callback";
+
+  if (process.env.APP_URL) {
+    // Explicit production URL — set APP_URL=https://yourdomain.vercel.app in Vercel env vars
+    redirectUri = `${process.env.APP_URL}/api/auth/google/callback`;
+  } else if (process.env.REPLIT_DOMAINS) {
+    redirectUri = `https://${process.env.REPLIT_DOMAINS}/api/auth/google/callback`;
+  } else if (process.env.VERCEL_URL) {
+    // Auto-injected by Vercel on every deployment
+    redirectUri = `https://${process.env.VERCEL_URL}/api/auth/google/callback`;
+  }
 
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
