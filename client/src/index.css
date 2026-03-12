@@ -207,17 +207,17 @@
   border-radius: 6px;
 }
 
-.faq-content {
+.faq-content, .faq-body {
   overflow: hidden;
   transition: max-height 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
 }
 
-.faq-content.open {
+.faq-content.open, .faq-body.open {
   max-height: 300px;
   opacity: 1;
 }
 
-.faq-content.closed {
+.faq-content.closed, .faq-body.closed {
   max-height: 0;
   opacity: 0;
 }

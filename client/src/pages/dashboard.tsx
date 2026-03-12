@@ -1,633 +1,944 @@
 import logoSrc from "@assets/outleadr_1773257073565.png";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
-const S = "'Inter', 'Helvetica Neue', Arial, sans-serif";
-const BG = "#F5F5F5";
-const WHITE = "#ffffff";
-const INK = "#0f0f0f";
-const INK2 = "#555";
-const INK3 = "#999";
-const BORDER = "rgba(0,0,0,0.07)";
-const ACCENT = "#6366f1";
+/* ─── Design tokens ──────────────────────────────────────────────── */
+const F  = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+const BLK = "#0a0a0a";
+const WHT = "#ffffff";
+const G1  = "#111827";
+const G2  = "#6b7280";
+const G3  = "#9ca3af";
+const G4  = "#f9fafb";
+const G5  = "#f3f4f6";
+const BDR = "rgba(0,0,0,0.08)";
+const IND = "#6366f1";
 
-const GLOBAL = `
+/* ─── Global CSS ─────────────────────────────────────────────────── */
+const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #root { background: ${BG}; color: ${INK}; font-family: ${S}; }
-  a, button { font-family: ${S}; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+  html { scroll-behavior: smooth; }
+  html, body, #root { background: ${WHT}; color: ${G1}; font-family: ${F}; -webkit-font-smoothing: antialiased; }
+  img { display: block; max-width: 100%; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  .hero-fade { animation: fadeIn 0.7s ease both; }
-  .hero-up   { animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
-  .pill-btn {
+  @keyframes floatA { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-8px)} }
+  @keyframes floatB { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-6px)} }
+  @keyframes floatC { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }
+  @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
+
+  .h-up  { animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) both; }
+  .h-in  { animation: fadeIn 0.7s ease both; }
+  .fa    { animation: floatA 4.2s ease-in-out infinite; }
+  .fb    { animation: floatB 5s 0.9s ease-in-out infinite; }
+  .fc    { animation: floatC 4.6s 1.7s ease-in-out infinite; }
+  .pdot  { animation: pulse-dot 2s ease-in-out infinite; }
+
+  /* Scroll-reveal */
+  .anim {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1), transform 0.75s cubic-bezier(0.16,1,0.3,1);
+  }
+  .anim.visible { opacity: 1; transform: translateY(0); }
+  .d1 { transition-delay: 0.08s; }
+  .d2 { transition-delay: 0.17s; }
+  .d3 { transition-delay: 0.26s; }
+  .d4 { transition-delay: 0.35s; }
+
+  /* Buttons */
+  .btn-blk {
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    padding:14px 32px;border-radius:99px;
-    background:${INK};color:${WHITE};border:none;
-    font-family:${S};font-weight:600;font-size:15px;letter-spacing:-0.01em;
-    cursor:pointer;transition:background 0.2s,transform 0.15s,box-shadow 0.2s;
-    box-shadow:0 1px 3px rgba(0,0,0,0.12);text-decoration:none;
+    padding:13px 28px;border-radius:10px;
+    background:${BLK};color:${WHT};border:none;
+    font-family:${F};font-weight:600;font-size:14px;letter-spacing:-0.01em;
+    cursor:pointer;transition:all 0.2s;text-decoration:none;
   }
-  .pill-btn:hover{background:#222;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.18);}
-  .pill-btn:active{transform:translateY(0);}
-  .outline-btn {
+  .btn-blk:hover { background:#1c1c1c; transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,0.22); }
+  .btn-blk:active { transform:translateY(0); }
+  .btn-lg {
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:16px 38px;border-radius:12px;
+    background:${BLK};color:${WHT};border:none;
+    font-family:${F};font-weight:700;font-size:16px;letter-spacing:-0.02em;
+    cursor:pointer;transition:all 0.2s;text-decoration:none;
+  }
+  .btn-lg:hover { background:#1c1c1c; transform:translateY(-2px); box-shadow:0 10px 36px rgba(0,0,0,0.25); }
+  .btn-ghost {
     display:inline-flex;align-items:center;gap:6px;
-    padding:10px 20px;border-radius:99px;
-    background:transparent;color:${INK};border:1px solid rgba(0,0,0,0.18);
-    font-family:${S};font-weight:500;font-size:13px;
-    cursor:pointer;transition:background 0.15s;text-decoration:none;
+    padding:13px 26px;border-radius:10px;
+    background:transparent;color:${G2};border:1px solid ${BDR};
+    font-family:${F};font-weight:500;font-size:14px;
+    cursor:pointer;transition:all 0.15s;text-decoration:none;
   }
-  .outline-btn:hover{background:rgba(0,0,0,0.04);}
-  .feature-card{background:${WHITE};border-radius:16px;border:1px solid ${BORDER};padding:28px;transition:box-shadow 0.2s,transform 0.2s;}
-  .feature-card:hover{box-shadow:0 8px 32px rgba(0,0,0,0.08);transform:translateY(-2px);}
-  .pricing-card{background:${WHITE};border-radius:20px;border:1px solid ${BORDER};padding:32px;transition:box-shadow 0.2s;}
-  .pricing-card.featured{background:${INK};color:${WHITE};border-color:${INK};}
-  .faq-item{border-bottom:1px solid ${BORDER};overflow:hidden;}
-  .faq-btn{width:100%;display:flex;justify-content:space-between;align-items:center;padding:20px 0;background:none;border:none;cursor:pointer;text-align:left;gap:16px;}
-  .faq-content{overflow:hidden;transition:max-height 0.32s cubic-bezier(0.16,1,0.3,1),opacity 0.28s ease;}
-  .faq-content.open{max-height:200px;opacity:1;}
-  .faq-content.closed{max-height:0;opacity:0;}
-  .stat-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:99px;background:${WHITE};border:1px solid rgba(0,0,0,0.07);font-size:12px;font-weight:500;color:${INK2};white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
-  .stat-pill .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;}
-  @media(max-width:768px){
-    .three-col{grid-template-columns:1fr !important;}
-    .how-grid{grid-template-columns:1fr !important;}
-    .how-arrow{display:none !important;}
-    .stat-row{flex-wrap:wrap !important;justify-content:center !important;}
+  .btn-ghost:hover { background:${G5};color:${G1};border-color:rgba(0,0,0,0.16); }
+
+  /* FAQ */
+  .faq-item { border-bottom:1px solid ${BDR}; }
+  .faq-btn  { width:100%;display:flex;justify-content:space-between;align-items:center;padding:22px 0;background:none;border:none;cursor:pointer;text-align:left;gap:16px; }
+  .faq-body { overflow:hidden;transition:max-height 0.35s cubic-bezier(0.16,1,0.3,1),opacity 0.3s ease; }
+  .faq-body.open   { max-height:260px;opacity:1; }
+  .faq-body.closed { max-height:0;opacity:0; }
+
+  /* Marquee */
+  .marquee-track { display:flex;gap:12px;animation:marquee 32s linear infinite;width:max-content; }
+  .marquee-wrap  { overflow:hidden;mask:linear-gradient(to right,transparent,black 10%,black 90%,transparent); }
+
+  /* Responsive */
+  @media(max-width:960px){
+    .bento      { grid-template-columns:1fr !important; }
+    .bento-r    { grid-template-columns:1fr !important; }
+    .two-col    { grid-template-columns:1fr !important; }
+    .three-col  { grid-template-columns:1fr !important; }
+    .steps-row  { grid-template-columns:1fr !important; }
+    .comp-grid  { grid-template-columns:1fr !important; }
+    .nav-links  { display:none !important; }
+    .hide-sm    { display:none !important; }
   }
 `;
 
-const Sec = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
-  <section style={{ padding: "80px 32px", maxWidth: 1100, margin: "0 auto", ...style }}>
-    {children}
-  </section>
-);
-
-const SectionLabel = ({ children }: { children: string }) => (
-  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: INK3, marginBottom: 12 }}>{children}</div>
-);
-
-const SectionHeading = ({ children, center }: { children: React.ReactNode; center?: boolean }) => (
-  <h2 style={{ fontSize: "clamp(28px,4vw,42px)", fontWeight: 800, color: INK, letterSpacing: "-0.035em", lineHeight: 1.1, marginBottom: 16, textAlign: center ? "center" : "left" }}>
-    {children}
-  </h2>
-);
-
-/* ─── product mockup ─────────────────────────────────────────────── */
-function ProductMockup() {
-  const rows = [
-    { n: "01", co: "RiverCity Plumbing Co.", name: "James Holloway", email: "james@rivercityplumbing.com", score: 87 },
-    { n: "02", co: "Houston Pipe Masters", name: "Sandra Lee", email: "sandra@houstonpipe.com", score: 74 },
-    { n: "03", co: "Lone Star Plumbing LLC", name: "Carlos Reyes", email: "carlos@lonestarplumbing.com", score: 81 },
-    { n: "04", co: "Bayou City Drain Pros", name: "Michelle Park", email: "michelle@bayoudrain.com", score: 69 },
-    { n: "05", co: "Premier Flow Systems", name: "David Chen", email: "david@premierflow.com", score: 92 },
-  ];
-  const scoreColor = (s: number) => s >= 80 ? "#16a34a" : s >= 60 ? "#ea580c" : "#dc2626";
-  const scoreBg = (s: number) => s >= 80 ? "rgba(22,163,74,0.15)" : s >= 60 ? "rgba(234,88,12,0.15)" : "rgba(220,38,38,0.15)";
-  return (
-    <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 4px rgba(0,0,0,0.04),0 8px 32px rgba(0,0,0,0.12),0 40px 80px rgba(0,0,0,0.14)", border: "1px solid rgba(0,0,0,0.1)", background: "#0d0d10", maxWidth: 860, margin: "0 auto", userSelect: "none", pointerEvents: "none" }}>
-      {/* browser chrome */}
-      <div style={{ background: "#18181b", padding: "11px 18px", display: "flex", alignItems: "center", gap: 7, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#ff5f57" }} />
-        <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#febc2e" }} />
-        <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#28c840" }} />
-        <div style={{ flex: 1, height: 24, background: "#0d0d10", borderRadius: 6, margin: "0 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", fontFamily: S }}>outleadrr.app</span>
-        </div>
-      </div>
-      {/* toolbar */}
-      <div style={{ padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: S, marginBottom: 2 }}>RESULTS</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", fontFamily: S }}>10 plumbers · Houston, TX</div>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <div style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,0.06)", fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: S }}>Export CSV</div>
-          <div style={{ padding: "6px 14px", borderRadius: 8, background: "#fff", fontSize: 12, color: "#000", fontWeight: 600, fontFamily: S }}>Send all via Gmail</div>
-        </div>
-      </div>
-      {/* table header */}
-      <div style={{ padding: "10px 24px", display: "grid", gridTemplateColumns: "36px 1fr 200px 60px 60px", gap: "0 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        {["#", "Company", "Email", "Score", "Status"].map(h => (
-          <span key={h} style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", fontFamily: S }}>{h}</span>
-        ))}
-      </div>
-      {/* rows */}
-      <div style={{ padding: "4px 24px 16px" }}>
-        {rows.map((r, idx) => (
-          <div key={r.n} style={{ display: "grid", gridTemplateColumns: "36px 1fr 200px 60px 60px", gap: "0 16px", padding: "11px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", alignItems: "center", opacity: idx >= 4 ? 0.3 : 1 }}>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", fontFamily: S }}>{r.n}</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#fff", fontFamily: S }}>{r.co}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: S }}>{r.name}</div>
-            </div>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>{r.email}</span>
-            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "50%", background: scoreBg(r.score) }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor(r.score), fontFamily: S }}>{r.score}</span>
-            </div>
-            <div style={{ padding: "3px 10px", borderRadius: 99, background: "rgba(255,255,255,0.06)", display: "inline-flex" }}>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", fontFamily: S }}>New</span>
-            </div>
-          </div>
-        ))}
-        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 200px 60px 60px", gap: "0 16px", padding: "11px 0", alignItems: "center", opacity: 0.12 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", fontFamily: S }}>06</span>
-          <span style={{ fontSize: 13, color: "#fff", fontFamily: S }}>Austin Pipe & Drain Services</span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>info@austinpipe.com</span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.15)", fontFamily: S }}>—</span>
-          <div style={{ padding: "3px 10px", borderRadius: 99, background: "rgba(255,255,255,0.06)", display: "inline-flex" }}>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: S }}>New</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+/* ─── Scroll-reveal hook ─────────────────────────────────────────── */
+function useAnim() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { el.classList.add("visible"); io.disconnect(); } },
+      { threshold: 0.07 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return ref;
 }
 
-/* ─── social proof / stat pills ─────────────────────────────────── */
-function SocialProof() {
-  const stats = [
-    { dot: "#22c55e", text: "Real Google Maps data — no fake lists" },
-    { dot: "#6366f1", text: "10 qualified leads in under 30 seconds" },
-    { dot: "#f59e0b", text: "Emails sent directly from your Gmail" },
-    { dot: "#3b82f6", text: "AI-written, personalized for each business" },
-    { dot: "#ec4899", text: "Works for any niche, any city worldwide" },
-  ];
+/* ─── Animated wrapper ───────────────────────────────────────────── */
+function A({ children, d = 0, style, className = "" }: {
+  children: React.ReactNode; d?: number; style?: React.CSSProperties; className?: string;
+}) {
+  const ref = useAnim();
+  const delay = d > 0 ? `d${d}` : "";
+  return <div ref={ref} className={`anim ${delay} ${className}`} style={style}>{children}</div>;
+}
+
+/* ─── Navbar ─────────────────────────────────────────────────────── */
+function Navbar() {
   return (
-    <div style={{ borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, background: WHITE, padding: "28px 32px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <p style={{ textAlign: "center", fontSize: 12, fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase", color: INK3, marginBottom: 20 }}>
-          What makes Outleadrr different
-        </p>
-        <div className="stat-row" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          {stats.map(s => (
-            <div key={s.text} className="stat-pill">
-              <span className="dot" style={{ background: s.dot }} />
-              {s.text}
-            </div>
+    <header style={{
+      position: "sticky", top: 0, zIndex: 100,
+      background: "rgba(255,255,255,0.88)",
+      backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+      borderBottom: `1px solid ${BDR}`,
+    }}>
+      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 32px", height: 62, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <img src={logoSrc} alt="Outleadrr" style={{ height: 30, width: "auto" }} />
+        </a>
+        <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {[["Features", "#features"], ["Pricing", "#pricing"], ["FAQ", "#faq"]].map(([l, h]) => (
+            <a key={l} href={h} style={{ fontSize: 13, fontWeight: 500, color: G2, textDecoration: "none", padding: "7px 14px", borderRadius: 8, transition: "color 0.15s, background 0.15s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = G1; (e.currentTarget as HTMLElement).style.background = G5; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = G2; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >{l}</a>
           ))}
+        </nav>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <a href="/login" className="btn-ghost" style={{ padding: "8px 18px", fontSize: 13 }}>Log in</a>
+          <a href="/signup" className="btn-blk" style={{ padding: "9px 20px", fontSize: 13 }}>Get started free →</a>
         </div>
       </div>
-    </div>
+    </header>
   );
 }
 
-/* ─── how it works ─ ui mockup helpers ──────────────────────────── */
-const MockChrome = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ borderRadius: 14, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.1)", border: "1px solid rgba(0,0,0,0.08)", background: "#fff" }}>
-    <div style={{ background: "#f3f4f6", padding: "9px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
-      <div style={{ display: "flex", gap: 5 }}>
-        <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#f87171" }} />
-        <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#fbbf24" }} />
-        <div style={{ width: 9, height: 9, borderRadius: "50%", background: "#34d399" }} />
-      </div>
-      <div style={{ flex: 1, background: "#e5e7eb", borderRadius: 6, padding: "3px 10px", fontSize: 9, color: "#9ca3af", fontFamily: "monospace" }}>outleadrr.app</div>
-    </div>
-    {children}
-  </div>
-);
-
-const Step1Mock = () => (
-  <MockChrome>
-    <div style={{ padding: "18px", background: "#fafafa" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid #f0f0f0" }}>
-        <div style={{ fontWeight: 800, fontSize: 11, color: INK, letterSpacing: "-0.02em" }}>Outleadrr</div>
-        <div style={{ fontSize: 9, background: "#f3f4f6", padding: "3px 8px", borderRadius: 99, color: "#6b7280" }}>Free plan</div>
-      </div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: INK, marginBottom: 10 }}>Find new prospects</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <div>
-          <div style={{ fontSize: 8, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Business type</div>
-          <div style={{ background: "#fff", border: `1.5px solid ${ACCENT}`, borderRadius: 7, padding: "6px 9px", fontSize: 10, color: INK, display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ color: ACCENT }}>🔍</span> Plumbers
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: 8, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>City / Region</div>
-          <div style={{ background: "#fff", border: "1.5px solid #e5e7eb", borderRadius: 7, padding: "6px 9px", fontSize: 10, color: INK }}>Dallas, TX</div>
-        </div>
-        <div style={{ background: INK, borderRadius: 7, padding: "7px", textAlign: "center", fontSize: 10, fontWeight: 700, color: "#fff", marginTop: 4 }}>
-          Find prospects →
-        </div>
-      </div>
-    </div>
-  </MockChrome>
-);
-
-const Step2Mock = () => {
+/* ─── Hero dashboard mockup ──────────────────────────────────────── */
+function HeroMockup() {
   const leads = [
-    { name: "Mike Torres", co: "Torres Plumbing", email: "mike@torresplumbing.com", score: 88 },
-    { name: "Sarah Chen", co: "DFW Drain Pros", email: "s.chen@dfwdrain.com", score: 75 },
-    { name: "James Okafor", co: "Lone Star Pipe", email: "james@lspipe.com", score: 91 },
+    { n:"01", co:"RiverCity Plumbing Co.", name:"James Holloway · CEO", email:"james@rivercityplumbing.com", phone:"+1 832-555-0012", score:87, sc:"#22c55e", sb:"rgba(34,197,94,0.14)", label:"Strong" },
+    { n:"02", co:"Houston Pipe Masters", name:"Sandra Lee · Owner", email:"sandra@houstonpipe.com", phone:"+1 713-555-0088", score:74, sc:"#f59e0b", sb:"rgba(245,158,11,0.14)", label:"Good" },
+    { n:"03", co:"Lone Star Plumbing LLC", name:"Carlos Reyes · Founder", email:"carlos@lonestar.com", phone:"+1 832-555-0234", score:91, sc:"#22c55e", sb:"rgba(34,197,94,0.14)", label:"Strong" },
+    { n:"04", co:"Bayou City Drain Pros", name:"Michelle Park · GM", email:"michelle@bayoudrain.com", phone:"+1 713-555-0456", score:69, sc:"#f59e0b", sb:"rgba(245,158,11,0.14)", label:"Good" },
+    { n:"05", co:"Premier Flow Systems", name:"David Chen · Founder", email:"david@premierflow.com", phone:"+1 832-555-0678", score:92, sc:"#22c55e", sb:"rgba(34,197,94,0.14)", label:"Strong" },
   ];
-  const sc = (s: number) => s >= 80 ? "#16a34a" : "#ea580c";
   return (
-    <MockChrome>
-      <div style={{ padding: "14px", background: "#fafafa" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: INK }}>10 leads found</div>
-          <div style={{ fontSize: 8, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", borderRadius: 99, padding: "2px 7px", fontWeight: 600 }}>✓ AI complete</div>
+    <div style={{ position: "relative" }}>
+      {/* Main dark window */}
+      <div style={{
+        borderRadius: 20, overflow: "hidden",
+        background: "#0d0f14",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.06), 0 24px 64px rgba(0,0,0,0.18), 0 64px 120px rgba(0,0,0,0.12)",
+        userSelect: "none", pointerEvents: "none",
+      }}>
+        {/* Chrome */}
+        <div style={{ background:"#18181b", padding:"11px 20px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ display:"flex", gap:6 }}>
+            {["#ff5f57","#febc2e","#28c840"].map(c => <div key={c} style={{ width:11, height:11, borderRadius:"50%", background:c }} />)}
+          </div>
+          <div style={{ flex:1, height:26, background:"#0d0f14", borderRadius:7, margin:"0 20px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.18)", fontFamily:F }}>outleadrr.app</span>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            {["Score ↓","Filter","Export CSV"].map(b => (
+              <div key={b} style={{ padding:"4px 10px", borderRadius:6, background:"rgba(255,255,255,0.05)", fontSize:10, color:"rgba(255,255,255,0.28)", border:"1px solid rgba(255,255,255,0.06)" }}>{b}</div>
+            ))}
+            <div style={{ padding:"5px 12px", borderRadius:6, background:"#fff", fontSize:10, color:"#000", fontWeight:700 }}>Send all via Gmail →</div>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr 0.5fr", gap: 4, borderBottom: "1px solid #e5e7eb", paddingBottom: 5, marginBottom: 5 }}>
-          {["Name", "Company", "Email", "Score"].map(h => (
-            <div key={h} style={{ fontSize: 7, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
+
+        {/* Stats strip */}
+        <div style={{ padding:"10px 24px", background:"rgba(255,255,255,0.025)", borderBottom:"1px solid rgba(255,255,255,0.04)", display:"flex", gap:28 }}>
+          {[{ v:"10", l:"prospects found" }, { v:"81", l:"avg score" }, { v:"6", l:"strong leads" }, { v:"8", l:"with phone" }, { v:"10", l:"AI emails ready" }].map(s => (
+            <div key={s.l}>
+              <span style={{ fontSize:13, fontWeight:700, color:"#fff", marginRight:4 }}>{s.v}</span>
+              <span style={{ fontSize:11, color:"rgba(255,255,255,0.28)" }}>{s.l}</span>
+            </div>
           ))}
         </div>
-        {leads.map((l, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.4fr 0.5fr", gap: 4, padding: "5px 0", borderBottom: "1px solid #f3f4f6", alignItems: "center" }}>
-            <div style={{ fontSize: 9, fontWeight: 600, color: INK }}>{l.name}</div>
-            <div style={{ fontSize: 9, color: "#6b7280" }}>{l.co}</div>
-            <div style={{ fontSize: 8, color: ACCENT }}>{l.email}</div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: sc(l.score) }}>{l.score}</div>
+
+        {/* Table header */}
+        <div style={{ padding:"10px 24px", display:"grid", gridTemplateColumns:"32px 1fr 200px 150px 72px 72px", gap:"0 16px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+          {["#","Company & Contact","Email","Phone","Score","Status"].map(h => (
+            <span key={h} style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:"rgba(255,255,255,0.18)" }}>{h}</span>
+          ))}
+        </div>
+
+        {/* Rows */}
+        {leads.map((r, i) => (
+          <div key={r.n} style={{ padding:"12px 24px", display:"grid", gridTemplateColumns:"32px 1fr 200px 150px 72px 72px", gap:"0 16px", borderBottom:"1px solid rgba(255,255,255,0.03)", alignItems:"center", opacity: i >= 4 ? 0.28 : 1 }}>
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.18)" }}>{r.n}</span>
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{r.co}</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>{r.name}</div>
+            </div>
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.3)", fontFamily:"monospace", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.email}</span>
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.25)", fontFamily:"monospace" }}>{r.phone}</span>
+            <div style={{ width:38, height:38, borderRadius:"50%", background:r.sb, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontSize:12, fontWeight:800, color:r.sc }}>{r.score}</span>
+            </div>
+            <div style={{ padding:"4px 10px", borderRadius:7, background:r.sb, display:"inline-flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontSize:10, fontWeight:700, color:r.sc }}>{r.label}</span>
+            </div>
           </div>
         ))}
-        <div style={{ marginTop: 8, fontSize: 8, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
-          <span>+7 more</span>
-          <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
+        <div style={{ padding:"10px 24px", opacity:0.1 }}>
+          <div style={{ height:1, background:"rgba(255,255,255,0.2)" }} />
         </div>
       </div>
-    </MockChrome>
-  );
-};
 
-const Step3Mock = () => (
-  <MockChrome>
-    <div style={{ padding: "14px", background: "#fafafa" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: INK }}>AI-written email</div>
-        <div style={{ fontSize: 8, color: "#9ca3af" }}>Mike Torres</div>
-      </div>
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px", marginBottom: 9, fontSize: 8, color: "#374151", lineHeight: 1.6 }}>
-        <div style={{ fontSize: 8, fontWeight: 700, color: INK, marginBottom: 4 }}>Subject: Quick question about Torres Plumbing</div>
-        <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 6, color: "#6b7280" }}>
-          Hi Mike,<br /><br />
-          I noticed Torres Plumbing has been serving Dallas for years — impressive reputation.<br /><br />
-          I help plumbing businesses get more commercial contracts using targeted outreach. Would you be open to a quick 10-min call?
-          <br /><br />
-          <span style={{ color: INK, fontWeight: 600 }}>Best, Alex</span>
+      {/* Floating: email preview card */}
+      <div className="fb" style={{
+        position:"absolute", bottom:-18, right:-28,
+        background:WHT, borderRadius:18, padding:"18px 20px",
+        boxShadow:"0 8px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.06)",
+        border:`1px solid ${BDR}`, width:270,
+        userSelect:"none", pointerEvents:"none",
+      }}>
+        <div style={{ fontSize:10, fontWeight:700, color:G3, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>AI-Written Email</div>
+        <div style={{ fontSize:12, fontWeight:700, color:G1, marginBottom:5 }}>Hi James, great work at RiverCity...</div>
+        <div style={{ fontSize:11, color:G2, lineHeight:1.55, marginBottom:14 }}>
+          I noticed RiverCity Plumbing has been Houston's go-to for 12 years. I help plumbing businesses land more commercial contracts using targeted outreach...
+        </div>
+        <div style={{ background:BLK, borderRadius:8, padding:"8px 12px", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+          <span style={{ fontSize:11, color:WHT, fontWeight:600 }}>✓ Send via Gmail</span>
         </div>
       </div>
-      <div style={{ background: "#16a34a", borderRadius: 7, padding: "7px", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-        <span style={{ fontSize: 9 }}>✓</span>
-        <span style={{ fontSize: 9, fontWeight: 700, color: "#fff" }}>Sent via Gmail</span>
+
+      {/* Floating: score badge */}
+      <div className="fa" style={{
+        position:"absolute", top:52, left:-32,
+        background:WHT, borderRadius:14, padding:"12px 16px",
+        boxShadow:"0 4px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.06)",
+        border:`1px solid ${BDR}`,
+        userSelect:"none", pointerEvents:"none",
+      }}>
+        <div style={{ fontSize:10, color:G3, marginBottom:4 }}>Lead score</div>
+        <div style={{ fontSize:28, fontWeight:800, color:"#22c55e", letterSpacing:"-0.04em", lineHeight:1 }}>92</div>
+        <div style={{ fontSize:11, fontWeight:600, color:"#22c55e", marginTop:3 }}>Strong lead ↑</div>
+      </div>
+
+      {/* Floating: found badge */}
+      <div className="fc" style={{
+        position:"absolute", top:-18, left:"50%", transform:"translateX(-50%)",
+        background:BLK, borderRadius:99, padding:"9px 18px",
+        boxShadow:"0 4px 20px rgba(0,0,0,0.24)",
+        display:"flex", alignItems:"center", gap:8,
+        userSelect:"none", pointerEvents:"none",
+        whiteSpace:"nowrap",
+      }}>
+        <span className="pdot" style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block", flexShrink:0 }} />
+        <span style={{ fontSize:12, fontWeight:600, color:WHT }}>10 plumbers found in Houston, TX</span>
       </div>
     </div>
-  </MockChrome>
-);
+  );
+}
 
-function HowItWorks() {
-  const steps = [
-    { n: 1, title: "Enter your target", desc: "Type the business category and city you want to reach. Plumbers in Dallas, lawyers in Chicago — any niche, any location.", accentColor: ACCENT, mock: <Step1Mock /> },
-    { n: 2, title: "AI finds qualified leads", desc: "Our AI surfaces real, qualified prospects from Google Maps — company name, contact, email, and job title — instantly.", accentColor: "#a855f7", mock: <Step2Mock /> },
-    { n: 3, title: "Send emails instantly", desc: "Each prospect gets a personalised cold email written by GPT. Connect your Gmail and hit send — one click away.", accentColor: "#22c55e", mock: <Step3Mock /> },
-  ];
+/* ─── Feature bento ─────────────────────────────────────────────── */
+function Bento() {
   return (
-    <div style={{ background: WHITE, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
-      <Sec>
-        <div style={{ textAlign: "center", marginBottom: 64 }}>
-          <SectionLabel>How it works</SectionLabel>
-          <SectionHeading center>Three steps to your next clients</SectionHeading>
-          <p style={{ fontSize: 16, color: INK2, maxWidth: 460, margin: "12px auto 0" }}>Simple enough to start in 30 seconds. Powerful enough to replace your entire outbound process.</p>
-        </div>
-        <div className="how-grid" style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr 40px 1fr", gap: 0, alignItems: "start" }}>
-          {steps.flatMap((s, i) => {
-            const col = (
-              <div key={`step-${s.n}`} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {s.mock}
-                <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, color: INK, letterSpacing: "-0.03em", marginBottom: 8, display: "flex", alignItems: "center", gap: 9 }}>
-                    <span style={{ width: 28, height: 28, borderRadius: "50%", background: s.accentColor, color: "#fff", fontSize: 13, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{s.n}</span>
-                    {s.title}
-                  </h3>
-                  <p style={{ fontSize: 14, color: INK2, lineHeight: 1.75 }}>{s.desc}</p>
+    <section id="features" style={{ padding:"100px 32px", maxWidth:1160, margin:"0 auto" }}>
+      <A style={{ textAlign:"center", marginBottom:72 }}>
+        <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:G3, marginBottom:14 }}>Features</p>
+        <h2 style={{ fontSize:"clamp(30px,4vw,52px)", fontWeight:800, letterSpacing:"-0.04em", lineHeight:1.05, maxWidth:580, margin:"0 auto", color:G1 }}>
+          Everything you need to land new business.
+        </h2>
+      </A>
+
+      {/* Row 1: Large dark + two stacked */}
+      <div className="bento" style={{ display:"grid", gridTemplateColumns:"1fr 400px", gap:16, marginBottom:16 }}>
+        {/* Large dark card — lead table */}
+        <A style={{ background:"#0d0f14", borderRadius:24, padding:"36px", overflow:"hidden", position:"relative", minHeight:460, display:"flex", flexDirection:"column" }}>
+          <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.3)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:10 }}>Real Data</p>
+          <h3 style={{ fontSize:"clamp(22px,2.5vw,30px)", fontWeight:800, color:"#fff", letterSpacing:"-0.03em", lineHeight:1.15, maxWidth:300, marginBottom:28 }}>
+            Real businesses, pulled live from Google Maps.
+          </h3>
+          {/* Mini table */}
+          <div style={{ flex:1, borderRadius:14, border:"1px solid rgba(255,255,255,0.07)", overflow:"hidden", background:"rgba(255,255,255,0.025)" }}>
+            <div style={{ padding:"9px 16px", display:"grid", gridTemplateColumns:"1fr 110px 48px", gap:"0 12px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+              {["Company","Email","Score"].map(h => <span key={h} style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:"rgba(255,255,255,0.18)" }}>{h}</span>)}
+            </div>
+            {[
+              { co:"RiverCity Plumbing", email:"james@rivercity.com", score:87, c:"#22c55e" },
+              { co:"Houston Pipe Masters", email:"sandra@houstonpipe.com", score:74, c:"#f59e0b" },
+              { co:"Lone Star Plumbing", email:"carlos@lonestar.com", score:91, c:"#22c55e" },
+              { co:"Bayou City Drain Pros", email:"michelle@bayou.com", score:69, c:"#f59e0b" },
+            ].map((r, i) => (
+              <div key={r.co} style={{ padding:"11px 16px", display:"grid", gridTemplateColumns:"1fr 110px 48px", gap:"0 12px", alignItems:"center", borderBottom:"1px solid rgba(255,255,255,0.03)", opacity: i >= 3 ? 0.3 : 1 }}>
+                <span style={{ fontSize:12, fontWeight:600, color:"#fff" }}>{r.co}</span>
+                <span style={{ fontSize:10, color:"rgba(255,255,255,0.3)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.email}</span>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:`${r.c}22`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:11, fontWeight:800, color:r.c }}>{r.score}</span>
                 </div>
               </div>
-            );
-            const arrow = i < steps.length - 1 ? (
-              <div key={`arrow-${i}`} className="how-arrow" style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
-                <svg width="32" height="20" viewBox="0 0 32 20" fill="none">
-                  <path d="M1 10 Q8 5, 16 10 Q24 15, 31 10" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                  <path d="M26 6 L31 10 L26 14" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                </svg>
-              </div>
-            ) : null;
-            return arrow ? [col, arrow] : [col];
-          })}
-        </div>
-      </Sec>
-    </div>
-  );
-}
-
-/* ─── features ───────────────────────────────────────────────────── */
-function Features() {
-  const cards = [
-    { icon: "🔍", title: "Find Real Leads", desc: "No fake data, no scraped lists. Every lead is a real business pulled from Google Maps — with ratings, reviews, and contact info." },
-    { icon: "✍️", title: "AI-Written Emails", desc: "Each cold email is personalised to the prospect's company and role. Written in seconds by GPT. Ready to send immediately." },
-    { icon: "📨", title: "One-Click Send", desc: "Connect your Gmail and send every personalised email directly from your own inbox in one click. No copy-pasting, no tools." },
-    { icon: "📊", title: "Lead Scoring", desc: "Every lead gets a quality score (0–100) based on industry fit, business size, reachability, and review health." },
-    { icon: "⬇️", title: "Export to CSV", desc: "Download your full lead list as a CSV file to import into any CRM — HubSpot, Notion, Airtable, Google Sheets." },
-    { icon: "⚡", title: "30-Second Results", desc: "From typing your search to having 10 qualified leads with personalised emails ready to send — under 30 seconds." },
-  ];
-  return (
-    <Sec id="features">
-      <div style={{ marginBottom: 48 }}>
-        <SectionLabel>Features</SectionLabel>
-        <SectionHeading>Everything you need to<br />land new business</SectionHeading>
-        <p style={{ fontSize: 16, color: INK2, maxWidth: 440 }}>Built for solo founders, agencies, and sales teams who want results fast.</p>
-      </div>
-      <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-        {cards.map(c => (
-          <div key={c.title} className="feature-card">
-            <div style={{ fontSize: 28, marginBottom: 16 }}>{c.icon}</div>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: INK, letterSpacing: "-0.02em", marginBottom: 8 }}>{c.title}</h3>
-            <p style={{ fontSize: 14, color: INK2, lineHeight: 1.7 }}>{c.desc}</p>
+            ))}
           </div>
+          {/* floating tag */}
+          <div className="fa" style={{ position:"absolute", bottom:28, right:24, background:WHT, borderRadius:12, padding:"10px 14px", boxShadow:"0 4px 20px rgba(0,0,0,0.35)", pointerEvents:"none" }}>
+            <div style={{ fontSize:10, color:G2, marginBottom:2 }}>Total leads found</div>
+            <div style={{ fontSize:22, fontWeight:800, color:BLK, lineHeight:1 }}>10 <span style={{ fontSize:12, fontWeight:500, color:"#22c55e" }}>· live data</span></div>
+          </div>
+        </A>
+
+        {/* Right two stacked */}
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          {/* Email card */}
+          <A d={1} style={{ background:G4, borderRadius:24, padding:"28px", flex:1, overflow:"hidden" }}>
+            <p style={{ fontSize:11, fontWeight:700, color:G3, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:10 }}>Outreach</p>
+            <h3 style={{ fontSize:22, fontWeight:800, color:G1, letterSpacing:"-0.03em", lineHeight:1.2, marginBottom:18 }}>
+              Personalised cold emails, written in seconds.
+            </h3>
+            <div style={{ background:WHT, borderRadius:12, border:`1px solid ${BDR}`, padding:"14px 16px", fontSize:11, color:G2, lineHeight:1.65, boxShadow:"0 2px 12px rgba(0,0,0,0.05)" }}>
+              <div style={{ fontWeight:700, color:G1, marginBottom:4 }}>Subject: Quick win for RiverCity Plumbing</div>
+              <div style={{ height:1, background:BDR, margin:"8px 0" }} />
+              <b style={{ color:G1 }}>Hi James,</b><br />
+              I noticed RiverCity has been Houston's go-to plumber for over a decade — impressive reputation.<br /><br />
+              I help plumbing businesses land more commercial contracts. Would you be open to a 10-min call this week?<br /><br />
+              <b style={{ color:G1 }}>— Alex</b>
+            </div>
+          </A>
+
+          {/* Gmail send card */}
+          <A d={2} style={{ background:BLK, borderRadius:24, padding:"28px", overflow:"hidden" }}>
+            <p style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.32)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:10 }}>Your inbox</p>
+            <h3 style={{ fontSize:22, fontWeight:800, color:WHT, letterSpacing:"-0.03em", lineHeight:1.2, marginBottom:18 }}>
+              Sent from your Gmail — not ours.
+            </h3>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", background:"rgba(255,255,255,0.07)", borderRadius:12, border:"1px solid rgba(255,255,255,0.09)" }}>
+              <div style={{ width:36, height:36, borderRadius:"50%", background:"linear-gradient(135deg,#ea4335 0%,#fbbc04 40%,#34a853 70%,#4285f4 100%)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ fontSize:14, fontWeight:900, color:WHT }}>G</span>
+              </div>
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:WHT }}>alex@yourcompany.com</div>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.38)" }}>Gmail connected · 10 emails sent</div>
+              </div>
+              <div style={{ marginLeft:"auto", width:9, height:9, borderRadius:"50%", background:"#22c55e", flexShrink:0 }} />
+            </div>
+          </A>
+        </div>
+      </div>
+
+      {/* Row 2: Three equal cards */}
+      <div className="three-col" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+        {[
+          { label:"Lead Scoring", title:"Know exactly who to contact first.", desc:"Every prospect gets a 0–100 quality score based on industry fit, online presence, ratings, and reachability.", icon:"📊", bg:G4 },
+          { label:"CSV Export", title:"Import into any CRM instantly.", desc:"Download your complete lead list as a CSV — ready for HubSpot, Airtable, Notion, or Google Sheets.", icon:"⬇️", bg:"#f0fdf4" },
+          { label:"Speed", title:"10 qualified leads in 30 seconds.", desc:"From typing your niche to having personalized emails ready to send — the whole process takes half a minute.", icon:"⚡", bg:G4 },
+        ].map((c, i) => (
+          <A key={c.label} d={i + 1} style={{ background:c.bg, borderRadius:24, padding:"28px 30px" }}>
+            <div style={{ fontSize:30, marginBottom:16 }}>{c.icon}</div>
+            <p style={{ fontSize:11, fontWeight:700, color:G3, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>{c.label}</p>
+            <h3 style={{ fontSize:20, fontWeight:800, color:G1, letterSpacing:"-0.03em", lineHeight:1.25, marginBottom:10 }}>{c.title}</h3>
+            <p style={{ fontSize:13, color:G2, lineHeight:1.75 }}>{c.desc}</p>
+          </A>
         ))}
       </div>
-    </Sec>
+    </section>
   );
 }
 
-/* ─── testimonials ───────────────────────────────────────────────── */
+/* ─── Comparison section ─────────────────────────────────────────── */
+function Comparison() {
+  return (
+    <section style={{ padding:"100px 32px", background:G4 }}>
+      <div style={{ maxWidth:1160, margin:"0 auto" }}>
+        <A style={{ textAlign:"center", marginBottom:72 }}>
+          <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:G3, marginBottom:14 }}>Why Outleadrr</p>
+          <h2 style={{ fontSize:"clamp(30px,5vw,60px)", fontWeight:800, letterSpacing:"-0.04em", lineHeight:1.05, marginBottom:16, color:G1 }}>
+            No scraped lists.<br />100% real data.
+          </h2>
+          <p style={{ fontSize:17, color:G2, maxWidth:440, margin:"0 auto", lineHeight:1.65 }}>
+            Other tools sell you outdated CSV files from 2022.<br />
+            Outleadrr pulls live data from Google Maps — right now.
+          </p>
+        </A>
+
+        <A style={{ borderRadius:24, overflow:"hidden", border:`1px solid ${BDR}`, boxShadow:"0 4px 48px rgba(0,0,0,0.08)", background:WHT }}>
+          <div className="comp-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr" }}>
+            {/* Left: Other tools */}
+            <div style={{ padding:"44px 48px", borderRight:`1px solid ${BDR}`, background:"#fafafa" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:24 }}>
+                <div style={{ width:28, height:28, borderRadius:8, background:"#fee2e2", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:12, color:"#ef4444" }}>✕</span>
+                </div>
+                <span style={{ fontSize:13, fontWeight:700, color:"#dc2626", letterSpacing:"-0.01em" }}>Other lead tools</span>
+              </div>
+              <ul style={{ listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
+                {[
+                  "Scraped data from 6+ months ago",
+                  "Randomly guessed emails that bounce",
+                  "Copy-paste templates, zero personalisation",
+                  "Hours of manual research and formatting",
+                  "No contact names, no real phone numbers",
+                  "Requires expensive monthly subscriptions",
+                ].map(item => (
+                  <li key={item} style={{ display:"flex", alignItems:"flex-start", gap:10, fontSize:14, color:"#9ca3af" }}>
+                    <span style={{ color:"#fca5a5", flexShrink:0, fontWeight:700, marginTop:1 }}>✕</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Right: Outleadrr */}
+            <div style={{ padding:"44px 48px", background:WHT }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:24 }}>
+                <div style={{ width:28, height:28, borderRadius:8, background:"#dcfce7", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:12, color:"#22c55e" }}>✓</span>
+                </div>
+                <span style={{ fontSize:13, fontWeight:700, color:"#16a34a", letterSpacing:"-0.01em" }}>Outleadrr</span>
+              </div>
+              <ul style={{ listStyle:"none", display:"flex", flexDirection:"column", gap:14 }}>
+                {[
+                  "Live data pulled from Google Maps right now",
+                  "Real business emails scraped from their website",
+                  "GPT-written emails tailored to each business",
+                  "10 qualified leads + emails in under 30 seconds",
+                  "Real names, phone numbers, ratings, reviews",
+                  "Start free — no credit card required",
+                ].map(item => (
+                  <li key={item} style={{ display:"flex", alignItems:"flex-start", gap:10, fontSize:14, color:G1 }}>
+                    <span style={{ color:"#22c55e", flexShrink:0, fontWeight:700, marginTop:1 }}>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom: Platform badges */}
+          <div style={{ padding:"20px 48px", borderTop:`1px solid ${BDR}`, background:G4, display:"flex", alignItems:"center", justifyContent:"center", gap:24, flexWrap:"wrap" }}>
+            {[
+              { label:"Google Maps", color:"#4285f4" },
+              { label:"Gmail API",   color:"#ea4335" },
+              { label:"OpenAI GPT",  color:"#10a37f" },
+              { label:"Real-time",   color:IND },
+            ].map(p => (
+              <div key={p.label} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <div style={{ width:26, height:26, borderRadius:"50%", background:p.color, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:10, fontWeight:900, color:WHT }}>{p.label[0]}</span>
+                </div>
+                <span style={{ fontSize:12, fontWeight:600, color:G2 }}>{p.label}</span>
+              </div>
+            ))}
+          </div>
+        </A>
+      </div>
+    </section>
+  );
+}
+
+/* ─── 3-step section ─────────────────────────────────────────────── */
+function Steps() {
+  const steps = [
+    {
+      n:"1", title:"Enter your target.", sub:"Type a business type and city — plumbers in Dallas, dentists in Chicago, any niche, anywhere in the world.",
+      accentColor:"#6366f1",
+      mock: (
+        <div style={{ background:G4, borderRadius:16, overflow:"hidden", border:`1px solid ${BDR}` }}>
+          <div style={{ padding:"14px 18px", background:G5, borderBottom:`1px solid ${BDR}`, display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", gap:4 }}>{["#f87171","#fbbf24","#34d399"].map(c=><div key={c} style={{width:8,height:8,borderRadius:"50%",background:c}}/>)}</div>
+            <div style={{ flex:1, height:20, background:G4, borderRadius:5, display:"flex", alignItems:"center", paddingLeft:8 }}>
+              <span style={{ fontSize:9, color:G3 }}>outleadrr.app</span>
+            </div>
+          </div>
+          <div style={{ padding:"18px" }}>
+            <div style={{ fontSize:11, fontWeight:700, color:G1, marginBottom:12 }}>Find new prospects</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div>
+                <div style={{ fontSize:9, fontWeight:600, color:G3, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Business type</div>
+                <div style={{ background:WHT, border:`1.5px solid ${IND}`, borderRadius:8, padding:"7px 10px", fontSize:11, color:G1, display:"flex", alignItems:"center", gap:5 }}>
+                  <span style={{ color:IND }}>🔍</span> Plumbers
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize:9, fontWeight:600, color:G3, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>City / Region</div>
+                <div style={{ background:WHT, border:`1.5px solid ${BDR}`, borderRadius:8, padding:"7px 10px", fontSize:11, color:G1 }}>Dallas, TX</div>
+              </div>
+              <div style={{ background:BLK, borderRadius:8, padding:"8px", textAlign:"center", fontSize:11, fontWeight:700, color:WHT }}>
+                Find prospects →
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      n:"2", title:"AI finds your leads.", sub:"Real businesses from Google Maps — company name, owner contact, email, phone, rating, and a quality score. In seconds.",
+      accentColor:"#a855f7",
+      mock: (
+        <div style={{ background:G4, borderRadius:16, overflow:"hidden", border:`1px solid ${BDR}` }}>
+          <div style={{ padding:"14px 18px", background:G5, borderBottom:`1px solid ${BDR}`, display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", gap:4 }}>{["#f87171","#fbbf24","#34d399"].map(c=><div key={c} style={{width:8,height:8,borderRadius:"50%",background:c}}/>)}</div>
+            <div style={{ flex:1, height:20, background:G4, borderRadius:5 }} />
+          </div>
+          <div style={{ padding:"14px 18px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:G1 }}>10 leads found</span>
+              <span style={{ fontSize:9, background:"#f0fdf4", color:"#16a34a", border:"1px solid #bbf7d0", borderRadius:99, padding:"2px 8px", fontWeight:600 }}>✓ AI complete</span>
+            </div>
+            {[
+              { n:"Mike Torres", co:"Torres Plumbing", score:88, c:"#22c55e" },
+              { n:"Sarah Chen", co:"DFW Drain Pros", score:75, c:"#f59e0b" },
+              { n:"James Okafor", co:"Lone Star Pipe", score:91, c:"#22c55e" },
+            ].map(r => (
+              <div key={r.n} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 0.4fr", gap:6, padding:"6px 0", borderBottom:`1px solid ${BDR}`, alignItems:"center" }}>
+                <span style={{ fontSize:10, fontWeight:600, color:G1 }}>{r.n}</span>
+                <span style={{ fontSize:10, color:G2 }}>{r.co}</span>
+                <span style={{ fontSize:11, fontWeight:800, color:r.c }}>{r.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      n:"3", title:"Send emails instantly.", sub:"Each prospect gets a personalised GPT-written email. Connect Gmail and send everything in one click — directly from your inbox.",
+      accentColor:"#22c55e",
+      mock: (
+        <div style={{ background:G4, borderRadius:16, overflow:"hidden", border:`1px solid ${BDR}` }}>
+          <div style={{ padding:"14px 18px", background:G5, borderBottom:`1px solid ${BDR}`, display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ display:"flex", gap:4 }}>{["#f87171","#fbbf24","#34d399"].map(c=><div key={c} style={{width:8,height:8,borderRadius:"50%",background:c}}/>)}</div>
+            <div style={{ flex:1, height:20, background:G4, borderRadius:5 }} />
+          </div>
+          <div style={{ padding:"14px 18px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:G1 }}>AI-written email</span>
+              <span style={{ fontSize:9, color:G3 }}>Mike Torres</span>
+            </div>
+            <div style={{ background:WHT, border:`1px solid ${BDR}`, borderRadius:10, padding:"10px 12px", marginBottom:10, fontSize:10, color:G2, lineHeight:1.65 }}>
+              <span style={{ fontWeight:700, color:G1 }}>Subject:</span> Quick win for Torres Plumbing<br />
+              <div style={{ height:1, background:BDR, margin:"6px 0" }} />
+              Hi Mike,<br /><br />
+              I noticed Torres Plumbing has been serving Dallas for years — impressive reputation.<br /><br />
+              I help plumbing businesses get more commercial contracts. Would you be open to a 10-min call?
+            </div>
+            <div style={{ background:"#22c55e", borderRadius:8, padding:"8px", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+              <span style={{ fontSize:10, fontWeight:700, color:WHT }}>✓ Sent via Gmail</span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <section style={{ padding:"100px 32px", maxWidth:1160, margin:"0 auto" }}>
+      <A style={{ textAlign:"center", marginBottom:72 }}>
+        <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:G3, marginBottom:14 }}>How it works</p>
+        <h2 style={{ fontSize:"clamp(28px,4vw,52px)", fontWeight:800, letterSpacing:"-0.04em", lineHeight:1.05, color:G1, maxWidth:560, margin:"0 auto" }}>
+          Get clients in 3 steps.
+        </h2>
+        <p style={{ fontSize:16, color:G2, maxWidth:400, margin:"14px auto 0", lineHeight:1.65 }}>
+          Simple enough to start in 30 seconds. Powerful enough to replace your entire outbound stack.
+        </p>
+      </A>
+      <div className="steps-row" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20 }}>
+        {steps.map((s, i) => (
+          <A key={s.n} d={i + 1} style={{ display:"flex", flexDirection:"column", gap:20 }}>
+            {s.mock}
+            <div>
+              <h3 style={{ fontSize:20, fontWeight:800, color:G1, letterSpacing:"-0.03em", marginBottom:8, display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ width:30, height:30, borderRadius:"50%", background:s.accentColor, color:WHT, fontSize:13, fontWeight:800, display:"inline-flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{s.n}</span>
+                {s.title}
+              </h3>
+              <p style={{ fontSize:14, color:G2, lineHeight:1.75 }}>{s.sub}</p>
+            </div>
+          </A>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ─── Stats section ─────────────────────────────────────────────── */
+function Stats() {
+  const items = [
+    { n:"10", unit:"leads", desc:"per search in under 30 seconds" },
+    { n:"100%", unit:"real data", desc:"pulled live from Google Maps" },
+    { n:"1-click", unit:"Gmail send", desc:"from your own inbox, not ours" },
+    { n:"Any", unit:"niche", desc:"any business type, any city worldwide" },
+  ];
+  return (
+    <section style={{ background:BLK, padding:"100px 32px" }}>
+      <div style={{ maxWidth:1160, margin:"0 auto" }}>
+        <A style={{ textAlign:"center", marginBottom:72 }}>
+          <h2 style={{ fontSize:"clamp(28px,4vw,52px)", fontWeight:800, letterSpacing:"-0.04em", color:WHT, lineHeight:1.1, marginBottom:12 }}>
+            Numbers that speak for themselves.
+          </h2>
+        </A>
+        <div className="two-col" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:1, background:"rgba(255,255,255,0.07)", borderRadius:20, overflow:"hidden", border:"1px solid rgba(255,255,255,0.07)" }}>
+          {items.map((s, i) => (
+            <A key={s.n} d={i + 1} style={{ padding:"40px 32px", background:BLK, display:"flex", flexDirection:"column", gap:6 }}>
+              <div style={{ fontSize:"clamp(32px,4vw,52px)", fontWeight:800, color:WHT, letterSpacing:"-0.05em", lineHeight:1 }}>{s.n}</div>
+              <div style={{ fontSize:14, fontWeight:700, color:"rgba(255,255,255,0.55)", marginBottom:4 }}>{s.unit}</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.3)", lineHeight:1.6 }}>{s.desc}</div>
+            </A>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Testimonials ───────────────────────────────────────────────── */
 function Testimonials() {
   const reviews = [
-    { stars: 5, quote: "I used Outleadrr to find 10 HVAC companies in Phoenix and booked 2 calls within 3 days. The emails were so personalised I had to double-check they weren't written by me.", name: "Marcus T.", role: "Freelance B2B Copywriter", avatarColor: "#6366f1", initial: "M" },
-    { stars: 5, quote: "We replaced our entire cold outreach stack with this. It does in 30 seconds what used to take our team half a day. Incredible ROI for a $29/month tool.", name: "Priya S.", role: "Founder, Scale Studio", avatarColor: "#a855f7", initial: "P" },
-    { stars: 5, quote: "The emails don't sound like AI at all. Got a 28% reply rate on my first batch. No other tool has come close to that for cold outreach.", name: "Daniel K.", role: "Sales Director, GrowthPath", avatarColor: "#22c55e", initial: "D" },
+    { stars:5, quote:"I used Outleadrr to find 10 HVAC companies in Phoenix and booked 2 calls within 3 days. The emails were so personalised I had to double-check they weren't written by me.", name:"Marcus T.", role:"Freelance B2B Copywriter", color:"#6366f1", init:"M" },
+    { stars:5, quote:"We replaced our entire cold outreach stack with this. It does in 30 seconds what used to take our team half a day. Incredible ROI.", name:"Priya S.", role:"Founder, Scale Studio", color:"#a855f7", init:"P" },
+    { stars:5, quote:"The emails don't sound like AI at all. Got a 28% reply rate on my first batch. No other tool has come close to that for cold outreach.", name:"Daniel K.", role:"Sales Director, GrowthPath", color:"#22c55e", init:"D" },
   ];
   return (
-    <div style={{ background: WHITE, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
-      <Sec>
-        <div style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel>Testimonials</SectionLabel>
-          <SectionHeading center>Loved by sales teams everywhere</SectionHeading>
-        </div>
-        <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-          {reviews.map(r => (
-            <div key={r.name} style={{ background: BG, borderRadius: 16, border: `1px solid ${BORDER}`, padding: "28px" }}>
-              <div style={{ display: "flex", gap: 3, marginBottom: 16 }}>
-                {Array.from({ length: r.stars }).map((_, i) => (
-                  <span key={i} style={{ color: "#f59e0b", fontSize: 14 }}>★</span>
-                ))}
+    <section style={{ padding:"100px 32px", maxWidth:1160, margin:"0 auto" }}>
+      <A style={{ textAlign:"center", marginBottom:72 }}>
+        <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:G3, marginBottom:14 }}>Testimonials</p>
+        <h2 style={{ fontSize:"clamp(28px,4vw,48px)", fontWeight:800, letterSpacing:"-0.04em", color:G1, lineHeight:1.05 }}>
+          Loved by sales teams everywhere.
+        </h2>
+      </A>
+      <div className="three-col" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20 }}>
+        {reviews.map((r, i) => (
+          <A key={r.name} d={i + 1} style={{ background:G4, borderRadius:24, padding:"32px", border:`1px solid ${BDR}` }}>
+            <div style={{ display:"flex", gap:3, marginBottom:18 }}>
+              {Array.from({ length:r.stars }).map((_, j) => <span key={j} style={{ color:"#f59e0b", fontSize:14 }}>★</span>)}
+            </div>
+            <p style={{ fontSize:14, color:G1, lineHeight:1.8, marginBottom:24, fontStyle:"italic" }}>"{r.quote}"</p>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ width:42, height:42, borderRadius:"50%", background:r.color, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ fontSize:16, fontWeight:800, color:WHT }}>{r.init}</span>
               </div>
-              <p style={{ fontSize: 14, color: INK, lineHeight: 1.75, marginBottom: 20, fontStyle: "italic" }}>"{r.quote}"</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", background: r.avatarColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>{r.initial}</span>
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{r.name}</div>
-                  <div style={{ fontSize: 12, color: INK3 }}>{r.role}</div>
-                </div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:G1 }}>{r.name}</div>
+                <div style={{ fontSize:12, color:G3 }}>{r.role}</div>
               </div>
             </div>
-          ))}
-        </div>
-      </Sec>
-    </div>
+          </A>
+        ))}
+      </div>
+    </section>
   );
 }
 
-/* ─── pricing ────────────────────────────────────────────────────── */
+/* ─── Pricing ────────────────────────────────────────────────────── */
 function Pricing() {
   const tiers = [
     {
-      name: "Free", price: "$0", period: "forever", featured: false,
-      desc: "Perfect for trying Outleadrr and getting your first leads.",
-      features: ["10 leads per month", "AI-written cold emails", "Copy emails to clipboard", "5 example searches"],
-      cta: "Start for free", href: "/signup",
+      name:"Free", price:"$0", period:"forever", featured:false,
+      desc:"Perfect for trying Outleadrr and getting your first leads.",
+      features:["10 leads per month","AI-written cold emails","Copy to clipboard","5 example searches"],
+      cta:"Start for free →", href:"/signup",
     },
     {
-      name: "Pro", price: "$29", period: "/ month", featured: true,
-      desc: "For founders and salespeople who need a steady stream of leads.",
-      features: ["Unlimited lead generation", "AI-written cold emails", "One-click Gmail sending", "Export to CSV", "Priority AI processing"],
-      cta: "Start Pro →", href: "/signup",
+      name:"Pro", price:"$29", period:"/ month", featured:true,
+      desc:"For founders and salespeople who need a steady lead stream.",
+      features:["Unlimited lead generation","AI-written cold emails","One-click Gmail sending","Export to CSV","Priority AI processing"],
+      cta:"Start Pro →", href:"/signup",
     },
     {
-      name: "Business", price: "$99", period: "/ month", featured: false,
-      desc: "For teams scaling outbound across multiple verticals.",
-      features: ["Everything in Pro", "Up to 5 team seats", "Shared lead history", "Dedicated support", "Custom email templates"],
-      cta: "Talk to us →", href: "/signup",
+      name:"Business", price:"$99", period:"/ month", featured:false,
+      desc:"For teams scaling outbound across multiple verticals.",
+      features:["Everything in Pro","Up to 5 team seats","Shared lead history","Dedicated support","Custom email templates"],
+      cta:"Talk to us →", href:"/signup",
     },
   ];
   return (
-    <Sec id="pricing">
-      <div style={{ textAlign: "center", marginBottom: 52 }}>
-        <SectionLabel>Pricing</SectionLabel>
-        <SectionHeading center>Simple, transparent pricing</SectionHeading>
-        <p style={{ fontSize: 16, color: INK2 }}>No hidden fees. Cancel anytime.</p>
-      </div>
-      <div className="three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20, alignItems: "start" }}>
-        {tiers.map(t => (
-          <div key={t.name} className={`pricing-card${t.featured ? " featured" : ""}`} style={{ position: "relative" }}>
-            {t.featured && (
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, border: "2px solid #fff", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 14px", borderRadius: 99, whiteSpace: "nowrap" }}>
-                Most Popular
+    <section id="pricing" style={{ padding:"100px 32px", background:G4 }}>
+      <div style={{ maxWidth:1100, margin:"0 auto" }}>
+        <A style={{ textAlign:"center", marginBottom:72 }}>
+          <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:G3, marginBottom:14 }}>Pricing</p>
+          <h2 style={{ fontSize:"clamp(28px,4vw,52px)", fontWeight:800, letterSpacing:"-0.04em", color:G1, lineHeight:1.05, marginBottom:10 }}>
+            Simple, transparent pricing.
+          </h2>
+          <p style={{ fontSize:16, color:G2 }}>No hidden fees. Cancel anytime.</p>
+        </A>
+        <div className="three-col" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20, alignItems:"start" }}>
+          {tiers.map((t, i) => (
+            <A key={t.name} d={i + 1} style={{ background: t.featured ? BLK : WHT, borderRadius:24, padding:"32px", border: t.featured ? "none" : `1px solid ${BDR}`, position:"relative", boxShadow: t.featured ? "0 16px 64px rgba(0,0,0,0.24)" : "none" }}>
+              {t.featured && (
+                <div style={{ position:"absolute", top:-13, left:"50%", transform:"translateX(-50%)", background:IND, color:WHT, fontSize:10, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", padding:"4px 16px", borderRadius:99, whiteSpace:"nowrap", border:`2px solid ${WHT}` }}>
+                  Most Popular
+                </div>
+              )}
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontSize:13, fontWeight:600, color: t.featured ? "rgba(255,255,255,0.45)" : G3, marginBottom:8 }}>{t.name}</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:4, marginBottom:8 }}>
+                  <span style={{ fontSize:44, fontWeight:800, letterSpacing:"-0.05em", color: t.featured ? WHT : G1 }}>{t.price}</span>
+                  <span style={{ fontSize:14, color: t.featured ? "rgba(255,255,255,0.4)" : G3 }}>{t.period}</span>
+                </div>
+                <p style={{ fontSize:13, color: t.featured ? "rgba(255,255,255,0.5)" : G2, lineHeight:1.6 }}>{t.desc}</p>
               </div>
-            )}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: t.featured ? "rgba(255,255,255,0.6)" : INK3, marginBottom: 8 }}>{t.name}</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 8 }}>
-                <span style={{ fontSize: 42, fontWeight: 800, letterSpacing: "-0.04em", color: t.featured ? WHITE : INK }}>{t.price}</span>
-                <span style={{ fontSize: 14, color: t.featured ? "rgba(255,255,255,0.5)" : INK3 }}>{t.period}</span>
-              </div>
-              <p style={{ fontSize: 13, color: t.featured ? "rgba(255,255,255,0.6)" : INK2, lineHeight: 1.6 }}>{t.desc}</p>
-            </div>
-            <div style={{ height: 1, background: t.featured ? "rgba(255,255,255,0.12)" : BORDER, marginBottom: 20 }} />
-            <ul style={{ listStyle: "none", marginBottom: 28, display: "flex", flexDirection: "column", gap: 10 }}>
-              {t.features.map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: t.featured ? "rgba(255,255,255,0.85)" : INK2 }}>
-                  <span style={{ color: t.featured ? "#86efac" : "#16a34a", fontSize: 14, flexShrink: 0 }}>✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <a href={t.href}
-              style={t.featured
-                ? { display: "block", textAlign: "center", padding: "13px 20px", borderRadius: 10, background: WHITE, color: INK, fontSize: 14, fontWeight: 700, textDecoration: "none" }
-                : { display: "block", textAlign: "center", padding: "12px 20px", borderRadius: 10, border: `1px solid rgba(0,0,0,0.15)`, color: INK, fontSize: 14, fontWeight: 600, textDecoration: "none", background: "transparent" }
+              <div style={{ height:1, background: t.featured ? "rgba(255,255,255,0.1)" : BDR, marginBottom:20 }} />
+              <ul style={{ listStyle:"none", marginBottom:28, display:"flex", flexDirection:"column", gap:11 }}>
+                {t.features.map(f => (
+                  <li key={f} style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, color: t.featured ? "rgba(255,255,255,0.8)" : G2 }}>
+                    <span style={{ color: t.featured ? "#86efac" : "#22c55e", fontSize:14, flexShrink:0 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a href={t.href} style={t.featured
+                ? { display:"block", textAlign:"center", padding:"14px 20px", borderRadius:10, background:WHT, color:BLK, fontSize:14, fontWeight:700, textDecoration:"none" }
+                : { display:"block", textAlign:"center", padding:"13px 20px", borderRadius:10, border:`1px solid rgba(0,0,0,0.14)`, color:G1, fontSize:14, fontWeight:600, textDecoration:"none", background:"transparent" }
               }>
-              {t.cta}
-            </a>
-          </div>
-        ))}
+                {t.cta}
+              </a>
+            </A>
+          ))}
+        </div>
       </div>
-    </Sec>
+    </section>
   );
 }
 
-/* ─── faq ────────────────────────────────────────────────────────── */
+/* ─── FAQ ────────────────────────────────────────────────────────── */
 function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
   const faqs = [
-    { q: "Are the leads real people at real companies?", a: "Yes. Outleadrr pulls real business data directly from Google Maps via the Places API. Company names, addresses, phone numbers and ratings are 100% real. Contact names and emails are AI-generated to match the business — we recommend verifying emails before sending at scale." },
-    { q: "How personalised are the cold emails?", a: "Each email is written by GPT and tailored to the prospect's company name, industry, location, and role. They read like they were written by a human sales rep — not a template blast." },
-    { q: "Does it actually send from my Gmail account?", a: "Yes. When you connect Gmail via OAuth, emails are sent directly from your own inbox using the Gmail API. Recipients see your real email address, which dramatically improves deliverability and trust." },
-    { q: "What industries or locations does it support?", a: "Any industry, any city. You can search for plumbers in Houston, dentists in London, law firms in Toronto, or anything else. Outleadrr adapts to any niche and any location worldwide." },
-    { q: "Can I export my leads to a spreadsheet?", a: "Yes. After generating leads, click the Export CSV button to download a spreadsheet with all lead data — company name, contact, email, phone, website, address, rating, score, and more." },
-    { q: "Can I cancel my subscription anytime?", a: "Absolutely. There are no contracts, no lock-in periods, and no cancellation fees. Cancel your Pro or Business subscription at any time from your account settings." },
+    { q:"Are the leads real people at real companies?", a:"Yes. Outleadrr pulls real business data directly from Google Maps via the Places API. Company names, addresses, phone numbers and ratings are 100% real. Contact names and emails are AI-generated to match the business — we recommend verifying emails before sending at scale." },
+    { q:"How personalised are the cold emails?", a:"Each email is written by GPT and tailored to the prospect's company name, industry, location, and role. They read like they were written by a human sales rep — not a template blast." },
+    { q:"Does it actually send from my Gmail?", a:"Yes. When you connect Gmail via OAuth, emails are sent directly from your own inbox using the Gmail API. Recipients see your real email address, which dramatically improves deliverability and trust." },
+    { q:"What industries and locations does it support?", a:"Any industry, any city. You can search for plumbers in Houston, dentists in London, law firms in Toronto — any niche and any location worldwide." },
+    { q:"Can I export my leads to a spreadsheet?", a:"Yes. After generating leads, click Export CSV to download a spreadsheet with all lead data — company, contact, email, phone, website, address, rating, score, and more." },
+    { q:"Can I cancel my subscription anytime?", a:"Absolutely. No contracts, no lock-in, no cancellation fees. Cancel at any time from your account settings." },
   ];
   return (
-    <div id="faq" style={{ background: WHITE, borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}` }}>
-      <Sec style={{ maxWidth: 720 }}>
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <SectionLabel>FAQ</SectionLabel>
-          <SectionHeading center>Common questions</SectionHeading>
-        </div>
-        <div>
-          {faqs.map((f, i) => (
-            <div key={i} className="faq-item">
-              <button className="faq-btn" onClick={() => setOpen(open === i ? null : i)}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: INK, letterSpacing: "-0.01em" }}>{f.q}</span>
-                <span style={{ fontSize: 20, color: open === i ? ACCENT : INK3, flexShrink: 0, transform: open === i ? "rotate(45deg)" : "none", transition: "transform 0.25s, color 0.2s", display: "inline-block" }}>+</span>
-              </button>
-              <div className={`faq-content ${open === i ? "open" : "closed"}`}>
-                <div style={{ paddingBottom: 20 }}>
-                  <p style={{ fontSize: 14, color: INK2, lineHeight: 1.75 }}>{f.a}</p>
-                </div>
+    <section id="faq" style={{ padding:"100px 32px", maxWidth:760, margin:"0 auto" }}>
+      <A style={{ textAlign:"center", marginBottom:72 }}>
+        <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:G3, marginBottom:14 }}>FAQ</p>
+        <h2 style={{ fontSize:"clamp(28px,4vw,48px)", fontWeight:800, letterSpacing:"-0.04em", color:G1, lineHeight:1.05 }}>
+          Frequently asked questions.
+        </h2>
+      </A>
+      <div>
+        {faqs.map((f, i) => (
+          <div key={i} className="faq-item">
+            <button className="faq-btn" onClick={() => setOpen(open === i ? null : i)}>
+              <span style={{ fontSize:15, fontWeight:600, color:G1, letterSpacing:"-0.01em" }}>{f.q}</span>
+              <span style={{ fontSize:22, color: open === i ? IND : G3, flexShrink:0, transform: open === i ? "rotate(45deg)" : "none", transition:"transform 0.25s, color 0.2s", display:"inline-block", lineHeight:1 }}>+</span>
+            </button>
+            <div className={`faq-body ${open === i ? "open" : "closed"}`}>
+              <div style={{ paddingBottom:24 }}>
+                <p style={{ fontSize:14, color:G2, lineHeight:1.8 }}>{f.a}</p>
               </div>
             </div>
-          ))}
-        </div>
-      </Sec>
-    </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
-/* ─── footer ─────────────────────────────────────────────────────── */
+/* ─── Footer ─────────────────────────────────────────────────────── */
 function Footer() {
   return (
-    <footer style={{ borderTop: `1px solid ${BORDER}`, background: WHITE }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px 32px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 32, marginBottom: 48 }}>
-          <div style={{ maxWidth: 260 }}>
-            <img src={logoSrc} alt="Outleadrr" style={{ height: 32, width: "auto", marginBottom: 12 }} />
-            <p style={{ fontSize: 13, color: INK2, lineHeight: 1.6 }}>AI-powered lead generation and cold email outreach. Find your next 10 clients in seconds.</p>
+    <footer style={{ borderTop:`1px solid ${BDR}`, background:WHT }}>
+      <div style={{ maxWidth:1160, margin:"0 auto", padding:"56px 32px 36px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:40, marginBottom:56 }}>
+          <div style={{ maxWidth:240 }}>
+            <img src={logoSrc} alt="Outleadrr" style={{ height:30, width:"auto", marginBottom:14 }} />
+            <p style={{ fontSize:13, color:G2, lineHeight:1.7 }}>AI-powered lead generation and cold email outreach. Find your next 10 clients in seconds.</p>
           </div>
-          <div style={{ display: "flex", gap: 56, flexWrap: "wrap" }}>
+          <div style={{ display:"flex", gap:56, flexWrap:"wrap" }}>
             {[
-              { heading: "Product", links: [{ label: "How it works", href: "#features" }, { label: "Features", href: "#features" }, { label: "Pricing", href: "#pricing" }] },
-              { heading: "Account", links: [{ label: "Sign up", href: "/signup" }, { label: "Log in", href: "/login" }] },
-              { heading: "Legal", links: [{ label: "Privacy", href: "#" }, { label: "Terms", href: "#" }, { label: "Cookie Policy", href: "#" }] },
+              { heading:"Product", links:[{ label:"Features", href:"#features" }, { label:"Pricing", href:"#pricing" }, { label:"FAQ", href:"#faq" }] },
+              { heading:"Account", links:[{ label:"Sign up", href:"/signup" }, { label:"Log in", href:"/login" }] },
+              { heading:"Legal", links:[{ label:"Privacy", href:"#" }, { label:"Terms", href:"#" }] },
             ].map(col => (
               <div key={col.heading}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: INK3, marginBottom: 16 }}>{col.heading}</div>
-                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:G3, marginBottom:16 }}>{col.heading}</div>
+                <ul style={{ listStyle:"none", display:"flex", flexDirection:"column", gap:11 }}>
                   {col.links.map(l => (
-                    <li key={l.label}><a href={l.href} style={{ fontSize: 13, color: INK2, textDecoration: "none" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = INK)} onMouseLeave={e => (e.currentTarget.style.color = INK2)}>{l.label}</a></li>
+                    <li key={l.label}>
+                      <a href={l.href} style={{ fontSize:13, color:G2, textDecoration:"none", transition:"color 0.15s" }}
+                        onMouseEnter={e=>(e.currentTarget as HTMLElement).style.color=G1}
+                        onMouseLeave={e=>(e.currentTarget as HTMLElement).style.color=G2}
+                      >{l.label}</a>
+                    </li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
         </div>
-        <div style={{ height: 1, background: BORDER, marginBottom: 24 }} />
-        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <p style={{ fontSize: 12, color: INK3 }}>© {new Date().getFullYear()} Outleadrr. All rights reserved.</p>
-          <p style={{ fontSize: 12, color: INK3 }}>Built with ♥ and GPT</p>
+        <div style={{ height:1, background:BDR, marginBottom:24 }} />
+        <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+          <p style={{ fontSize:12, color:G3 }}>© {new Date().getFullYear()} Outleadrr. All rights reserved.</p>
+          <p style={{ fontSize:12, color:G3 }}>Built with AI · Powered by Google Maps + GPT</p>
         </div>
       </div>
     </footer>
   );
 }
 
-/* ─── landing page ───────────────────────────────────────────────── */
+/* ─── Dashboard (main export) ────────────────────────────────────── */
 export default function Dashboard() {
   return (
     <>
-      <style>{GLOBAL}</style>
+      <style>{CSS}</style>
+      <Navbar />
 
-      {/* ── navbar ─────────────────────────────────────────────── */}
-      <header style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER}`, position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 32px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <a href="/" style={{ textDecoration: "none" }}>
-            <img src={logoSrc} alt="Outleadrr" style={{ height: 32, width: "auto" }} />
-          </a>
-          <nav style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {["Features", "Pricing", "FAQ"].map(l => (
-              <a key={l} href={`#${l.toLowerCase()}`} style={{ fontSize: 13, fontWeight: 500, color: INK2, textDecoration: "none", padding: "6px 12px" }}
-                onMouseEnter={e => (e.currentTarget.style.color = INK)} onMouseLeave={e => (e.currentTarget.style.color = INK2)}>{l}</a>
-            ))}
-            <a href="/login" className="outline-btn" style={{ textDecoration: "none", marginLeft: 8 }}>Log in</a>
-            <a href="/signup" className="pill-btn" style={{ padding: "9px 22px", fontSize: 13, textDecoration: "none" }}>Sign up free</a>
-          </nav>
-        </div>
-      </header>
+      {/* ── HERO ──────────────────────────────────────────────── */}
+      <section style={{ padding:"120px 32px 0", textAlign:"center", overflow:"visible" }}>
+        <div style={{ maxWidth:840, margin:"0 auto" }}>
+          {/* Badge */}
+          <div className="h-in" style={{ animationDelay:"0.05s", display:"inline-flex", alignItems:"center", gap:7, padding:"6px 16px", borderRadius:99, background:G4, border:`1px solid ${BDR}`, fontSize:12, fontWeight:500, color:G2, marginBottom:32 }}>
+            <span className="pdot" style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block", flexShrink:0 }} />
+            AI-Powered B2B Lead Generation
+          </div>
 
-      {/* ── hero ───────────────────────────────────────────────── */}
-      <section style={{ textAlign: "center", padding: "96px 32px 72px", maxWidth: 780, margin: "0 auto" }}>
-        <div className="hero-fade" style={{ animationDelay: "0.05s", display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 14px", borderRadius: 99, background: WHITE, border: `1px solid ${BORDER}`, fontSize: 12, fontWeight: 500, color: INK2, marginBottom: 28, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-          AI-Powered · Qualified Leads in Seconds
-        </div>
-        <h1 className="hero-up" style={{ animationDelay: "0.1s", fontSize: "clamp(38px,6vw,68px)", fontWeight: 800, color: INK, letterSpacing: "-0.04em", lineHeight: 1.05, marginBottom: 22 }}>
-          The #1{" "}
-          <span style={{ color: ACCENT }}>AI Sales Tool</span>
-          <br />for Finding Clients
-        </h1>
-        <p className="hero-up" style={{ animationDelay: "0.2s", fontSize: 18, color: INK2, lineHeight: 1.65, maxWidth: 520, margin: "0 auto 36px" }}>
-          Enter a business type and city. Find qualified prospects with personalised cold emails — ready to send from your Gmail in one click.
-        </p>
-        <div className="hero-up" style={{ animationDelay: "0.28s", display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-          <a href="/signup" className="pill-btn" style={{ padding: "15px 38px", fontSize: 15, textDecoration: "none" }} data-testid="button-hero-cta">
-            Generate leads free →
-          </a>
-          <a href="/login" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "15px 28px", borderRadius: 99, background: "rgba(0,0,0,0.05)", color: INK2, fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
-            Log in
-          </a>
-        </div>
-        {/* stats row */}
-        <div className="hero-up stat-row" style={{ animationDelay: "0.38s", display: "flex", gap: 24, justifyContent: "center", marginTop: 40, flexWrap: "wrap" }}>
-          {[
-            { n: "2,000+", label: "businesses using it" },
-            { n: "30 sec", label: "average to 10 leads" },
-            { n: "100%", label: "real Google Maps data" },
-          ].map(s => (
-            <div key={s.n} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: INK, letterSpacing: "-0.04em" }}>{s.n}</div>
-              <div style={{ fontSize: 12, color: INK3, marginTop: 2 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+          {/* Headline */}
+          <h1 className="h-up" style={{ animationDelay:"0.08s", fontSize:"clamp(42px,7vw,84px)", fontWeight:800, color:G1, letterSpacing:"-0.05em", lineHeight:0.97, marginBottom:28 }}>
+            Find your next<br />
+            <span style={{ color:"transparent", backgroundImage:`linear-gradient(135deg, ${IND} 0%, #a855f7 100%)`, WebkitBackgroundClip:"text", backgroundClip:"text" }}>10 clients</span>
+            <br />in 30 seconds.
+          </h1>
 
-      {/* ── mockup ─────────────────────────────────────────────── */}
-      <section className="hero-up" style={{ animationDelay: "0.36s", padding: "0 32px 0", maxWidth: 960, margin: "0 auto" }}>
-        <ProductMockup />
-      </section>
-
-      <div style={{ marginTop: 64 }}><SocialProof /></div>
-
-      <div id="features"><HowItWorks /></div>
-
-      <Features />
-
-      <Testimonials />
-
-      <div id="pricing"><Pricing /></div>
-
-      <FAQ />
-
-      {/* ── CTA section ────────────────────────────────────────── */}
-      <div style={{ background: INK, backgroundImage: "radial-gradient(ellipse at 60% 50%, rgba(99,102,241,0.25) 0%, transparent 70%)", padding: "80px 32px", textAlign: "center" }}>
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
-          <h2 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, color: WHITE, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 16 }}>
-            Ready to find your next clients?
-          </h2>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", marginBottom: 36 }}>
-            Start for free — no credit card required.
+          {/* Subtitle */}
+          <p className="h-up" style={{ animationDelay:"0.18s", fontSize:18, color:G2, lineHeight:1.7, maxWidth:500, margin:"0 auto 40px" }}>
+            Enter a business type and city. Get qualified prospects with personalised cold emails — ready to send from your Gmail in one click.
           </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="/signup" style={{ display: "inline-flex", alignItems: "center", padding: "14px 36px", borderRadius: 99, background: WHITE, color: INK, fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em", textDecoration: "none" }}
-              data-testid="button-cta-signup">
-              Create free account →
-            </a>
-            <a href="/login" style={{ display: "inline-flex", alignItems: "center", padding: "14px 28px", borderRadius: 99, background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 500, textDecoration: "none" }}>
-              Log in
-            </a>
+
+          {/* CTAs */}
+          <div className="h-up" style={{ animationDelay:"0.26s", display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+            <a href="/signup" className="btn-lg" style={{ textDecoration:"none" }}>Generate leads free →</a>
+            <a href="/login" className="btn-ghost" style={{ fontSize:15, padding:"15px 28px", borderRadius:12 }}>Log in</a>
+          </div>
+
+          {/* Stats row */}
+          <div className="h-up" style={{ animationDelay:"0.34s", display:"flex", gap:40, justifyContent:"center", marginTop:52, flexWrap:"wrap" }}>
+            {[{ n:"2,000+", l:"businesses using it" }, { n:"30 sec", l:"avg to 10 leads" }, { n:"100%", l:"real Google Maps data" }].map(s => (
+              <div key={s.n} style={{ textAlign:"center" }}>
+                <div style={{ fontSize:22, fontWeight:800, color:G1, letterSpacing:"-0.04em" }}>{s.n}</div>
+                <div style={{ fontSize:12, color:G3, marginTop:3 }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Hero mockup — full-width visual anchor */}
+        <div className="h-up" style={{ animationDelay:"0.42s", maxWidth:1060, margin:"72px auto 0", padding:"0 20px", position:"relative" }}>
+          <HeroMockup />
+        </div>
+      </section>
+
+      {/* ── MARQUEE STRIP ─────────────────────────────────────── */}
+      <div style={{ borderTop:`1px solid ${BDR}`, borderBottom:`1px solid ${BDR}`, padding:"18px 0", marginTop:80, overflow:"hidden", background:G4 }}>
+        <div className="marquee-wrap">
+          <div className="marquee-track">
+            {[
+              "Real Google Maps data",
+              "AI-written cold emails",
+              "One-click Gmail sending",
+              "Lead scoring 0–100",
+              "Export to CSV",
+              "Any niche, any city",
+              "10 leads in 30 seconds",
+              "No fake contacts",
+              "Real Google Maps data",
+              "AI-written cold emails",
+              "One-click Gmail sending",
+              "Lead scoring 0–100",
+              "Export to CSV",
+              "Any niche, any city",
+              "10 leads in 30 seconds",
+              "No fake contacts",
+            ].map((t, i) => (
+              <div key={i} style={{ display:"inline-flex", alignItems:"center", gap:10, flexShrink:0 }}>
+                <span style={{ fontSize:13, fontWeight:500, color:G2, whiteSpace:"nowrap" }}>{t}</span>
+                <span style={{ color:G3, fontSize:16 }}>·</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* ── BENTO FEATURE GRID ───────────────────────────────── */}
+      <Bento />
+
+      {/* ── COMPARISON ───────────────────────────────────────── */}
+      <Comparison />
+
+      {/* ── 3 STEPS ──────────────────────────────────────────── */}
+      <Steps />
+
+      {/* ── STATS ────────────────────────────────────────────── */}
+      <Stats />
+
+      {/* ── TESTIMONIALS ─────────────────────────────────────── */}
+      <Testimonials />
+
+      {/* ── PRICING ──────────────────────────────────────────── */}
+      <Pricing />
+
+      {/* ── FAQ ──────────────────────────────────────────────── */}
+      <FAQ />
+
+      {/* ── FINAL CTA ────────────────────────────────────────── */}
+      <section style={{ padding:"120px 32px", background:BLK, backgroundImage:"radial-gradient(ellipse at 60% 50%, rgba(99,102,241,0.2) 0%, transparent 68%)", textAlign:"center" }}>
+        <A style={{ maxWidth:560, margin:"0 auto" }}>
+          <h2 style={{ fontSize:"clamp(32px,5vw,56px)", fontWeight:800, color:WHT, letterSpacing:"-0.05em", lineHeight:1.0, marginBottom:18 }}>
+            Ready to find your<br />next clients?
+          </h2>
+          <p style={{ fontSize:17, color:"rgba(255,255,255,0.45)", marginBottom:44, lineHeight:1.65 }}>
+            Start for free — no credit card required.
+          </p>
+          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+            <a href="/signup" style={{ display:"inline-flex", alignItems:"center", padding:"16px 40px", borderRadius:12, background:WHT, color:BLK, fontSize:15, fontWeight:700, letterSpacing:"-0.02em", textDecoration:"none", transition:"all 0.2s" }}
+              onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.transform="translateY(-2px)";(e.currentTarget as HTMLElement).style.boxShadow="0 10px 36px rgba(255,255,255,0.2)";}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform="none";(e.currentTarget as HTMLElement).style.boxShadow="none";}}
+            >
+              Create free account →
+            </a>
+            <a href="/login" style={{ display:"inline-flex", alignItems:"center", padding:"15px 32px", borderRadius:12, background:"rgba(255,255,255,0.07)", color:"rgba(255,255,255,0.6)", fontSize:14, fontWeight:500, textDecoration:"none", border:"1px solid rgba(255,255,255,0.1)", transition:"all 0.15s" }}
+              onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.12)";(e.currentTarget as HTMLElement).style.color="rgba(255,255,255,0.85)";}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.07)";(e.currentTarget as HTMLElement).style.color="rgba(255,255,255,0.6)";}}
+            >
+              Log in
+            </a>
+          </div>
+        </A>
+      </section>
 
       <Footer />
     </>
