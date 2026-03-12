@@ -113,11 +113,11 @@ const CSS = `
 
   /* Neumorphic key shapes for CTA section */
   .neu-key {
-    border-radius: 24px;
-    background: linear-gradient(145deg, #ebe8ff, #d8d4f5);
-    box-shadow: 6px 6px 16px rgba(99,102,241,0.18), -4px -4px 12px rgba(255,255,255,0.9);
+    border-radius: 22px;
+    background: linear-gradient(145deg, #f8fafc, #e8edf5);
+    box-shadow: 5px 5px 14px rgba(15,23,42,0.1), -3px -3px 10px rgba(255,255,255,1);
     display: flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.85);
   }
 
   @media(max-width:1024px){
@@ -231,9 +231,11 @@ function Navbar() {
       transition: "border-color 0.3s ease",
     }}>
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 48px", height: 68, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {/* Logo */}
-        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <img src={logoSrc} alt="Outleadrr" style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }} />
+        {/* Logo — image has built-in padding so we clip via overflow */}
+        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <div style={{ height: 36, overflow: "hidden", display: "flex", alignItems: "center" }}>
+            <img src={logoSrc} alt="Outleadrr" style={{ height: 130, width: "auto", objectFit: "contain", marginTop: -47, marginBottom: -47, display: "block" }} />
+          </div>
         </a>
         {/* Nav links */}
         <nav className="nav-links" style={{ display: "flex", alignItems: "center", gap: 0 }}>
@@ -321,13 +323,13 @@ function Hero() {
         </div>
         {/* Headline */}
         <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(52px,7.2vw,92px)", fontWeight: 900, color: G1, letterSpacing: "-0.058em", lineHeight: 0.93, marginBottom: 32 }}>
-          Your next 10 clients<br />
-          <span className="grad-text">are already on</span><br />
-          Google Maps.
+          10 leads.<br />
+          <span className="grad-text">1 click to send.</span><br />
+          30 seconds.
         </h1>
         {/* Subline */}
         <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 18, color: G2, lineHeight: 1.72, maxWidth: 480, margin: "0 auto 48px" }}>
-          We find them, write personalised cold emails, and send from your own Gmail — all in under 30 seconds.
+          Type a business type and city. We find real prospects from Google Maps, write personalised cold emails with AI, and send them from your own Gmail.
         </p>
         {/* CTAs */}
         <div className="h-up" style={{ animationDelay: "0.28s", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -852,7 +854,7 @@ function FAQ() {
 /* ─── Cluely-style CTA section ───────────────────────────────────── */
 function FinalCTA() {
   return (
-    <section style={{ padding: "160px 48px", background: "linear-gradient(160deg, #f5f3ff 0%, #ede9fe 40%, #faf5ff 100%)", position: "relative", overflow: "hidden", textAlign: "center" }}>
+    <section style={{ padding: "160px 48px", background: WHT, borderTop: `1px solid ${BDR}`, position: "relative", overflow: "hidden", textAlign: "center" }}>
       {/* Floating neumorphic key shapes */}
       <div className="neu-key" style={{ position: "absolute", top: "8%", left: "7%", width: 110, height: 110, animation: "shimKeyA 6s ease-in-out infinite" }}>
         <div style={{ textAlign: "center" }}>
@@ -891,22 +893,18 @@ function FinalCTA() {
 
       {/* Text */}
       <div style={{ position: "relative", zIndex: 1, maxWidth: 580, margin: "0 auto" }}>
-        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(99,102,241,0.6)", marginBottom: 20 }}>Get started today</p>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: G3, marginBottom: 20 }}>Get started today</p>
         <h2 style={{ fontSize: "clamp(36px,5.5vw,66px)", fontWeight: 900, color: G1, letterSpacing: "-0.055em", lineHeight: 0.95, marginBottom: 22 }}>
           Your next clients<br />are already on<br />Google Maps.
         </h2>
-        <p style={{ fontSize: 17, color: G2, marginBottom: 48, lineHeight: 1.7, maxWidth: 420, margin: "0 auto 48px" }}>
+        <p style={{ fontSize: 17, color: G2, lineHeight: 1.7, maxWidth: 420, margin: "0 auto 48px" }}>
           Find them, email them, and close them. Start free today — no credit card required.
         </p>
         <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
           <a href="/signup" className="btn-primary" style={{ padding: "17px 48px", fontSize: 16 }}>
             Get started free →
           </a>
-          <a href="/login" style={{ display: "inline-flex", alignItems: "center", padding: "16px 28px", borderRadius: 12, background: "rgba(99,102,241,0.08)", color: IND, fontSize: 15, fontWeight: 600, textDecoration: "none", border: "1.5px solid rgba(99,102,241,0.2)", transition: "all 0.2s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.14)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(99,102,241,0.08)"; }}>
-            Log in
-          </a>
+          <a href="/login" className="btn-ghost">Log in</a>
         </div>
       </div>
     </section>
