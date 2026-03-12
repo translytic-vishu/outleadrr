@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import OpenAI from "openai";
 import bcrypt from "bcrypt";
 import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
@@ -10,10 +11,12 @@ import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./place
 import { storage } from "./storage";
 import { z } from "zod";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+function getOpenAI() {
+  return new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "placeholder",
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
+  });
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -26,6 +29,18 @@ declare module "express-session" {
 }
 
 const MemStore = MemoryStore(session);
+const PgSession = connectPgSimple(session);
+
+function buildSessionStore() {
+  if (process.env.DATABASE_URL) {
+    return new PgSession({
+      conString: process.env.DATABASE_URL,
+      tableName: "session",
+      createTableIfMissing: true,
+    });
+  }
+  return new MemStore({ checkPeriod: 86400000 });
+}
 
 /* ─── auth middleware ─────────────────────────────────────────────── */
 function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -41,9 +56,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       secret: process.env.SESSION_SECRET || "ai-sales-agent-secret-key",
       resave: false,
       saveUninitialized: false,
-      store: new MemStore({ checkPeriod: 86400000 }),
+      store: buildSessionStore(),
       cookie: {
         secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       },
     })
@@ -214,7 +230,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }).join("\n\n");
 
       /* ── 5. Use OpenAI only for contact person + cold email ──────── */
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAI().chat.completions.create({
         model: "gpt-5.1",
         messages: [
           {
