@@ -208,7 +208,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Invalid input", details: parsed.error.issues });
       }
 
-      const { businessType, location } = parsed.data;
+      const { businessType, location, intent, leadCount = 10, tone = "professional" } = parsed.data;
 
       /* ── 1. Require Google Places API key ────────────────────────── */
       if (!process.env.GOOGLE_PLACES_API_KEY) {
@@ -219,7 +219,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       /* ── 2. Search Google Places for real businesses ─────────────── */
-      const searchResults = await searchPlaces(`${businessType} in ${location}`);
+      const allResults = await searchPlaces(`${businessType} in ${location}`);
+      const searchResults = allResults.slice(0, leadCount);
 
       if (searchResults.length === 0) {
         return res.status(404).json({
@@ -261,7 +262,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 - "title": a realistic job title (Owner, CEO, Founder, General Manager, etc.)
 - "email": if a website domain is available use firstname@domain (e.g. sarah@torresplumbing.com); otherwise construct a plausible one from the business name
 - "emailSubject": a compelling, specific cold email subject line (do NOT use generic phrases like "Quick question")
-- "emailBody": 150-200 word personalized cold email. Reference the actual business name and city. Professional, warm tone. Include a clear value proposition and specific call to action.
+- "emailBody": 150-200 word personalized cold email. Reference the actual business name and city. Include a clear value proposition and specific call to action.${intent ? ` The sender is pitching: "${intent}" — make every email relevant to this offering.` : ""}
+Tone: ${tone === "professional" ? "formal and business-focused" : tone === "friendly" ? "warm, conversational and approachable" : tone === "direct" ? "concise and straight to the point, no fluff" : "light, witty and memorable — make them smile"}.
 
 BUSINESSES:
 ${businessList}

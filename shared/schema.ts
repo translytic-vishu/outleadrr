@@ -32,6 +32,9 @@ export type MeResponse = z.infer<typeof meResponseSchema>;
 export const generateLeadsSchema = z.object({
   businessType: z.string().min(1),
   location: z.string().min(1),
+  intent: z.string().optional(),
+  leadCount: z.number().int().min(1).max(50).optional(),
+  tone: z.enum(["professional", "friendly", "direct", "humorous"]).optional(),
 });
 
 export const leadSchema = z.object({
