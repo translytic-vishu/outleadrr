@@ -68,37 +68,47 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   /* ─── User auth ─────────────────────────────────────────────────── */
 
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
-    const parsed = signupSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.issues[0].message });
+    try {
+      const parsed = signupSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.issues[0].message });
+      }
+      const { email, password } = parsed.data;
+      const existing = await storage.getUserByEmail(email);
+      if (existing) {
+        return res.status(409).json({ error: "An account with this email already exists" });
+      }
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await storage.createUser(email, passwordHash);
+      req.session.userId = user.id;
+      return res.status(201).json({ id: user.id, email: user.email });
+    } catch (e: any) {
+      console.error("Signup error:", e);
+      return res.status(500).json({ error: e.message || "Signup failed" });
     }
-    const { email, password } = parsed.data;
-    const existing = await storage.getUserByEmail(email);
-    if (existing) {
-      return res.status(409).json({ error: "An account with this email already exists" });
-    }
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await storage.createUser(email, passwordHash);
-    req.session.userId = user.id;
-    return res.status(201).json({ id: user.id, email: user.email });
   });
 
   app.post("/api/auth/login", async (req: Request, res: Response) => {
-    const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid email or password" });
+    try {
+      const parsed = loginSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid email or password" });
+      }
+      const { email, password } = parsed.data;
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      const match = await bcrypt.compare(password, user.passwordHash);
+      if (!match) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      req.session.userId = user.id;
+      return res.json({ id: user.id, email: user.email });
+    } catch (e: any) {
+      console.error("Login error:", e);
+      return res.status(500).json({ error: e.message || "Login failed" });
     }
-    const { email, password } = parsed.data;
-    const user = await storage.getUserByEmail(email);
-    if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-    req.session.userId = user.id;
-    return res.json({ id: user.id, email: user.email });
   });
 
   app.post("/api/auth/logout", (req: Request, res: Response) => {
@@ -107,14 +117,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: "Not authenticated" });
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const user = await storage.getUserById(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+      return res.json({ id: user.id, email: user.email });
+    } catch (e: any) {
+      console.error("Auth/me error:", e);
+      return res.status(500).json({ error: e.message || "Auth check failed" });
     }
-    const user = await storage.getUserById(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ error: "User not found" });
-    }
-    return res.json({ id: user.id, email: user.email });
   });
 
   /* ─── Google OAuth ─────────────────────────────────────────────── */
@@ -350,6 +365,14 @@ Return ONLY valid JSON. The "contacts" array must have exactly ${placeDetails.le
     const failed = results.filter((r) => !r.success).length;
 
     return res.json({ results, sent, failed, total: leads.length });
+  });
+
+  /* ─── Global error handler (prevents unhandled rejections from crashing lambda) */
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error("Express global error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message || "Internal server error" });
+    }
   });
 
   return httpServer;
