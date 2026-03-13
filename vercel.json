@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "npm run build && npx esbuild api/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=api/handler.cjs --external:pg-native --tsconfig=tsconfig.json",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "functions": {
-    "api/handler.cjs": {
+    "api/index.ts": {
       "memory": 1024,
       "maxDuration": 30
     }
@@ -11,11 +11,11 @@
   "rewrites": [
     {
       "source": "/api/auth/google/callback",
-      "destination": "/api/handler"
+      "destination": "/api/index"
     },
     {
       "source": "/api/:path*",
-      "destination": "/api/handler"
+      "destination": "/api/index"
     },
     {
       "source": "/(.*)",
