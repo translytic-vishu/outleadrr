@@ -13,4 +13,4 @@ vite.config.ts.*
 # Replit
 .replit
 replit.nix
-.local/
+.local/api/handler.cjs
