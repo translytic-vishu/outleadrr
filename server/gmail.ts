@@ -8,16 +8,23 @@ const SCOPES = [
 ];
 
 export function getOAuthClient() {
-  let redirectUri = "http://localhost:5000/api/auth/google/callback";
+  // APP_URL must be set in Vercel environment variables to your stable production URL
+  // e.g. APP_URL=https://outleadrr.vercel.app
+  let redirectUri: string;
 
   if (process.env.APP_URL) {
-    // Explicit production URL — set APP_URL=https://yourdomain.vercel.app in Vercel env vars
     redirectUri = `${process.env.APP_URL}/api/auth/google/callback`;
   } else if (process.env.REPLIT_DOMAINS) {
     redirectUri = `https://${process.env.REPLIT_DOMAINS}/api/auth/google/callback`;
-  } else if (process.env.VERCEL_URL) {
-    // Auto-injected by Vercel on every deployment
-    redirectUri = `https://${process.env.VERCEL_URL}/api/auth/google/callback`;
+  } else {
+    // Local dev fallback
+    redirectUri = "http://localhost:5000/api/auth/google/callback";
+  }
+
+  console.log("[OAuth] redirect_uri:", redirectUri);
+
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set");
   }
 
   return new google.auth.OAuth2(

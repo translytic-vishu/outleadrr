@@ -120,11 +120,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   /* ─── Google OAuth ─────────────────────────────────────────────── */
 
   app.get("/api/auth/google", (_req: Request, res: Response) => {
-    res.redirect(getAuthUrl());
+    try { res.redirect(getAuthUrl()); }
+    catch (e) { console.error("getAuthUrl error:", e); res.status(500).json({ error: String(e) }); }
   });
 
   app.get("/api/auth/google-login", (_req: Request, res: Response) => {
-    res.redirect(getLoginAuthUrl());
+    try { res.redirect(getLoginAuthUrl()); }
+    catch (e) { console.error("getLoginAuthUrl error:", e); res.status(500).json({ error: String(e) }); }
   });
 
   app.get("/api/auth/google/callback", async (req: Request, res: Response) => {
