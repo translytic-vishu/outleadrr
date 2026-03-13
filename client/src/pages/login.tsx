@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import logoSrc from "@assets/outleadr_1773257073565.png";
+import { AuthNav, AuthFooter } from "@/components/site-nav";
 
 const S = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 const INK = "#0f0f0f";
@@ -84,17 +84,7 @@ export default function Login() {
       `}</style>
 
       <div className="auth-bg" />
-
-      {/* Navbar */}
-      <header style={{ position: "relative", zIndex: 10, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER}`, height: 60, display: "flex", alignItems: "center", padding: "0 32px", justifyContent: "space-between" }}>
-        <a href="/" style={{ textDecoration: "none" }}>
-          <img src={logoSrc} alt="Outleadrr" style={{ height: 32, width: "auto" }} />
-        </a>
-        <a href="/" style={{ fontSize: 13, color: INK2, textDecoration: "none", display: "flex", alignItems: "center", gap: 5 }}
-          onMouseEnter={e => (e.currentTarget.style.color = INK)} onMouseLeave={e => (e.currentTarget.style.color = INK2)}>
-          ← Back to home
-        </a>
-      </header>
+      <AuthNav />
 
       {/* Card */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", position: "relative", zIndex: 10 }}>
@@ -139,12 +129,13 @@ export default function Login() {
 
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 14, color: INK2 }}>
             Don't have an account?{" "}
-            <a href="/signup" style={{ color: INK, fontWeight: 700, textDecoration: "none", borderBottom: "1px solid rgba(0,0,0,0.15)" }}>
+            <a href="/signup" style={{ color: ACCENT, fontWeight: 700, textDecoration: "none" }}>
               Sign up free →
             </a>
           </p>
         </div>
       </div>
+      <AuthFooter />
     </div>
   );
 }

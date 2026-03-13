@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import logoSrc from "@assets/outleadr_1773257073565.png";
+import { AppNav } from "@/components/site-nav";
 
 /* ─── Design tokens ───────────────────────────────────────────────── */
 const FONT  = "'Inter', 'Helvetica Neue', Arial, sans-serif";
@@ -499,49 +499,37 @@ export default function App() {
       <style>{GLOBAL}</style>
       {sendData && <SendResultsPanel data={sendData} onClose={() => setSendData(null)} />}
 
-      {/* ── Navbar ──────────────────────────────────────────────── */}
-      <header style={{ background:"rgba(255,255,255,.95)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",borderBottom:`1px solid ${BDR}`,position:"sticky",top:0,zIndex:50 }}>
-        <div style={{ maxWidth:1160,margin:"0 auto",padding:"0 32px",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16 }}>
-          <a href="/" style={{ textDecoration:"none",flexShrink:0 }}>
-            <div style={{ height:32,overflow:"hidden",display:"flex",alignItems:"center" }}>
-              <img src={logoSrc} alt="Outleadrr" style={{ height:120,width:"auto",objectFit:"contain",marginTop:-44,marginBottom:-44,display:"block" }} />
-            </div>
-          </a>
-          <nav style={{ display:"flex",alignItems:"center",gap:10,flexWrap:"wrap" }}>
-            <span style={{ fontSize:13,color:INK3 }}>{me.email}</span>
-            {auth?.connected ? (
-              <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                <span style={{ fontSize:12,color:"#16a34a",display:"flex",alignItems:"center",gap:5 }}>
-                  <span style={{ width:7,height:7,borderRadius:"50%",background:"#22c55e",display:"inline-block" }} />{auth.email}
-                </span>
-                <button className="outline-btn" onClick={() => disconnectMutation.mutate()} style={{ fontSize:12,padding:"5px 12px" }}>Disconnect Gmail</button>
-              </div>
-            ) : (
-              <a href="/api/auth/google" className="send-btn" style={{ textDecoration:"none",fontSize:13,padding:"7px 16px" }}>Connect Gmail →</a>
-            )}
-            <button className="outline-btn" onClick={() => logoutMutation.mutate()} style={{ color:INK3,fontSize:12,padding:"5px 12px" }}>Log out</button>
-          </nav>
-        </div>
-      </header>
+      <AppNav
+        email={me.email}
+        gmailStatus={auth ?? null}
+        onDisconnectGmail={() => disconnectMutation.mutate()}
+        onLogout={() => logoutMutation.mutate()}
+        disconnecting={disconnectMutation.isPending}
+        loggingOut={logoutMutation.isPending}
+      />
 
       {/* ── Page Title ───────────────────────────────────────────── */}
-      <div style={{ borderBottom:`1px solid ${BDR}`,background:WHITE }}>
-        <div style={{ maxWidth:1160,margin:"0 auto",padding:"26px 32px" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:5 }}>
-            <div style={{ width:36,height:36,borderRadius:10,background:IND_L,border:`1.5px solid ${IND_M}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18 }}>🎯</div>
-            <h1 style={{ fontSize:22,fontWeight:800,color:INK,letterSpacing:"-.03em" }}>Lead Generator</h1>
+      <div style={{ background:`linear-gradient(135deg,${WHITE} 0%,#f3f4ff 100%)`,borderBottom:`1px solid ${BDR}` }}>
+        <div style={{ maxWidth:1200,margin:"0 auto",padding:"32px 36px" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:14,marginBottom:8 }}>
+            <div style={{ width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${IND},#818cf8)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:"0 4px 14px rgba(99,102,241,.35)" }}>🎯</div>
+            <div>
+              <h1 style={{ fontSize:26,fontWeight:900,color:INK,letterSpacing:"-.04em",lineHeight:1 }}>Lead Generator</h1>
+              <p style={{ fontSize:13,color:INK2,marginTop:4 }}>Find businesses, score them, and send AI-crafted cold emails in seconds.</p>
+            </div>
           </div>
-          <p style={{ fontSize:14,color:INK2,paddingLeft:48 }}>Find businesses, score them, and send personalised cold emails — all in one click.</p>
         </div>
       </div>
 
       {/* ── Campaign Setup Form ──────────────────────────────────── */}
-      <div style={{ maxWidth:1160,margin:"0 auto",padding:"28px 32px 0" }}>
-        <div style={{ background:WHITE,borderRadius:18,border:`1px solid ${BDR}`,boxShadow:"0 2px 12px rgba(0,0,0,.05),0 8px 32px rgba(0,0,0,.04)",overflow:"hidden" }}>
+      <div style={{ maxWidth:1200,margin:"0 auto",padding:"28px 36px 0" }}>
+        <div style={{ background:WHITE,borderRadius:20,border:`1px solid ${BDR}`,boxShadow:"0 4px 24px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.04)",overflow:"hidden" }}>
           {/* Form header */}
-          <div style={{ padding:"18px 24px 0",borderBottom:`1px solid ${BDR}` }}>
-            <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:16 }}>
-              <span style={{ fontSize:11,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:IND }}>Campaign Setup</span>
+          <div style={{ padding:"20px 28px 16px",borderBottom:`1px solid ${BDR}`,background:`linear-gradient(90deg,${IND_L},transparent)` }}>
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ width:6,height:22,borderRadius:3,background:IND }} />
+              <span style={{ fontSize:13,fontWeight:700,letterSpacing:".04em",color:INK }}>Campaign Setup</span>
+              <span style={{ fontSize:12,color:INK3,marginLeft:4 }}>— Describe your offer, choose your targets, hit send.</span>
             </div>
           </div>
 
@@ -607,7 +595,7 @@ export default function App() {
 
       {/* ── API key missing banner ───────────────────────────────── */}
       {apiKeyMissing && (
-        <div style={{ maxWidth:1160,margin:"20px auto 0",padding:"0 32px" }}>
+        <div style={{ maxWidth:1200,margin:"20px auto 0",padding:"0 36px" }}>
           <div style={{ background:"#fefce8",border:"1px solid #fde047",borderRadius:14,padding:"18px 22px",display:"flex",gap:14,alignItems:"flex-start" }}>
             <span style={{ fontSize:20,flexShrink:0 }}>🔑</span>
             <div>
@@ -623,7 +611,7 @@ export default function App() {
 
       {/* ── Loading / Progress ───────────────────────────────────── */}
       {generateMutation.isPending && (
-        <div style={{ maxWidth:1160,margin:"28px auto 0",padding:"0 32px" }}>
+        <div style={{ maxWidth:1200,margin:"28px auto 0",padding:"0 36px" }}>
           <div style={{ background:WHITE,borderRadius:18,border:`1px solid ${BDR}`,padding:"4px 32px 32px",boxShadow:"0 2px 12px rgba(0,0,0,.04)" }}>
             <ProgressSteps active={generateMutation.isPending} />
             <div style={{ display:"flex",flexDirection:"column",gap:12,marginTop:20 }}>
@@ -635,24 +623,26 @@ export default function App() {
 
       {/* ── Results ─────────────────────────────────────────────── */}
       {result && !generateMutation.isPending && (
-        <div ref={resultsRef} style={{ maxWidth:1160,margin:"24px auto 80px",padding:"0 32px" }}>
+        <div ref={resultsRef} style={{ maxWidth:1200,margin:"24px auto 80px",padding:"0 36px" }}>
 
-          {/* Stats + Response Rate banner */}
+          {/* Stats cards */}
           {summaryStats && (() => {
             const rr = responseRate(summaryStats.avgScore);
+            const cards = [
+              { label:"Leads Found",    value:String(summaryStats.total),         sub:"businesses",      accent:IND,     bg:IND_L },
+              { label:"Avg Lead Score", value:String(summaryStats.avgScore),       sub:"out of 100",      accent:"#0ea5e9",bg:"#f0f9ff" },
+              { label:"Strong Leads",   value:String(summaryStats.strongCount),    sub:"ready to close",  accent:"#16a34a",bg:"#f0fdf4" },
+              { label:"Est. Response",  value:rr.label,                           sub:"avg reply rate",   accent:rr.color, bg:rr.bg },
+            ];
             return (
-              <div style={{ background:WHITE,borderRadius:14,border:`1px solid ${BDR}`,padding:"14px 22px",marginBottom:14,display:"flex",alignItems:"center",gap:24,flexWrap:"wrap",boxShadow:"0 1px 4px rgba(0,0,0,.04)" }}>
-                <span style={{ fontSize:13,color:INK2 }}><strong style={{ color:INK }}>{summaryStats.total}</strong> leads found</span>
-                <span style={{ color:BDR }}>|</span>
-                <span style={{ fontSize:13,color:INK2 }}>Avg score: <strong style={{ color:INK }}>{summaryStats.avgScore}</strong></span>
-                <span style={{ color:BDR }}>|</span>
-                <span style={{ fontSize:13,color:INK2 }}><strong style={{ color:"#16a34a" }}>{summaryStats.strongCount}</strong> Strong Leads</span>
-                <span style={{ color:BDR }}>|</span>
-                <span style={{ fontSize:13,color:INK2 }}><strong style={{ color:INK }}>{summaryStats.withPhone}</strong> with phone</span>
-                <div style={{ marginLeft:"auto",display:"flex",alignItems:"center",gap:8,background:rr.bg,border:`1px solid ${rr.color}22`,borderRadius:99,padding:"5px 14px" }}>
-                  <span style={{ fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".06em",color:rr.color }}>Est. Response Rate</span>
-                  <span style={{ fontSize:16,fontWeight:800,color:rr.color }}>{rr.label}</span>
-                </div>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16 }}>
+                {cards.map(c => (
+                  <div key={c.label} style={{ background:WHITE,borderRadius:14,border:`1px solid ${BDR}`,padding:"16px 20px",boxShadow:"0 1px 4px rgba(0,0,0,.04)" }}>
+                    <div style={{ fontSize:11,fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:INK3,marginBottom:8 }}>{c.label}</div>
+                    <div style={{ fontSize:26,fontWeight:900,color:c.accent,letterSpacing:"-.03em",lineHeight:1 }}>{c.value}</div>
+                    <div style={{ fontSize:12,color:INK3,marginTop:4 }}>{c.sub}</div>
+                  </div>
+                ))}
               </div>
             );
           })()}
