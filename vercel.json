@@ -2,12 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build && npx esbuild api/_index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=api/fn/index.js --external:pg-native --external:bufferutil --external:utf-8-validate --tsconfig=tsconfig.json",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/fn/index.js": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
     {
       "source": "/api/auth/google/callback",
