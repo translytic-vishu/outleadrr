@@ -32,13 +32,8 @@ const MemStore = MemoryStore(session);
 const PgSession = connectPgSimple(session);
 
 function buildSessionStore() {
-  if (process.env.DATABASE_URL) {
-    return new PgSession({
-      conString: process.env.DATABASE_URL,
-      tableName: "session",
-      createTableIfMissing: true,
-    });
-  }
+  // Use in-memory store for sessions — avoids blocking login if DB is unreachable.
+  // User data (accounts) still uses DATABASE_URL via storage.ts.
   return new MemStore({ checkPeriod: 86400000 });
 }
 
