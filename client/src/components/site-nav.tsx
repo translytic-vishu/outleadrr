@@ -110,18 +110,21 @@ export function AppNav({ email, gmailStatus, onDisconnectGmail, onLogout, discon
 
           {gmailStatus?.connected ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 99, padding: "4px 12px" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-                <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>{gmailStatus.email}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "6px 12px" }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7l3.5 3.5L12.5 3" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#16a34a", letterSpacing: ".06em", textTransform: "uppercase", lineHeight: 1 }}>Gmail Connected</div>
+                  <div style={{ fontSize: 11, color: "#166534", marginTop: 1 }}>{gmailStatus.email}</div>
+                </div>
               </div>
               <button
                 onClick={onDisconnectGmail}
                 disabled={disconnecting}
-                style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${BDR}`, background: WHITE, fontSize: 12, fontWeight: 600, color: INK2, cursor: "pointer", fontFamily: FONT, transition: "all .15s" }}
+                style={{ padding: "6px 12px", borderRadius: 7, border: `1px solid ${BDR}`, background: "rgba(255,255,255,.8)", fontSize: 11, fontWeight: 600, color: INK2, cursor: "pointer", fontFamily: FONT, transition: "all .15s", backdropFilter: "blur(8px)" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#dc2626"; (e.currentTarget as HTMLButtonElement).style.color = "#dc2626"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = BDR; (e.currentTarget as HTMLButtonElement).style.color = INK2; }}
               >
-                Disconnect Gmail
+                Disconnect
               </button>
             </div>
           ) : (
@@ -132,7 +135,7 @@ export function AppNav({ email, gmailStatus, onDisconnectGmail, onLogout, discon
               textDecoration: "none", fontFamily: FONT,
               boxShadow: "0 2px 8px rgba(99,102,241,.3)",
             }}>
-              Connect Gmail →
+              Connect Gmail
             </a>
           )}
 

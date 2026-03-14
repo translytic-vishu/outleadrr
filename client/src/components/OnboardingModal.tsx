@@ -164,7 +164,23 @@ function SlideScore() {
 }
 
 /* ── Slide 4: Gmail ───────────────────────────── */
-function SlideGmail() {
+function SlideGmail({ connected, gmailEmail }: { connected: boolean; gmailEmail?: string }) {
+  if (connected) {
+    return (
+      <div style={{ width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:16 }}>
+        <div style={{ width:60,height:60,borderRadius:"50%",background:"rgba(74,222,128,.1)",border:"1px solid rgba(74,222,128,.25)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M5 14l6 6L23 7" stroke="#4ade80" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+        <div style={{ textAlign:"center" }}>
+          <div style={{ fontSize:15,fontWeight:700,color:"#4ade80",marginBottom:4 }}>Gmail Connected</div>
+          <div style={{ fontSize:12,color:"rgba(255,255,255,.4)" }}>{gmailEmail}</div>
+        </div>
+        <div style={{ width:"100%",background:"rgba(74,222,128,.06)",border:"1px solid rgba(74,222,128,.15)",borderRadius:11,padding:"14px 18px",fontSize:13,color:"rgba(255,255,255,.6)",lineHeight:1.6,textAlign:"center" }}>
+          You're ready to send emails directly from your inbox. Recipients will see your real address.
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ width:"100%",display:"flex",flexDirection:"column",gap:12 }}>
       <div style={{ background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.08)",borderRadius:13,overflow:"hidden" }}>
@@ -183,13 +199,13 @@ function SlideGmail() {
       </div>
       <div style={{ background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.06)",borderRadius:11,padding:"2px 16px" }}>
         {[
-          { t:"Emails come from your real Gmail address, not a third-party sender" },
-          { t:"Better deliverability — recipients see your name, not a bulk tool" },
-          { t:"We only request send access and never read your inbox" },
-        ].map((c, i) => (
+          "Emails come from your real Gmail address, not a third-party sender",
+          "Better deliverability — recipients see your name, not a bulk tool",
+          "We only request send access and never read your inbox",
+        ].map((t, i) => (
           <div key={i} className="ob-check">
             <Chk />
-            <span style={{ fontSize:13,color:"rgba(255,255,255,.6)",lineHeight:1.55 }}>{c.t}</span>
+            <span style={{ fontSize:13,color:"rgba(255,255,255,.6)",lineHeight:1.55 }}>{t}</span>
           </div>
         ))}
       </div>
@@ -215,15 +231,15 @@ function SlideReady() {
   );
 }
 
-const SLIDES = [
-  { key:"welcome", title:"Welcome to Outleadrr",      sub:"Find real prospects, score them, and send personalized emails — all in one place.",     Comp: SlideWelcome },
-  { key:"find",    title:"Find businesses instantly",  sub:"Search any industry and city. We pull live results straight from Google Maps.",          Comp: SlideFind    },
-  { key:"score",   title:"Every lead gets a score",    sub:"Each business is ranked across five dimensions so you know exactly who to contact first.", Comp: SlideScore   },
-  { key:"gmail",   title:"Connect your Gmail",         sub:"Send emails directly from your inbox. One connection, and you're ready to go.",           Comp: SlideGmail   },
-  { key:"ready",   title:"You're all set",             sub:"Here's all you need to know to get started.",                                             Comp: SlideReady   },
+const SLIDE_DEFS = [
+  { key:"welcome", title:"Welcome to Outleadrr",      sub:"Find real prospects, score them, and send personalized emails — all in one place."      },
+  { key:"find",    title:"Find businesses instantly",  sub:"Search any industry and city. We pull live results straight from Google Maps."           },
+  { key:"score",   title:"Every lead gets a score",    sub:"Each business is ranked across five dimensions so you know exactly who to contact first."},
+  { key:"gmail",   title:"Connect your Gmail",         sub:"Send emails directly from your inbox. One connection, and you're ready to go."           },
+  { key:"ready",   title:"You're all set",             sub:"Here's all you need to know to get started."                                             },
 ];
 
-export function OnboardingModal() {
+export function OnboardingModal({ gmailConnected, gmailEmail }: { gmailConnected?: boolean; gmailEmail?: string }) {
   const [visible, setVisible] = useState(false);
   const [step,    setStep]    = useState(0);
   const [exiting, setExiting] = useState(false);
@@ -233,7 +249,7 @@ export function OnboardingModal() {
   const dismiss = () => { localStorage.setItem(STORAGE_KEY, "1"); setVisible(false); };
 
   const go = (dir: 1 | -1) => {
-    if (dir === 1 && step === SLIDES.length - 1) { dismiss(); return; }
+    if (dir === 1 && step === SLIDE_DEFS.length - 1) { dismiss(); return; }
     if (dir === -1 && step === 0) return;
     setExiting(true);
     setTimeout(() => { setStep(s => s + dir); setExiting(false); }, 230);
@@ -241,10 +257,19 @@ export function OnboardingModal() {
 
   if (!visible) return null;
 
-  const { title, sub, Comp } = SLIDES[step];
-  const isFirst = step === 0;
-  const isGmail = SLIDES[step].key === "gmail";
-  const isLast  = step === SLIDES.length - 1;
+  const { title, sub, key } = SLIDE_DEFS[step];
+  const isFirst  = step === 0;
+  const isGmail  = key === "gmail";
+  const isLast   = step === SLIDE_DEFS.length - 1;
+
+  const renderSlide = () => {
+    if (key === "welcome") return <SlideWelcome />;
+    if (key === "find")    return <SlideFind />;
+    if (key === "score")   return <SlideScore />;
+    if (key === "gmail")   return <SlideGmail connected={!!gmailConnected} gmailEmail={gmailEmail} />;
+    if (key === "ready")   return <SlideReady />;
+    return null;
+  };
 
   return (
     <>
@@ -275,19 +300,19 @@ export function OnboardingModal() {
             <h2 style={{ fontSize:22,fontWeight:800,color:"#fff",letterSpacing:"-.03em",lineHeight:1.15,marginBottom:7 }}>{title}</h2>
             <p style={{ fontSize:13,color:"rgba(255,255,255,.42)",lineHeight:1.6,maxWidth:360,margin:"0 auto" }}>{sub}</p>
           </div>
-          <Comp />
+          {renderSlide()}
         </div>
 
         {/* CTA */}
         <div style={{ padding:"10px 24px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:8 }}>
-          {isGmail ? (
+          {isGmail && !gmailConnected ? (
             <>
               <a href="/api/auth/google" className="ob-cta" style={{ textDecoration:"none",textAlign:"center" }}>Connect Gmail</a>
               <button className="ob-cta-outline" onClick={() => go(1)}>Skip for now</button>
             </>
           ) : (
             <button className="ob-cta" onClick={() => go(1)}>
-              {isLast ? "Start finding leads" : isFirst ? "Get started" : "Continue"}
+              {isLast ? "Start finding leads" : isFirst ? "Get started" : isGmail && gmailConnected ? "Continue" : "Continue"}
             </button>
           )}
         </div>

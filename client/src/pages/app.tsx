@@ -443,15 +443,15 @@ type SortKey    = "score-desc" | "score-asc" | "name";
 type FilterLbl  = "all" | "Strong Lead" | "Good Lead" | "Weak Lead";
 type Tone       = "professional" | "friendly" | "direct" | "humorous" | "persuasive" | "casual" | "consultative" | "bold";
 
-const PERSONAS: { key: Tone; name: string; label: string; color: string; avatar: string; desc: string }[] = [
-  { key:"professional", name:"Marcus", label:"Professional", color:"#6366f1", avatar:"M", desc:"Formal, polished, business-focused"   },
-  { key:"friendly",     name:"Sarah",  label:"Friendly",     color:"#10b981", avatar:"S", desc:"Warm, personable, conversational"      },
-  { key:"direct",       name:"Alex",   label:"Direct",       color:"#f59e0b", avatar:"A", desc:"Short, punchy, straight to value"      },
-  { key:"humorous",     name:"Jake",   label:"Humorous",     color:"#ec4899", avatar:"J", desc:"Witty, memorable, stands out"          },
-  { key:"persuasive",   name:"Emma",   label:"Persuasive",   color:"#0ea5e9", avatar:"E", desc:"Compelling, benefit-driven, converts"  },
-  { key:"casual",       name:"Ryan",   label:"Casual",       color:"#84cc16", avatar:"R", desc:"Relaxed, approachable, no formality"   },
-  { key:"consultative", name:"Lisa",   label:"Consultative", color:"#a78bfa", avatar:"L", desc:"Expert tone, advisory, trust-building" },
-  { key:"bold",         name:"Chris",  label:"Bold",         color:"#fb923c", avatar:"C", desc:"Confident, assertive, high energy"     },
+const PERSONAS: { key: Tone; name: string; label: string; color: string; photo: string; desc: string }[] = [
+  { key:"professional", name:"Marcus", label:"Professional", color:"#6366f1", photo:"https://randomuser.me/api/portraits/men/32.jpg",   desc:"Formal, polished, business-focused"   },
+  { key:"friendly",     name:"Sarah",  label:"Friendly",     color:"#10b981", photo:"https://randomuser.me/api/portraits/women/5.jpg",   desc:"Warm, personable, conversational"     },
+  { key:"direct",       name:"Alex",   label:"Direct",       color:"#f59e0b", photo:"https://randomuser.me/api/portraits/men/45.jpg",    desc:"Short, punchy, straight to value"     },
+  { key:"humorous",     name:"Jake",   label:"Humorous",     color:"#ec4899", photo:"https://randomuser.me/api/portraits/men/22.jpg",    desc:"Witty, memorable, stands out"         },
+  { key:"persuasive",   name:"Emma",   label:"Persuasive",   color:"#0ea5e9", photo:"https://randomuser.me/api/portraits/women/44.jpg",  desc:"Compelling, benefit-driven, converts" },
+  { key:"casual",       name:"Ryan",   label:"Casual",       color:"#84cc16", photo:"https://randomuser.me/api/portraits/men/8.jpg",     desc:"Relaxed, approachable, no formality"  },
+  { key:"consultative", name:"Lisa",   label:"Consultative", color:"#a78bfa", photo:"https://randomuser.me/api/portraits/women/68.jpg",  desc:"Expert tone, advisory, trust-building"},
+  { key:"bold",         name:"Chris",  label:"Bold",         color:"#fb923c", photo:"https://randomuser.me/api/portraits/men/71.jpg",    desc:"Confident, assertive, high energy"    },
 ];
 
 /* ── Persona Dropdown ─────────────────────────────────────────────── */
@@ -461,35 +461,35 @@ function PersonaDropdown({ value, onChange }: { value: Tone; onChange: (t: Tone)
   return (
     <div style={{ position:"relative" }}>
       <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderRadius:10,border:"1.5px solid #e2e2e6",background:W,cursor:"pointer",transition:"all .15s",minWidth:220,boxShadow:"0 1px 2px rgba(0,0,0,.04)" }}
+        style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,border:"1.5px solid #e2e2e6",background:"rgba(255,255,255,0.8)",cursor:"pointer",transition:"all .15s",minWidth:230,backdropFilter:"blur(8px)",boxShadow:"0 1px 4px rgba(0,0,0,.05)" }}
         onMouseEnter={e=>(e.currentTarget.style.borderColor=K)}
         onMouseLeave={e=>{ if(!open) e.currentTarget.style.borderColor="#e2e2e6"; }}>
-        <div style={{ width:28,height:28,borderRadius:8,background:selected.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0 }}>{selected.avatar}</div>
+        <img src={selected.photo} alt={selected.name} style={{ width:32,height:32,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:`2px solid ${selected.color}` }} />
         <div style={{ flex:1,textAlign:"left" }}>
           <div style={{ fontSize:13,fontWeight:700,color:K,lineHeight:1 }}>{selected.name}</div>
           <div style={{ fontSize:11,color:K3,marginTop:2 }}>{selected.label}</div>
         </div>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition:"transform .2s",transform:open?"rotate(180deg)":"none",flexShrink:0 }}>
-          <path d="M3 5l4 4 4-4" stroke={K3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ transition:"transform .2s",transform:open?"rotate(180deg)":"none",flexShrink:0 }}>
+          <path d="M2.5 4.5l4 4 4-4" stroke={K3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position:"fixed",inset:0,zIndex:10 }} />
-          <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:20,background:W,border:"1.5px solid #e2e2e6",borderRadius:12,boxShadow:"0 8px 32px rgba(0,0,0,.12)",overflow:"hidden" }}>
+          <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,minWidth:300,zIndex:20,background:"rgba(255,255,255,0.95)",border:"1.5px solid #e2e2e6",borderRadius:14,boxShadow:"0 12px 40px rgba(0,0,0,.13)",overflow:"hidden",backdropFilter:"blur(16px)" }}>
             {PERSONAS.map(p => (
               <button key={p.key} type="button"
                 onClick={() => { onChange(p.key); setOpen(false); }}
-                style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"11px 14px",background:p.key===value?"#f7f7f9":W,border:"none",cursor:"pointer",transition:"background .12s",textAlign:"left" }}
-                onMouseEnter={e=>(e.currentTarget.style.background="#f7f7f9")}
-                onMouseLeave={e=>(e.currentTarget.style.background=p.key===value?"#f7f7f9":W)}>
-                <div style={{ width:32,height:32,borderRadius:8,background:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",flexShrink:0 }}>{p.avatar}</div>
+                style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:p.key===value?"#f5f5f7":"transparent",border:"none",cursor:"pointer",transition:"background .1s",textAlign:"left" }}
+                onMouseEnter={e=>(e.currentTarget.style.background="#f5f5f7")}
+                onMouseLeave={e=>(e.currentTarget.style.background=p.key===value?"#f5f5f7":"transparent")}>
+                <img src={p.photo} alt={p.name} style={{ width:36,height:36,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:`2px solid ${p.color}` }} />
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13,fontWeight:700,color:K }}>{p.name} <span style={{ fontWeight:500,color:K3 }}>— {p.label}</span></div>
+                  <div style={{ fontSize:13,fontWeight:700,color:K }}>{p.name} <span style={{ fontWeight:400,color:K3,fontSize:12 }}>· {p.label}</span></div>
                   <div style={{ fontSize:11,color:K3,marginTop:1 }}>{p.desc}</div>
                 </div>
                 {p.key === value && (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke={K} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink:0 }}><path d="M2.5 7l3 3 6-6" stroke={K} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 )}
               </button>
             ))}
@@ -519,6 +519,7 @@ export default function App() {
 
   const [result,        setResult]        = useState<LeadsResponse|null>(null);
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [billingError,  setBillingError]  = useState(false);
   const [sendData,      setSendData]      = useState<SendEmailsResponse|null>(null);
   const [sendResults,   setSendResults]   = useState<Record<number,{success:boolean}>>({});
   const [sortBy,        setSortBy]        = useState<SortKey>("score-desc");
@@ -562,15 +563,16 @@ export default function App() {
       return res.json() as Promise<LeadsResponse>;
     },
     onSuccess: (data) => {
-      setApiKeyMissing(false); setResult(data); setSendData(null); setSendResults({}); setFilterLabel("all"); setSortBy("score-desc");
+      setApiKeyMissing(false); setBillingError(false); setResult(data); setSendData(null); setSendResults({}); setFilterLabel("all"); setSortBy("score-desc");
       const init: Record<number,{subject:string;body:string}> = {};
       data.leads.forEach(l => { init[l.id]={ subject:l.emailSubject, body:l.emailBody }; });
       setEditedEmails(init);
       setTimeout(()=>resultsRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),200);
     },
     onError: (err:any) => {
-      if (err.isApiKeyMissing) setApiKeyMissing(true);
-      else toast({ title:"Generation failed.", description:err.message, variant:"destructive" });
+      if (err.isApiKeyMissing) { setApiKeyMissing(true); return; }
+      if (err.message?.includes("REQUEST_DENIED") || err.message?.includes("Billing")) { setBillingError(true); return; }
+      toast({ title:"Generation failed.", description:err.message, variant:"destructive" });
     },
   });
 
@@ -643,7 +645,7 @@ export default function App() {
       <style>{GLOBAL}</style>
       <BgWave />
       <div style={{ position:"relative",zIndex:1 }}>
-      <OnboardingModal />
+      <OnboardingModal gmailConnected={auth?.connected} gmailEmail={auth?.email} />
       {sendData && <SendResultsPanel data={sendData} onClose={()=>setSendData(null)} />}
 
       <AppNav
@@ -747,14 +749,25 @@ export default function App() {
       {/* ── API key banner ───────────────────────────────────────── */}
       {apiKeyMissing && (
         <div style={{ width:"100%",padding:"20px 48px 0" }}>
-          <div style={{ background:"#fefce8",border:"1px solid #fde047",borderRadius:12,padding:"18px 22px",display:"flex",gap:12,alignItems:"flex-start" }}>
-            <div>
-              <div style={{ fontSize:13,fontWeight:700,color:"#854d0e",marginBottom:4 }}>Google Places API key required</div>
-              <p style={{ fontSize:12,color:"#92400e",lineHeight:1.6,margin:0 }}>
-                Add <code style={{ fontFamily:"monospace",background:"rgba(0,0,0,.06)",padding:"1px 5px",borderRadius:3 }}>GOOGLE_PLACES_API_KEY</code> to your environment.
-                Get one at <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" style={{ color:"#854d0e",fontWeight:700 }}>Google Cloud Console</a>.
-              </p>
-            </div>
+          <div style={{ background:"rgba(254,252,232,0.9)",border:"1px solid #fde047",borderRadius:12,padding:"18px 22px",backdropFilter:"blur(8px)" }}>
+            <div style={{ fontSize:13,fontWeight:700,color:"#854d0e",marginBottom:4 }}>Google Places API key required</div>
+            <p style={{ fontSize:12,color:"#92400e",lineHeight:1.6,margin:0 }}>
+              Add <code style={{ fontFamily:"monospace",background:"rgba(0,0,0,.06)",padding:"1px 5px",borderRadius:3 }}>GOOGLE_PLACES_API_KEY</code> to your Vercel environment variables.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Billing error banner ─────────────────────────────────── */}
+      {billingError && (
+        <div style={{ width:"100%",padding:"20px 48px 0" }}>
+          <div style={{ background:"rgba(255,241,242,0.9)",border:"1px solid #fecdd3",borderRadius:12,padding:"18px 22px",backdropFilter:"blur(8px)" }}>
+            <div style={{ fontSize:13,fontWeight:700,color:"#9f1239",marginBottom:6 }}>Google Cloud billing not enabled</div>
+            <p style={{ fontSize:12,color:"#be123c",lineHeight:1.7,margin:0 }}>
+              The Places API requires billing to be enabled on your Google Cloud project — even for free usage. You won't be charged until you exceed the $200/month free credit.
+              <br />
+              <strong>Fix:</strong> Go to <a href="https://console.cloud.google.com/billing" target="_blank" rel="noreferrer" style={{ color:"#9f1239",fontWeight:700 }}>Google Cloud Console → Billing</a>, link a billing account to your project, then try again.
+            </p>
           </div>
         </div>
       )}
