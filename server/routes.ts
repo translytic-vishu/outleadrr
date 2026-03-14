@@ -167,6 +167,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           user = await storage.createGoogleUser(userInfo.email, userInfo.id);
         }
         req.session.userId = user.id;
+        // Explicitly save session before redirect — critical in serverless
+        // (Lambda terminates after res is sent, async auto-save never completes)
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => (err ? reject(err) : resolve()));
+        });
         return res.redirect("/app");
       } else {
         /* ── Gmail connect ────────────────────────────────────── */
@@ -174,12 +179,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         req.session.gmailRefreshToken = refreshToken;
         req.session.gmailEmail = userInfo.email || "";
         req.session.gmailName = userInfo.name || "";
+        await new Promise<void>((resolve, reject) => {
+          req.session.save((err) => (err ? reject(err) : resolve()));
+        });
         return res.redirect("/app?connected=true");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("OAuth callback error:", err);
       const dest = state === "login" ? "/login" : "/app";
-      return res.redirect(`${dest}?error=oauth_failed`);
+      // Include error detail in URL so it's visible for debugging
+      const detail = encodeURIComponent((err?.message || String(err)).slice(0, 200));
+      return res.redirect(`${dest}?error=${detail}`);
     }
   });
 
