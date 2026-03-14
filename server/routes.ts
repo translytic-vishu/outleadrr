@@ -5,7 +5,7 @@ import MemoryStore from "memorystore";
 import connectPgSimple from "connect-pg-simple";
 import OpenAI from "openai";
 import bcrypt from "bcryptjs";
-import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
+import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema.js";
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail.js";
 import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places.js";
 import { storage } from "./storage.js";

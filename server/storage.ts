@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import type { User } from "@shared/schema";
+import type { User } from "../shared/schema.js";
 
 export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
