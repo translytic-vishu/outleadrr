@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const STORAGE_KEY = "outleadrr_onboarding_v3";
+const STORAGE_KEY = "outleadrr_onboarding_v5";
 const F = "'Inter','Helvetica Neue',Arial,sans-serif";
 
 const CSS = `
@@ -324,8 +324,8 @@ export function OnboardingModal({ gmailConnected, gmailEmail }: { gmailConnected
             onMouseLeave={e=>{ if(!isFirst)(e.currentTarget.style.color="rgba(255,255,255,.28)"); }}>
             Back
           </button>
-          <Dots n={SLIDES.length} i={step} />
-          <span style={{ fontSize:11,color:"rgba(255,255,255,.18)",minWidth:24,textAlign:"right" }}>{step+1}/{SLIDES.length}</span>
+          <Dots n={SLIDE_DEFS.length} i={step} />
+          <span style={{ fontSize:11,color:"rgba(255,255,255,.18)",minWidth:24,textAlign:"right" }}>{step+1}/{SLIDE_DEFS.length}</span>
         </div>
       </div>
     </>

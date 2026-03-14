@@ -6,7 +6,7 @@ import connectPgSimple from "connect-pg-simple";
 import OpenAI from "openai";
 import bcrypt from "bcryptjs";
 import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema.js";
-import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail.js";
+import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail, fetchInboxMessages } from "./gmail.js";
 import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places.js";
 import { storage } from "./storage.js";
 import { z } from "zod";
@@ -338,6 +338,9 @@ Return ONLY valid JSON. The "contacts" array must have exactly ${placeDetails.le
         contactName: z.string(),
       })
     ),
+    campaignName: z.string().optional(),
+    businessType: z.string().optional(),
+    location: z.string().optional(),
   });
 
   app.post("/api/send-emails", requireAuth, async (req: Request, res: Response) => {
@@ -350,7 +353,7 @@ Return ONLY valid JSON. The "contacts" array must have exactly ${placeDetails.le
       return res.status(400).json({ error: "Invalid request body" });
     }
 
-    const { leads } = parsed.data;
+    const { leads, campaignName, businessType, location } = parsed.data;
     const from = req.session.gmailEmail!;
     const accessToken = req.session.gmailAccessToken!;
     const refreshToken = req.session.gmailRefreshToken || "";
@@ -371,7 +374,52 @@ Return ONLY valid JSON. The "contacts" array must have exactly ${placeDetails.le
     const sent = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
 
+    // Persist campaign record
+    try {
+      await storage.createCampaign({
+        userId: req.session.userId!,
+        name: campaignName || `${businessType || "Campaign"} — ${location || ""}`.trim(),
+        businessType: businessType || "",
+        location: location || "",
+        totalLeads: leads.length,
+        sent,
+        failed,
+      });
+    } catch (e) {
+      console.error("Failed to save campaign:", e);
+    }
+
     return res.json({ results, sent, failed, total: leads.length });
+  });
+
+  /* ─── Campaigns (protected) ────────────────────────────────────── */
+
+  app.get("/api/campaigns", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const campaigns = await storage.getCampaigns(req.session.userId!);
+      return res.json({ campaigns });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ─── Gmail Inbox (protected) ──────────────────────────────────── */
+
+  app.get("/api/inbox", requireAuth, async (req: Request, res: Response) => {
+    if (!req.session.gmailAccessToken) {
+      return res.json({ messages: [], connected: false });
+    }
+    try {
+      const messages = await fetchInboxMessages(
+        req.session.gmailAccessToken,
+        req.session.gmailRefreshToken || "",
+        25
+      );
+      return res.json({ messages, connected: true });
+    } catch (e: any) {
+      console.error("Inbox fetch error:", e);
+      return res.status(500).json({ error: e.message });
+    }
   });
 
   /* ─── Global error handler (prevents unhandled rejections from crashing lambda) */

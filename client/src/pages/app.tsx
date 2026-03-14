@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -13,7 +13,6 @@ const K    = "#0a0a0a";
 const K2   = "#3a3a3a";
 const K3   = "#888";
 const K4   = "#c4c4c8";
-const BG   = "#f8f8f9";
 const BDR  = "rgba(0,0,0,0.07)";
 const BDR2 = "rgba(0,0,0,0.12)";
 const IND  = "#6366f1";
@@ -276,15 +275,18 @@ export default function AppPage() {
       toast({ title: "Gmail not connected", description: "Connect your Gmail account first", variant: "destructive" });
       return;
     }
-    sendMutation.mutate({ leads: selectedLeads });
+    sendMutation.mutate({
+      leads: selectedLeads,
+      campaignName: campaignName || undefined,
+      businessType: bizType || undefined,
+      location: location_ || undefined,
+    });
   };
 
   const toggleAll = () => {
     if (selected.size === leads.length) setSelected(new Set());
     else setSelected(new Set(leads.map((_, i) => i)));
   };
-
-  const activePersna = PERSONAS.find(p => p.tone === tone) || PERSONAS[0];
 
   return (
     <AppLayout>

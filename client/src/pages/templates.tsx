@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
 
 const F   = "'Inter','Helvetica Neue',Arial,sans-serif";
 const K   = "#0a0a0a";
@@ -10,148 +11,338 @@ const BG  = "#f8f8f9";
 const BDR = "rgba(0,0,0,0.07)";
 const IND = "#6366f1";
 
+const CSS = `
+  *,*::before,*::after{box-sizing:border-box;}textarea{font-family:${F};resize:none;}
+  @keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .tpl-card{transition:border-color .15s,box-shadow .15s;animation:fadeUp .3s ease both;}
+  .tpl-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.09)!important;}
+`;
+
 const TEMPLATES = [
   {
-    id: 1, name: "The Value-First Open",
-    tag: "Professional", uses: 47,
-    subject: "Quick question about {{Company}}'s growth",
-    preview: "Hi {{FirstName}}, I noticed {{Company}} has been expanding quickly in {{City}}. Most businesses at your stage run into [specific pain]. We've helped 40+ similar companies solve this with...",
+    id: 1, name: "The Value-First Open", tag: "Professional", tagColor: "#6366f1",
+    subject: "Quick question about {{Company}}'s growth plans",
+    body: `Hi {{FirstName}},
+
+I came across {{Company}} while looking into {{Industry}} businesses in {{City}} and was genuinely impressed by your work.
+
+Most businesses at your stage are focused on [specific challenge]. We've helped 40+ similar companies solve this with [specific approach], typically seeing [result] within the first 90 days.
+
+Would it be worth a 15-minute call this week to see if there's a fit?
+
+Best,
+{{YourName}}`,
+    uses: 94, tone: "Formal, credibility-led",
   },
   {
-    id: 2, name: "The Casual Check-in",
-    tag: "Friendly", uses: 31,
+    id: 2, name: "The Casual Check-in", tag: "Friendly", tagColor: "#10b981",
     subject: "Hey {{FirstName}} — thought of you",
-    preview: "Hey {{FirstName}}! Saw {{Company}} recently [event/achievement]. Really impressive. I work with businesses like yours to help with [specific value]. Any chance you'd be open to a quick chat?",
+    body: `Hey {{FirstName}}!
+
+Came across {{Company}} recently and genuinely love what you're building in {{City}}. The kind of business that's clearly doing things right.
+
+I work with businesses like yours to help with [specific value prop]. Nothing pushy — just thought it might be worth a quick chat if the timing's ever right.
+
+Are you open to a 10-minute call sometime this week?
+
+Cheers,
+{{YourName}}`,
+    uses: 67, tone: "Warm, peer-to-peer",
   },
   {
-    id: 3, name: "The Direct Ask",
-    tag: "Direct", uses: 28,
-    subject: "15 minutes to double {{Company}}'s [metric]?",
-    preview: "Hi {{FirstName}}, I'll keep it short. I help [industry] businesses [specific outcome]. Could save you [time/money]. Worth 15 minutes? Book here: [link]",
+    id: 3, name: "The Direct Ask", tag: "Direct", tagColor: "#f59e0b",
+    subject: "15 minutes to improve {{Company}}'s [metric]?",
+    body: `Hi {{FirstName}},
+
+I'll keep this short.
+
+I help {{Industry}} businesses in {{City}} [specific outcome]. Usually takes less than 30 days to see results.
+
+Worth 15 minutes? Book directly here: [calendar link]
+
+{{YourName}}`,
+    uses: 51, tone: "No-fluff, fast",
   },
   {
-    id: 4, name: "The Case Study",
-    tag: "Persuasive", uses: 19,
+    id: 4, name: "The Case Study Lead", tag: "Persuasive", tagColor: "#8b5cf6",
     subject: "How [Similar Company] got [result] in 90 days",
-    preview: "Hi {{FirstName}}, [Competitor/peer] was facing the same challenge as {{Company}}. After working with us, they [specific result with numbers]. I'd love to show you how we could do the same for {{Company}}...",
+    body: `Hi {{FirstName}},
+
+[Similar Company in {{City}}] was dealing with the exact same challenge {{Company}} is likely facing right now.
+
+After working with us for 90 days, they [specific measurable result]. Here's how we did it: [brief explanation].
+
+I think we could do the same for {{Company}}. Would you be open to a quick call to explore it?
+
+{{YourName}}`,
+    uses: 43, tone: "Proof-first, credible",
   },
   {
-    id: 5, name: "The Industry Insight",
-    tag: "Consultative", uses: 22,
-    subject: "{{Industry}} trend that's costing businesses like {{Company}}",
-    preview: "Hi {{FirstName}}, one thing I keep hearing from [industry] leaders is [insight]. Most businesses don't realize how much this is costing them. We've built a solution specifically for this...",
+    id: 5, name: "The Industry Insight", tag: "Consultative", tagColor: "#3b82f6",
+    subject: "One {{Industry}} trend that's affecting businesses like {{Company}}",
+    body: `Hi {{FirstName}},
+
+Something I keep hearing from {{Industry}} owners in {{City}}: [specific insight or trend].
+
+Most businesses don't realize how much this is costing them until it's too late. We've built a solution specifically around this — and the results have been strong.
+
+I'd love to share what we're seeing. Would a 20-minute call this week work for you?
+
+{{YourName}}`,
+    uses: 38, tone: "Advisory, thought-led",
   },
   {
-    id: 6, name: "The Bold Challenger",
-    tag: "Bold", uses: 14,
+    id: 6, name: "The Bold Challenger", tag: "Bold", tagColor: "#ef4444",
     subject: "Honest question for {{FirstName}} at {{Company}}",
-    preview: "{{FirstName}} — most [industry] businesses are leaving [money/opportunity] on the table and don't even know it. {{Company}} might be too. I can show you in under 10 minutes. Interested?",
+    body: `{{FirstName}} —
+
+Most {{Industry}} businesses in {{City}} are leaving [opportunity/money] on the table and don't even know it.
+
+{{Company}} might be too.
+
+I can show you in under 10 minutes. No slides, no pitch — just a straight conversation about what we're seeing.
+
+Worth it?
+
+{{YourName}}`,
+    uses: 29, tone: "Disruptive, confident",
+  },
+  {
+    id: 7, name: "The Problem Agitator", tag: "Persuasive", tagColor: "#8b5cf6",
+    subject: "Is {{Company}} dealing with [common pain]?",
+    body: `Hi {{FirstName}},
+
+One thing I hear constantly from {{Industry}} businesses: [common frustration or problem].
+
+It's not a new problem — but most solutions out there either cost too much or take too long to set up.
+
+We built something different. It's working well for businesses in {{City}} already.
+
+Happy to show you a quick demo — no strings attached.
+
+{{YourName}}`,
+    uses: 35, tone: "Pain-first, empathetic",
+  },
+  {
+    id: 8, name: "The Quick Win Offer", tag: "Direct", tagColor: "#f59e0b",
+    subject: "A free [deliverable] for {{Company}}",
+    body: `Hi {{FirstName}},
+
+I put together a free [specific deliverable — audit, analysis, report] for {{Company}} based on what I saw online.
+
+It covers [specific finding 1] and [specific finding 2] — both are quick wins your team could action this week.
+
+Want me to send it over? Takes 2 minutes to review.
+
+{{YourName}}`,
+    uses: 48, tone: "Generous, low-friction",
+  },
+  {
+    id: 9, name: "The Mutual Connection", tag: "Friendly", tagColor: "#10b981",
+    subject: "[Mutual connection] suggested I reach out",
+    body: `Hi {{FirstName}},
+
+[Mutual connection's name] mentioned you're the right person to talk to at {{Company}}.
+
+We recently helped [their business / similar business] with [result], and [mutual connection] thought it might be worth an introduction.
+
+Would you be open to a quick 15-minute call to see if there's a fit?
+
+{{YourName}}`,
+    uses: 22, tone: "Trust-transfer, warm",
+  },
+  {
+    id: 10, name: "The FOMO Play", tag: "Bold", tagColor: "#ef4444",
+    subject: "Your {{City}} competitors are already doing this",
+    body: `Hi {{FirstName}},
+
+I've been working with several {{Industry}} businesses in {{City}} recently, and there's a clear pattern emerging among the ones that are growing fastest.
+
+They all [specific thing they're doing].
+
+{{Company}} isn't on that list yet — but it could be.
+
+Would you be open to a 15-minute call to see what that would look like for you specifically?
+
+{{YourName}}`,
+    uses: 31, tone: "Competitive urgency",
+  },
+  {
+    id: 11, name: "The Referral Ask", tag: "Casual", tagColor: "#06b6d4",
+    subject: "Not for you — but maybe someone you know?",
+    body: `Hi {{FirstName}},
+
+I'll be upfront — this might not be relevant to you directly. But I help {{Industry}} businesses in {{City}} with [specific thing], and I'm looking to connect with a few more this quarter.
+
+If you know anyone who might benefit, I'd love an intro. Happy to return the favour.
+
+Either way, hope things are going well at {{Company}}.
+
+{{YourName}}`,
+    uses: 17, tone: "Disarming, indirect",
+  },
+  {
+    id: 12, name: "The Re-engagement", tag: "Friendly", tagColor: "#10b981",
+    subject: "Checking back in — still relevant?",
+    body: `Hi {{FirstName}},
+
+Reaching back out after a while — hope things are going well at {{Company}}.
+
+Last time we connected, [brief recap of context]. The timing wasn't quite right then, which is completely fine.
+
+I wanted to check in and see if anything has changed on your end. We've had some great results with {{Industry}} businesses in {{City}} recently and thought of you.
+
+Worth a quick catch-up?
+
+{{YourName}}`,
+    uses: 26, tone: "Re-engagement, respectful",
   },
 ];
 
-const TAG_COLORS: Record<string, string> = {
-  Professional: "#6366f1", Friendly: "#10b981", Direct: "#f59e0b",
-  Persuasive: "#8b5cf6", Consultative: "#3b82f6", Bold: "#ef4444",
-};
+const TAGS = ["All", "Professional", "Friendly", "Direct", "Persuasive", "Consultative", "Bold", "Casual"];
 
 export default function Templates() {
-  const [activeTemplate, setActiveTemplate] = useState<typeof TEMPLATES[0] | null>(null);
+  const [active, setActive] = useState<typeof TEMPLATES[0] | null>(null);
+  const [filter, setFilter] = useState("All");
+
+  const visible = filter === "All" ? TEMPLATES : TEMPLATES.filter(t => t.tag === filter);
 
   return (
     <AppLayout>
-      <style>{`*,*::before,*::after{box-sizing:border-box;}textarea{font-family:${F};resize:none;}`}</style>
+      <style>{CSS}</style>
+      <PageIntro config={PAGE_INTROS.templates} />
 
       <div style={{ padding: "28px 36px", fontFamily: F }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 22 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: K, letterSpacing: "-.03em" }}>Templates</h1>
-            <p style={{ fontSize: 13, color: K3, marginTop: 3 }}>Pre-built email templates for every situation and tone.</p>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: K, letterSpacing: "-.03em", marginBottom: 4 }}>Templates</h1>
+            <p style={{ fontSize: 13, color: K3 }}>{TEMPLATES.length} ready-to-use email frameworks. Click any to preview and use.</p>
           </div>
-          <button
-            style={{ padding: "9px 18px", borderRadius: 9, border: "none", background: K, color: W, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: F, boxShadow: "0 2px 8px rgba(0,0,0,.15)" }}
-          >
-            + New Template
-          </button>
         </div>
 
+        {/* Filter tabs */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 22, flexWrap: "wrap" }}>
+          {TAGS.map(tag => (
+            <button
+              key={tag}
+              onClick={() => setFilter(tag)}
+              style={{
+                padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${filter === tag ? IND : "#e4e4e8"}`,
+                background: filter === tag ? `${IND}0f` : W,
+                color: filter === tag ? IND : K3,
+                fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F,
+                transition: "all .15s",
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
-          {TEMPLATES.map(t => {
-            const tagColor = TAG_COLORS[t.tag] || "#6366f1";
-            return (
-              <div
-                key={t.id}
-                onClick={() => setActiveTemplate(t)}
-                style={{
-                  background: W, borderRadius: 14, border: `1px solid ${BDR}`,
-                  padding: "20px", cursor: "pointer",
-                  boxShadow: "0 1px 4px rgba(0,0,0,.05)",
-                  transition: "border-color .15s, box-shadow .15s",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = tagColor + "60"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 4px 20px rgba(0,0,0,.09)`; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = BDR; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 1px 4px rgba(0,0,0,.05)"; }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: K }}>{t.name}</div>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: tagColor + "18", color: tagColor, flexShrink: 0, marginLeft: 8 }}>{t.tag}</span>
-                </div>
-                <div style={{ fontSize: 12, color: K2, fontWeight: 600, marginBottom: 8 }}>Subject: <span style={{ fontWeight: 400, color: K3 }}>{t.subject}</span></div>
-                <div style={{ fontSize: 12, color: K3, lineHeight: 1.6, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" as any }}>{t.preview}</div>
-                <div style={{ marginTop: 14, fontSize: 11, color: K3 }}>Used {t.uses} times</div>
+          {visible.map((t, i) => (
+            <div
+              key={t.id}
+              className="tpl-card"
+              onClick={() => setActive(t)}
+              style={{
+                background: W, borderRadius: 14, border: `1px solid ${BDR}`,
+                padding: "20px", cursor: "pointer",
+                boxShadow: "0 1px 4px rgba(0,0,0,.04)",
+                animationDelay: `${i * 0.04}s`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: K, lineHeight: 1.3, flex: 1, marginRight: 8 }}>{t.name}</div>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${t.tagColor}15`, color: t.tagColor, flexShrink: 0 }}>{t.tag}</span>
               </div>
-            );
-          })}
+              <div style={{ fontSize: 11, color: K3, marginBottom: 10, fontStyle: "italic" }}>{t.tone}</div>
+              <div style={{ fontSize: 12, color: K2, fontWeight: 600, marginBottom: 6 }}>Subject:</div>
+              <div style={{ fontSize: 12, color: K3, marginBottom: 12, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any }}>{t.subject}</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: 11, color: K3 }}>Used {t.uses}×</div>
+                <div style={{ fontSize: 12, color: IND, fontWeight: 600 }}>Preview →</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Slide-in drawer */}
-      {activeTemplate && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 200,
-          background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)",
-          display: "flex", justifyContent: "flex-end",
-        }} onClick={() => setActiveTemplate(null)}>
+      {active && (
+        <>
+          <div
+            onClick={() => setActive(null)}
+            style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}
+          />
           <div
             style={{
-              width: 480, background: W, height: "100%", overflowY: "auto",
-              boxShadow: "-8px 0 40px rgba(0,0,0,.12)",
-              animation: "slideIn .2s ease",
+              position: "fixed", right: 0, top: 0, bottom: 0, zIndex: 201,
+              width: 500, background: W, overflowY: "auto",
+              boxShadow: "-8px 0 48px rgba(0,0,0,.12)",
+              animation: "slideIn .22s cubic-bezier(.16,1,.3,1)",
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            {/* Drawer header */}
+            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", position: "sticky", top: 0, background: W, zIndex: 1 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: K }}>{activeTemplate.name}</div>
-                <div style={{ fontSize: 12, color: K3, marginTop: 2 }}>{activeTemplate.tag} tone · Used {activeTemplate.uses} times</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: K }}>{active.name}</div>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: `${active.tagColor}15`, color: active.tagColor }}>{active.tag}</span>
+                </div>
+                <div style={{ fontSize: 12, color: K3 }}>{active.tone} · Used {active.uses} times</div>
               </div>
-              <button onClick={() => setActiveTemplate(null)} style={{ background: "none", border: "none", cursor: "pointer", color: K3, fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
+              <button onClick={() => setActive(null)} style={{ background: "none", border: "none", cursor: "pointer", color: K3, fontSize: 22, lineHeight: 1, padding: 4, marginTop: -2 }}>×</button>
             </div>
+
+            {/* Drawer body */}
             <div style={{ padding: "20px 24px" }}>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: K3, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Subject Line</div>
-                <div style={{ background: BG, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: K, fontWeight: 600, border: `1px solid ${BDR}` }}>{activeTemplate.subject}</div>
+              {/* Subject */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: K3, textTransform: "uppercase", letterSpacing: ".07em", marginBottom: 8 }}>Subject Line</div>
+                <div style={{ background: BG, borderRadius: 9, padding: "11px 14px", fontSize: 13, color: K, fontWeight: 600, border: `1px solid ${BDR}` }}>{active.subject}</div>
               </div>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: K3, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Body</div>
-                <div style={{ background: BG, borderRadius: 8, padding: "14px", fontSize: 13, color: K2, lineHeight: 1.65, border: `1px solid ${BDR}` }}>{activeTemplate.preview}</div>
+
+              {/* Body */}
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: K3, textTransform: "uppercase", letterSpacing: ".07em", marginBottom: 8 }}>Email Body</div>
+                <div style={{ background: BG, borderRadius: 9, padding: "14px 16px", fontSize: 13, color: K2, lineHeight: 1.7, border: `1px solid ${BDR}`, whiteSpace: "pre-wrap" }}>{active.body}</div>
               </div>
-              <div style={{ padding: "14px", background: IND + "0a", borderRadius: 10, border: `1px solid ${IND}22`, marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: IND, marginBottom: 4 }}>Dynamic Variables</div>
-                <div style={{ fontSize: 12, color: K2, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {["{{FirstName}}", "{{Company}}", "{{City}}", "{{Industry}}"].map(v => (
-                    <span key={v} style={{ background: IND + "18", color: IND, padding: "2px 8px", borderRadius: 5, fontWeight: 600 }}>{v}</span>
+
+              {/* Variables */}
+              <div style={{ background: `${IND}08`, borderRadius: 10, border: `1px solid ${IND}20`, padding: "14px 16px", marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: IND, marginBottom: 8 }}>Dynamic Variables</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {["{{FirstName}}", "{{Company}}", "{{City}}", "{{Industry}}", "{{YourName}}"].map(v => (
+                    <span key={v} style={{ background: `${IND}15`, color: IND, padding: "3px 9px", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{v}</span>
                   ))}
                 </div>
               </div>
+
+              {/* CTA */}
               <button
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: K, color: W, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: F, boxShadow: "0 2px 10px rgba(0,0,0,.12)" }}
+                onClick={() => setActive(null)}
+                style={{
+                  width: "100%", padding: "13px", borderRadius: 10, border: "none",
+                  background: K, color: W, fontSize: 14, fontWeight: 700,
+                  cursor: "pointer", fontFamily: F,
+                  boxShadow: "0 2px 10px rgba(0,0,0,.12)",
+                  transition: "all .15s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#222"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = K; }}
               >
-                Use This Template
+                Use This Template in Builder
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
-      <style>{`@keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}`}</style>
     </AppLayout>
   );
 }

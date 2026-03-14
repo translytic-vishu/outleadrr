@@ -2,6 +2,7 @@ import { google } from "googleapis";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/gmail.readonly",
   "openid",
   "email",
   "profile",
@@ -94,4 +95,42 @@ export async function sendEmailViaGmail(
   });
 
   return result.data;
+}
+
+export async function fetchInboxMessages(accessToken: string, refreshToken: string, maxResults = 20) {
+  const oauth2Client = getOAuthClient();
+  oauth2Client.setCredentials({ access_token: accessToken, refresh_token: refreshToken });
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  // Get list of inbox message IDs
+  const list = await gmail.users.messages.list({
+    userId: "me",
+    labelIds: ["INBOX"],
+    maxResults,
+  });
+
+  const messages = list.data.messages || [];
+  if (messages.length === 0) return [];
+
+  // Fetch full details for each message in parallel
+  const details = await Promise.all(
+    messages.map(m =>
+      gmail.users.messages.get({ userId: "me", id: m.id!, format: "metadata", metadataHeaders: ["From","Subject","Date"] })
+        .then(r => r.data)
+        .catch(() => null)
+    )
+  );
+
+  return details.filter(Boolean).map(msg => {
+    const headers = msg!.payload?.headers || [];
+    const get = (name: string) => headers.find(h => h.name === name)?.value || "";
+    return {
+      id: msg!.id!,
+      from: get("From"),
+      subject: get("Subject"),
+      date: get("Date"),
+      snippet: msg!.snippet || "",
+      isUnread: (msg!.labelIds || []).includes("UNREAD"),
+    };
+  });
 }
