@@ -8,6 +8,12 @@ import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import AppPage from "@/pages/app";
+import Campaigns from "@/pages/campaigns";
+import Inbox from "@/pages/inbox";
+import Templates from "@/pages/templates";
+import Leads from "@/pages/leads";
+import Analytics from "@/pages/analytics";
+import Settings from "@/pages/settings";
 
 function Router() {
   return (
@@ -16,6 +22,12 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/app" component={AppPage} />
+      <Route path="/campaigns" component={Campaigns} />
+      <Route path="/inbox" component={Inbox} />
+      <Route path="/templates" component={Templates} />
+      <Route path="/leads" component={Leads} />
+      <Route path="/analytics" component={Analytics} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

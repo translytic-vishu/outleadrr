@@ -254,7 +254,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       /* ── 5. Use OpenAI only for contact person + cold email ──────── */
       const completion = await getOpenAI().chat.completions.create({
-        model: "gpt-5.1",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
