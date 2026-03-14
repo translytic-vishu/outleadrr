@@ -64,19 +64,21 @@ const GLOBAL = `
   .ghost-btn{
     display:inline-flex;align-items:center;gap:6px;
     padding:7px 14px;border-radius:7px;
-    background:${W};color:${K2};border:1.5px solid #e2e2e6;
+    background:rgba(255,255,255,0.7);color:${K2};border:1.5px solid rgba(0,0,0,0.09);
     font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    box-shadow:0 1px 3px rgba(0,0,0,.06);
   }
-  .ghost-btn:hover{border-color:${K};color:${K};}
+  .ghost-btn:hover{border-color:${K};color:${K};background:rgba(255,255,255,0.9);}
   .ghost-btn:disabled{opacity:.4;cursor:not-allowed;}
   .send-btn{
     display:inline-flex;align-items:center;gap:6px;
     padding:8px 20px;border-radius:8px;border:none;
     background:${K};color:#fff;font-size:13px;font-weight:700;
     cursor:pointer;transition:all .2s;
-    box-shadow:0 2px 6px rgba(0,0,0,.18);
+    box-shadow:0 2px 8px rgba(0,0,0,.22);
   }
-  .send-btn:hover{background:#1c1c1c;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.24);}
+  .send-btn:hover{background:#1c1c1c;transform:translateY(-1px);box-shadow:0 5px 16px rgba(0,0,0,.28);}
   .send-btn:disabled{background:#ccc;cursor:not-allowed;box-shadow:none;transform:none;}
   .filter-pill{
     padding:6px 14px;border-radius:7px;border:1.5px solid #e2e2e6;
@@ -92,7 +94,55 @@ const GLOBAL = `
   }
 `;
 
-/* ─── Wave canvas (same as landing page) ─────────────────────────── */
+/* ─── Background wave (fixed, full page) ─────────────────────────── */
+function BgWave() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    let raf: number; let t = 0;
+    const waves = Array.from({ length: 10 }, (_, i) => ({
+      yFrac: 0.08 + (i / 10) * 0.88,
+      amp: 12 + (i % 3) * 9 + Math.random() * 8,
+      freq: 0.0012 + Math.random() * 0.002,
+      speed: 0.08 + Math.random() * 0.12,
+      phase: Math.random() * Math.PI * 2,
+      phase2: Math.random() * Math.PI * 2,
+      opacity: 0.018 + Math.random() * 0.025,
+    }));
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    const draw = () => {
+      const CW = canvas.offsetWidth, CH = canvas.offsetHeight;
+      ctx.clearRect(0, 0, CW, CH);
+      waves.forEach(w => {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(10,10,10,${w.opacity})`;
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= CW; x += 4) {
+          const y = CH * w.yFrac
+            + Math.sin(x * w.freq + t * w.speed + w.phase) * w.amp
+            + Math.sin(x * w.freq * 2.1 + t * w.speed * 1.3 + w.phase2) * (w.amp * 0.3);
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+      t += 0.004;
+      raf = requestAnimationFrame(draw);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+  return <canvas ref={ref} style={{ position:"fixed",inset:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,opacity:.6 }} />;
+}
+
+/* ─── Wave canvas (hero section) ─────────────────────────────────── */
 function WaveCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -393,12 +443,58 @@ type SortKey    = "score-desc" | "score-asc" | "name";
 type FilterLbl  = "all" | "Strong Lead" | "Good Lead" | "Weak Lead";
 type Tone       = "professional" | "friendly" | "direct" | "humorous";
 
-const TONES: { key: Tone; label: string }[] = [
-  { key:"professional", label:"Professional" },
-  { key:"friendly",     label:"Friendly"     },
-  { key:"direct",       label:"Direct"       },
-  { key:"humorous",     label:"Humorous"     },
+const PERSONAS: { key: Tone; name: string; label: string; color: string; avatar: string; desc: string }[] = [
+  { key:"professional", name:"Marcus", label:"Professional", color:"#6366f1", avatar:"M", desc:"Formal, polished, business-focused" },
+  { key:"friendly",     name:"Sarah",  label:"Friendly",     color:"#10b981", avatar:"S", desc:"Warm, personable, conversational"  },
+  { key:"direct",       name:"Alex",   label:"Direct",       color:"#f59e0b", avatar:"A", desc:"Short, punchy, straight to value"  },
+  { key:"humorous",     name:"Jake",   label:"Humorous",     color:"#ec4899", avatar:"J", desc:"Witty, memorable, stands out"      },
 ];
+
+/* ── Persona Dropdown ─────────────────────────────────────────────── */
+function PersonaDropdown({ value, onChange }: { value: Tone; onChange: (t: Tone) => void }) {
+  const [open, setOpen] = useState(false);
+  const selected = PERSONAS.find(p => p.key === value)!;
+  return (
+    <div style={{ position:"relative" }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderRadius:10,border:"1.5px solid #e2e2e6",background:W,cursor:"pointer",transition:"all .15s",minWidth:220,boxShadow:"0 1px 2px rgba(0,0,0,.04)" }}
+        onMouseEnter={e=>(e.currentTarget.style.borderColor=K)}
+        onMouseLeave={e=>{ if(!open) e.currentTarget.style.borderColor="#e2e2e6"; }}>
+        <div style={{ width:28,height:28,borderRadius:8,background:selected.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#fff",flexShrink:0 }}>{selected.avatar}</div>
+        <div style={{ flex:1,textAlign:"left" }}>
+          <div style={{ fontSize:13,fontWeight:700,color:K,lineHeight:1 }}>{selected.name}</div>
+          <div style={{ fontSize:11,color:K3,marginTop:2 }}>{selected.label}</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transition:"transform .2s",transform:open?"rotate(180deg)":"none",flexShrink:0 }}>
+          <path d="M3 5l4 4 4-4" stroke={K3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position:"fixed",inset:0,zIndex:10 }} />
+          <div style={{ position:"absolute",top:"calc(100% + 6px)",left:0,right:0,zIndex:20,background:W,border:"1.5px solid #e2e2e6",borderRadius:12,boxShadow:"0 8px 32px rgba(0,0,0,.12)",overflow:"hidden" }}>
+            {PERSONAS.map(p => (
+              <button key={p.key} type="button"
+                onClick={() => { onChange(p.key); setOpen(false); }}
+                style={{ width:"100%",display:"flex",alignItems:"center",gap:12,padding:"11px 14px",background:p.key===value?"#f7f7f9":W,border:"none",cursor:"pointer",transition:"background .12s",textAlign:"left" }}
+                onMouseEnter={e=>(e.currentTarget.style.background="#f7f7f9")}
+                onMouseLeave={e=>(e.currentTarget.style.background=p.key===value?"#f7f7f9":W)}>
+                <div style={{ width:32,height:32,borderRadius:8,background:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:"#fff",flexShrink:0 }}>{p.avatar}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13,fontWeight:700,color:K }}>{p.name} <span style={{ fontWeight:500,color:K3 }}>— {p.label}</span></div>
+                  <div style={{ fontSize:11,color:K3,marginTop:1 }}>{p.desc}</div>
+                </div>
+                {p.key === value && (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7l3 3 6-6" stroke={K} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 const EXAMPLES = [
   { business:"plumbers",       location:"Houston, TX"       },
@@ -541,6 +637,8 @@ export default function App() {
   return (
     <>
       <style>{GLOBAL}</style>
+      <BgWave />
+      <div style={{ position:"relative",zIndex:1 }}>
       <OnboardingModal />
       {sendData && <SendResultsPanel data={sendData} onClose={()=>setSendData(null)} />}
 
@@ -614,14 +712,8 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <label className="lf-label">Email Tone</label>
-                <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
-                  {TONES.map(t=>(
-                    <button key={t.key} type="button" className={`tone-pill${tone===t.key?" active":""}`} onClick={()=>setTone(t.key)}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
+                <label className="lf-label">Email Persona</label>
+                <PersonaDropdown value={tone} onChange={setTone} />
               </div>
             </div>
 
@@ -718,7 +810,7 @@ export default function App() {
               <button className="ghost-btn" onClick={()=>generateMutation.mutate({businessType,location,intent:intent||undefined,leadCount,tone})}>Regenerate</button>
               {auth?.connected
                 ? <button className="send-btn" onClick={()=>sendMutation.mutate(result.leads)} disabled={sendMutation.isPending}>{sendMutation.isPending?"Sending…":"Send all via Gmail"}</button>
-                : <a href="/api/auth/google" className="send-btn" style={{ textDecoration:"none" }}>Connect Gmail to send</a>
+                : <a href="/api/auth/google" className="send-btn" style={{ textDecoration:"none" }}>Connect Gmail →</a>
               }
             </div>
           </div>
@@ -748,6 +840,7 @@ export default function App() {
           }
         </div>
       )}
+      </div>
     </>
   );
 }
