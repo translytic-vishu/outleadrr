@@ -100,7 +100,7 @@ export function AppNav({ email, gmailStatus, onDisconnectGmail, onLogout, discon
       borderBottom: `1px solid ${BDR}`,
       position: "sticky", top: 0, zIndex: 50, fontFamily: FONT,
     }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 36px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+      <div style={{ width: "100%", padding: "0 48px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
         <a href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
           <Logo size={36} />
         </a>

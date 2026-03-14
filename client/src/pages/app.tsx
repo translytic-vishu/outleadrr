@@ -5,83 +5,87 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { AppNav } from "@/components/site-nav";
+import { OnboardingModal } from "@/components/OnboardingModal";
 
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 const F   = "'Inter','Helvetica Neue',Arial,sans-serif";
-const BG  = "#f7f7f8";
+const BG  = "#f4f4f6";
 const W   = "#ffffff";
-const K   = "#0a0a0a";   // near-black
-const K2  = "#444";
+const K   = "#0a0a0a";
+const K2  = "#3a3a3a";
 const K3  = "#888";
-const K4  = "#bbb";
-const BDR = "rgba(0,0,0,0.08)";
-const BDR2= "rgba(0,0,0,0.14)";
+const K4  = "#c0c0c0";
+const BDR = "rgba(0,0,0,0.07)";
+const BDR2= "rgba(0,0,0,0.13)";
+const ACC = "#0a0a0a";
 
 const GLOBAL = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body,#root{background:${BG};color:${K};font-family:${F};}
   input,button,select,textarea{font-family:${F};}
   input::placeholder,textarea::placeholder{color:${K4};}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   @keyframes progLine{from{width:0}to{width:100%}}
   .lf-input{
-    width:100%;padding:11px 14px;
-    background:${W};border:1.5px solid ${BDR};
-    border-radius:8px;font-size:14px;color:${K};outline:none;
+    width:100%;padding:12px 16px;
+    background:${W};border:1.5px solid #e2e2e6;
+    border-radius:10px;font-size:14px;color:${K};outline:none;
     transition:border-color .2s,box-shadow .2s;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);
   }
-  .lf-input:focus{border-color:${K};box-shadow:0 0 0 3px rgba(0,0,0,.06);}
-  .lf-label{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${K3};display:block;margin-bottom:7px;}
+  .lf-input:focus{border-color:${K};box-shadow:0 0 0 3px rgba(0,0,0,.07);}
+  .lf-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:${K3};display:block;margin-bottom:8px;}
   .vol-pill{
-    padding:7px 18px;border-radius:6px;border:1.5px solid ${BDR};
+    padding:8px 20px;border-radius:8px;border:1.5px solid #e2e2e6;
     background:${W};font-size:13px;font-weight:600;color:${K2};
-    cursor:pointer;transition:all .15s;
+    cursor:pointer;transition:all .15s;box-shadow:0 1px 2px rgba(0,0,0,.04);
   }
   .vol-pill:hover{border-color:${K};color:${K};}
-  .vol-pill.active{background:${K};border-color:${K};color:#fff;}
+  .vol-pill.active{background:${K};border-color:${K};color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);}
   .tone-pill{
-    padding:7px 15px;border-radius:6px;border:1.5px solid ${BDR};
+    padding:8px 16px;border-radius:8px;border:1.5px solid #e2e2e6;
     background:${W};font-size:12px;font-weight:600;color:${K2};
-    cursor:pointer;transition:all .15s;
+    cursor:pointer;transition:all .15s;box-shadow:0 1px 2px rgba(0,0,0,.04);
   }
   .tone-pill:hover{border-color:${K};color:${K};}
-  .tone-pill.active{background:${K};border-color:${K};color:#fff;}
+  .tone-pill.active{background:${K};border-color:${K};color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);}
   .cta-btn{
     display:flex;align-items:center;justify-content:center;gap:9px;
-    width:100%;padding:14px;border-radius:8px;border:none;
-    background:${K};color:#fff;font-size:14px;font-weight:700;letter-spacing:-.01em;
+    width:100%;padding:15px;border-radius:10px;border:none;
+    background:${K};color:#fff;font-size:15px;font-weight:700;letter-spacing:-.01em;
     cursor:pointer;transition:background .2s,transform .15s,box-shadow .2s;
-    box-shadow:0 1px 4px rgba(0,0,0,.18);
+    box-shadow:0 2px 8px rgba(0,0,0,.22),0 1px 2px rgba(0,0,0,.1);
   }
-  .cta-btn:hover{background:#1a1a1a;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.22);}
+  .cta-btn:hover{background:#1c1c1c;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.28);}
   .cta-btn:active{transform:translateY(0);}
-  .cta-btn:disabled{background:#c8c8c8;box-shadow:none;cursor:not-allowed;transform:none;}
+  .cta-btn:disabled{background:#c0c0c0;box-shadow:none;cursor:not-allowed;transform:none;}
   .ghost-btn{
     display:inline-flex;align-items:center;gap:6px;
-    padding:7px 14px;border-radius:6px;
-    background:${W};color:${K2};border:1.5px solid ${BDR};
+    padding:7px 14px;border-radius:7px;
+    background:${W};color:${K2};border:1.5px solid #e2e2e6;
     font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
   }
   .ghost-btn:hover{border-color:${K};color:${K};}
-  .ghost-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .ghost-btn:disabled{opacity:.4;cursor:not-allowed;}
   .send-btn{
     display:inline-flex;align-items:center;gap:6px;
-    padding:8px 18px;border-radius:6px;border:none;
+    padding:8px 20px;border-radius:8px;border:none;
     background:${K};color:#fff;font-size:13px;font-weight:700;
     cursor:pointer;transition:all .2s;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);
   }
-  .send-btn:hover{background:#1a1a1a;}
-  .send-btn:disabled{background:#ccc;cursor:not-allowed;}
+  .send-btn:hover{background:#1c1c1c;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.24);}
+  .send-btn:disabled{background:#ccc;cursor:not-allowed;box-shadow:none;transform:none;}
   .filter-pill{
-    padding:5px 14px;border-radius:6px;border:1.5px solid ${BDR};
+    padding:6px 14px;border-radius:7px;border:1.5px solid #e2e2e6;
     background:${W};font-size:12px;font-weight:600;color:${K2};cursor:pointer;transition:all .15s;
   }
   .filter-pill:hover{border-color:${K};color:${K};}
-  .filter-pill.active{background:${K};color:#fff;border-color:${K};}
-  .skeleton{animation:pulse 1.6s ease-in-out infinite;background:#e4e4e6;border-radius:5px;}
-  @media(max-width:680px){
+  .filter-pill.active{background:${K};color:#fff;border-color:${K};box-shadow:0 2px 6px rgba(0,0,0,.15);}
+  .skeleton{animation:pulse 1.6s ease-in-out infinite;background:#e2e2e6;border-radius:6px;}
+  @media(max-width:768px){
     .form-2col{grid-template-columns:1fr !important;}
     .vol-tone-row{flex-direction:column !important;}
     .toolbar-row{flex-direction:column !important;align-items:flex-start !important;}
@@ -263,10 +267,10 @@ function LeadCard({ lead, index, sending, sendResult, editedEmail, onEditEmail }
 
   return (
     <div style={{
-      background:W,borderRadius:12,border:`1px solid ${BDR}`,
-      boxShadow:"0 1px 3px rgba(0,0,0,.04)",
+      background:W,borderRadius:16,border:`1px solid #e2e2e6`,
+      boxShadow:"0 2px 12px rgba(0,0,0,.06)",
       overflow:"hidden",opacity:sending?.55:1,transition:"opacity .2s",
-      animation:`fadeUp .38s cubic-bezier(.16,1,.3,1) ${index*55}ms both`,
+      animation:`fadeUp .4s cubic-bezier(.16,1,.3,1) ${index*55}ms both`,
     }}>
       {/* Header row */}
       <div style={{ padding:"18px 22px",display:"flex",gap:16,alignItems:"flex-start" }}>
@@ -537,6 +541,7 @@ export default function App() {
   return (
     <>
       <style>{GLOBAL}</style>
+      <OnboardingModal />
       {sendData && <SendResultsPanel data={sendData} onClose={()=>setSendData(null)} />}
 
       <AppNav
@@ -548,35 +553,35 @@ export default function App() {
         loggingOut={logoutMutation.isPending}
       />
 
-      {/* ── Page hero with waves ─────────────────────────────────── */}
-      <div style={{ position:"relative",background:W,borderBottom:`1px solid ${BDR}`,overflow:"hidden" }}>
+      {/* ── Page hero ────────────────────────────────────────────── */}
+      <div style={{ position:"relative",background:"#0a0a0a",overflow:"hidden" }}>
         <WaveCanvas />
-        <div style={{ position:"relative",zIndex:1,maxWidth:1200,margin:"0 auto",padding:"36px 36px 32px" }}>
-          <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:BG,border:`1px solid ${BDR}`,borderRadius:4,padding:"3px 10px",marginBottom:14 }}>
-            <span style={{ width:6,height:6,borderRadius:"50%",background:K,display:"inline-block" }} />
-            <span style={{ fontSize:10,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:K3 }}>Lead Generator</span>
+        <div style={{ position:"relative",zIndex:1,width:"100%",padding:"52px 48px 48px" }}>
+          <div style={{ display:"inline-flex",alignItems:"center",gap:7,background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:6,padding:"4px 12px",marginBottom:18 }}>
+            <span style={{ width:6,height:6,borderRadius:"50%",background:"#4ade80",display:"inline-block",boxShadow:"0 0 6px #4ade80" }} />
+            <span style={{ fontSize:10,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(255,255,255,0.6)" }}>Lead Generator</span>
           </div>
-          <h1 style={{ fontSize:32,fontWeight:900,color:K,letterSpacing:"-.04em",lineHeight:1.1,marginBottom:8 }}>
+          <h1 style={{ fontSize:42,fontWeight:900,color:"#ffffff",letterSpacing:"-.04em",lineHeight:1.08,marginBottom:12 }}>
             Find businesses.<br />Send in one click.
           </h1>
-          <p style={{ fontSize:14,color:K2,maxWidth:460 }}>
+          <p style={{ fontSize:15,color:"rgba(255,255,255,0.55)",maxWidth:500,lineHeight:1.6 }}>
             Discover real prospects from Google Maps, score them by opportunity, and send AI-written cold emails — in under 30 seconds.
           </p>
         </div>
       </div>
 
       {/* ── Form card ────────────────────────────────────────────── */}
-      <div style={{ maxWidth:1200,margin:"0 auto",padding:"28px 36px 0" }}>
-        <div style={{ background:W,borderRadius:12,border:`1px solid ${BDR}`,boxShadow:"0 2px 16px rgba(0,0,0,.05)" }}>
+      <div style={{ width:"100%",padding:"32px 48px 0" }}>
+        <div style={{ background:W,borderRadius:16,border:`1px solid #e2e2e6`,boxShadow:"0 4px 24px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04)" }}>
           {/* Card header */}
-          <div style={{ padding:"16px 22px",borderBottom:`1px solid ${BDR}`,display:"flex",alignItems:"center",gap:8 }}>
-            <div style={{ width:5,height:18,background:K,borderRadius:2 }} />
-            <span style={{ fontSize:12,fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:K }}>Campaign Setup</span>
+          <div style={{ padding:"18px 28px",borderBottom:`1px solid #f0f0f2`,display:"flex",alignItems:"center",gap:10 }}>
+            <div style={{ width:4,height:20,background:K,borderRadius:2 }} />
+            <span style={{ fontSize:11,fontWeight:800,letterSpacing:".1em",textTransform:"uppercase",color:K }}>Campaign Setup</span>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ padding:"20px 22px 22px" }}>
+          <form onSubmit={handleSubmit} style={{ padding:"24px 28px 28px" }}>
             {/* Row 1 */}
-            <div className="form-2col" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
+            <div className="form-2col" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16 }}>
               <div>
                 <label className="lf-label">Business Type</label>
                 <input className="lf-input" value={businessType} onChange={e=>setBusinessType(e.target.value)} placeholder="plumbers, dentists, HVAC companies…" />
@@ -588,19 +593,19 @@ export default function App() {
             </div>
 
             {/* Row 2: Intent */}
-            <div style={{ marginBottom:14 }}>
+            <div style={{ marginBottom:16 }}>
               <label className="lf-label">
                 What are you selling?
-                <span style={{ textTransform:"none",letterSpacing:0,fontWeight:400,color:K4,marginLeft:6 }}>GPT tailors every email around this</span>
+                <span style={{ textTransform:"none",letterSpacing:0,fontWeight:400,color:K4,marginLeft:6,fontSize:11 }}>GPT tailors every email around this</span>
               </label>
               <input className="lf-input" value={intent} onChange={e=>setIntent(e.target.value)} placeholder="e.g. website design services for local businesses" />
             </div>
 
             {/* Row 3: Volume + Tone */}
-            <div className="vol-tone-row" style={{ display:"flex",gap:28,marginBottom:18,flexWrap:"wrap" }}>
+            <div className="vol-tone-row" style={{ display:"flex",gap:32,marginBottom:22,flexWrap:"wrap" }}>
               <div>
                 <label className="lf-label">Lead Volume</label>
-                <div style={{ display:"flex",gap:7 }}>
+                <div style={{ display:"flex",gap:8 }}>
                   {([10,25,50] as (10|25|50)[]).map(n=>(
                     <button key={n} type="button" className={`vol-pill${leadCount===n?" active":""}`} onClick={()=>setLeadCount(n)}>
                       {n}{n===50?"+":""}
@@ -610,7 +615,7 @@ export default function App() {
               </div>
               <div>
                 <label className="lf-label">Email Tone</label>
-                <div style={{ display:"flex",gap:7,flexWrap:"wrap" }}>
+                <div style={{ display:"flex",gap:8,flexWrap:"wrap" }}>
                   {TONES.map(t=>(
                     <button key={t.key} type="button" className={`tone-pill${tone===t.key?" active":""}`} onClick={()=>setTone(t.key)}>
                       {t.label}
@@ -623,17 +628,18 @@ export default function App() {
             {/* Submit */}
             <button type="submit" className="cta-btn" disabled={generateMutation.isPending}>
               {generateMutation.isPending
-                ? <><span style={{ width:14,height:14,border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite" }} /> Finding leads…</>
+                ? <><span style={{ width:15,height:15,border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",borderRadius:"50%",display:"inline-block",animation:"spin .7s linear infinite" }} /> Finding leads…</>
                 : `Find ${leadCount===50?"50+":leadCount} leads →`}
             </button>
 
             {/* Examples */}
-            <div style={{ display:"flex",flexWrap:"wrap",gap:6,marginTop:12 }}>
+            <div style={{ display:"flex",flexWrap:"wrap",gap:7,marginTop:14 }}>
               {EXAMPLES.map(ex=>(
                 <button key={ex.business} type="button"
                   onClick={()=>{ setBusinessType(ex.business); setLocation(ex.location); }}
-                  style={{ padding:"4px 11px",borderRadius:5,background:BG,border:`1px solid ${BDR}`,fontSize:12,color:K2,cursor:"pointer",transition:"border-color .15s" }}
-                  onMouseEnter={e=>(e.currentTarget.style.borderColor=K2)} onMouseLeave={e=>(e.currentTarget.style.borderColor=BDR)}>
+                  style={{ padding:"5px 13px",borderRadius:7,background:"#f7f7f9",border:`1px solid #e2e2e6`,fontSize:12,color:K2,cursor:"pointer",transition:"all .15s",fontWeight:500 }}
+                  onMouseEnter={e=>{ e.currentTarget.style.borderColor=K; e.currentTarget.style.color=K; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.borderColor="#e2e2e6"; e.currentTarget.style.color=K2; }}>
                   {ex.business}, {ex.location}
                 </button>
               ))}
@@ -644,8 +650,8 @@ export default function App() {
 
       {/* ── API key banner ───────────────────────────────────────── */}
       {apiKeyMissing && (
-        <div style={{ maxWidth:1200,margin:"20px auto 0",padding:"0 36px" }}>
-          <div style={{ background:"#fefce8",border:"1px solid #fde047",borderRadius:10,padding:"16px 20px",display:"flex",gap:12,alignItems:"flex-start" }}>
+        <div style={{ width:"100%",padding:"20px 48px 0" }}>
+          <div style={{ background:"#fefce8",border:"1px solid #fde047",borderRadius:12,padding:"18px 22px",display:"flex",gap:12,alignItems:"flex-start" }}>
             <div>
               <div style={{ fontSize:13,fontWeight:700,color:"#854d0e",marginBottom:4 }}>Google Places API key required</div>
               <p style={{ fontSize:12,color:"#92400e",lineHeight:1.6,margin:0 }}>
@@ -659,10 +665,10 @@ export default function App() {
 
       {/* ── Loading ──────────────────────────────────────────────── */}
       {generateMutation.isPending && (
-        <div style={{ maxWidth:1200,margin:"24px auto 0",padding:"0 36px" }}>
-          <div style={{ background:W,borderRadius:12,border:`1px solid ${BDR}`,padding:"8px 36px 32px",boxShadow:"0 2px 12px rgba(0,0,0,.04)" }}>
+        <div style={{ width:"100%",padding:"28px 48px 0" }}>
+          <div style={{ background:W,borderRadius:16,border:`1px solid #e2e2e6`,padding:"8px 36px 36px",boxShadow:"0 4px 24px rgba(0,0,0,.07)" }}>
             <ProgressSteps active={generateMutation.isPending} />
-            <div style={{ display:"flex",flexDirection:"column",gap:10,marginTop:18 }}>
+            <div style={{ display:"flex",flexDirection:"column",gap:12,marginTop:20 }}>
               {[0,1,2].map(i=><SkeletonCard key={i} />)}
             </div>
           </div>
@@ -671,28 +677,28 @@ export default function App() {
 
       {/* ── Results ─────────────────────────────────────────────── */}
       {result && !generateMutation.isPending && (
-        <div ref={resultsRef} style={{ maxWidth:1200,margin:"24px auto 80px",padding:"0 36px" }}>
+        <div ref={resultsRef} style={{ width:"100%",padding:"28px 48px 80px" }}>
 
           {/* Stat bar */}
           {stats && (
-            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14 }}>
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16 }}>
               {[
                 { label:"Leads Found",    value:String(stats.total),           sub:"businesses"    },
                 { label:"Avg Score",      value:String(stats.avg)+"/100",      sub:"lead quality"  },
                 { label:"Strong Leads",   value:String(stats.strong),          sub:"top prospects" },
                 { label:"Est. Response",  value:respRate(stats.avg),           sub:"reply rate"    },
               ].map(c=>(
-                <div key={c.label} style={{ background:W,borderRadius:10,border:`1px solid ${BDR}`,padding:"14px 18px",boxShadow:"0 1px 3px rgba(0,0,0,.04)" }}>
-                  <div style={{ fontSize:9,fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:K3,marginBottom:6 }}>{c.label}</div>
-                  <div style={{ fontSize:22,fontWeight:800,color:K,letterSpacing:"-.03em",lineHeight:1 }}>{c.value}</div>
-                  <div style={{ fontSize:11,color:K3,marginTop:4 }}>{c.sub}</div>
+                <div key={c.label} style={{ background:W,borderRadius:12,border:`1px solid #e2e2e6`,padding:"18px 22px",boxShadow:"0 2px 8px rgba(0,0,0,.05)" }}>
+                  <div style={{ fontSize:9,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:K3,marginBottom:8 }}>{c.label}</div>
+                  <div style={{ fontSize:26,fontWeight:800,color:K,letterSpacing:"-.03em",lineHeight:1 }}>{c.value}</div>
+                  <div style={{ fontSize:11,color:K3,marginTop:5 }}>{c.sub}</div>
                 </div>
               ))}
             </div>
           )}
 
           {/* Toolbar */}
-          <div className="toolbar-row" style={{ background:W,borderRadius:10,border:`1px solid ${BDR}`,padding:"10px 16px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,boxShadow:"0 1px 3px rgba(0,0,0,.04)" }}>
+          <div className="toolbar-row" style={{ background:W,borderRadius:12,border:`1px solid #e2e2e6`,padding:"12px 18px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,boxShadow:"0 2px 8px rgba(0,0,0,.05)" }}>
             <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
               {(["all","Strong Lead","Good Lead","Weak Lead"] as FilterLbl[]).map(f=>(
                 <button key={f} className={`filter-pill${filterLabel===f?" active":""}`} onClick={()=>setFilterLabel(f)}>
@@ -725,7 +731,7 @@ export default function App() {
           )}
 
           {displayedLeads.length > 0
-            ? <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+            ? <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
                 {displayedLeads.map((lead,i)=>(
                   <LeadCard key={lead.id} lead={lead} index={i}
                     sending={sendMutation.isPending&&!sendResults[lead.id]}
@@ -735,8 +741,8 @@ export default function App() {
                   />
                 ))}
               </div>
-            : <div style={{ textAlign:"center",padding:"56px 32px",background:W,borderRadius:12,border:`1px solid ${BDR}` }}>
-                <div style={{ fontSize:13,fontWeight:700,color:K,marginBottom:6 }}>No {filterLabel} leads found</div>
+            : <div style={{ textAlign:"center",padding:"64px 32px",background:W,borderRadius:16,border:`1px solid #e2e2e6`,boxShadow:"0 2px 8px rgba(0,0,0,.05)" }}>
+                <div style={{ fontSize:14,fontWeight:700,color:K,marginBottom:8 }}>No {filterLabel} leads found</div>
                 <button className="ghost-btn" onClick={()=>setFilterLabel("all")}>Show all</button>
               </div>
           }
