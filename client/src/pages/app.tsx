@@ -317,8 +317,8 @@ function LeadCard({ lead, index, sending, sendResult, editedEmail, onEditEmail }
 
   return (
     <div style={{
-      background:W,borderRadius:16,border:`1px solid #e2e2e6`,
-      boxShadow:"0 2px 12px rgba(0,0,0,.06)",
+      background:"rgba(255,255,255,0.82)",borderRadius:16,border:`1px solid rgba(255,255,255,0.9)`,
+      boxShadow:"0 4px 20px rgba(0,0,0,.07)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",
       overflow:"hidden",opacity:sending?.55:1,transition:"opacity .2s",
       animation:`fadeUp .4s cubic-bezier(.16,1,.3,1) ${index*55}ms both`,
     }}>
@@ -441,13 +441,17 @@ function respRate(avg: number) {
 
 type SortKey    = "score-desc" | "score-asc" | "name";
 type FilterLbl  = "all" | "Strong Lead" | "Good Lead" | "Weak Lead";
-type Tone       = "professional" | "friendly" | "direct" | "humorous";
+type Tone       = "professional" | "friendly" | "direct" | "humorous" | "persuasive" | "casual" | "consultative" | "bold";
 
 const PERSONAS: { key: Tone; name: string; label: string; color: string; avatar: string; desc: string }[] = [
-  { key:"professional", name:"Marcus", label:"Professional", color:"#6366f1", avatar:"M", desc:"Formal, polished, business-focused" },
-  { key:"friendly",     name:"Sarah",  label:"Friendly",     color:"#10b981", avatar:"S", desc:"Warm, personable, conversational"  },
-  { key:"direct",       name:"Alex",   label:"Direct",       color:"#f59e0b", avatar:"A", desc:"Short, punchy, straight to value"  },
-  { key:"humorous",     name:"Jake",   label:"Humorous",     color:"#ec4899", avatar:"J", desc:"Witty, memorable, stands out"      },
+  { key:"professional", name:"Marcus", label:"Professional", color:"#6366f1", avatar:"M", desc:"Formal, polished, business-focused"   },
+  { key:"friendly",     name:"Sarah",  label:"Friendly",     color:"#10b981", avatar:"S", desc:"Warm, personable, conversational"      },
+  { key:"direct",       name:"Alex",   label:"Direct",       color:"#f59e0b", avatar:"A", desc:"Short, punchy, straight to value"      },
+  { key:"humorous",     name:"Jake",   label:"Humorous",     color:"#ec4899", avatar:"J", desc:"Witty, memorable, stands out"          },
+  { key:"persuasive",   name:"Emma",   label:"Persuasive",   color:"#0ea5e9", avatar:"E", desc:"Compelling, benefit-driven, converts"  },
+  { key:"casual",       name:"Ryan",   label:"Casual",       color:"#84cc16", avatar:"R", desc:"Relaxed, approachable, no formality"   },
+  { key:"consultative", name:"Lisa",   label:"Consultative", color:"#a78bfa", avatar:"L", desc:"Expert tone, advisory, trust-building" },
+  { key:"bold",         name:"Chris",  label:"Bold",         color:"#fb923c", avatar:"C", desc:"Confident, assertive, high energy"     },
 ];
 
 /* ── Persona Dropdown ─────────────────────────────────────────────── */
@@ -670,11 +674,11 @@ export default function App() {
 
       {/* ── Form card ────────────────────────────────────────────── */}
       <div style={{ width:"100%",padding:"32px 48px 0" }}>
-        <div style={{ background:W,borderRadius:16,border:`1px solid #e2e2e6`,boxShadow:"0 4px 24px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04)" }}>
+        <div style={{ background:"rgba(255,255,255,0.82)",borderRadius:18,border:`1px solid rgba(255,255,255,0.9)`,boxShadow:"0 8px 32px rgba(0,0,0,.08),0 1px 0 rgba(255,255,255,.9)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)" }}>
           {/* Card header */}
-          <div style={{ padding:"18px 28px",borderBottom:`1px solid #f0f0f2`,display:"flex",alignItems:"center",gap:10 }}>
-            <div style={{ width:4,height:20,background:K,borderRadius:2 }} />
-            <span style={{ fontSize:11,fontWeight:800,letterSpacing:".1em",textTransform:"uppercase",color:K }}>Campaign Setup</span>
+          <div style={{ padding:"18px 28px",borderBottom:`1px solid rgba(0,0,0,0.06)`,display:"flex",alignItems:"center",gap:10 }}>
+            <div style={{ width:3,height:18,background:K,borderRadius:2,opacity:.7 }} />
+            <span style={{ fontSize:11,fontWeight:700,letterSpacing:".09em",textTransform:"uppercase",color:K2 }}>Campaign Setup</span>
           </div>
 
           <form onSubmit={handleSubmit} style={{ padding:"24px 28px 28px" }}>
@@ -780,7 +784,7 @@ export default function App() {
                 { label:"Strong Leads",   value:String(stats.strong),          sub:"top prospects" },
                 { label:"Est. Response",  value:respRate(stats.avg),           sub:"reply rate"    },
               ].map(c=>(
-                <div key={c.label} style={{ background:W,borderRadius:12,border:`1px solid #e2e2e6`,padding:"18px 22px",boxShadow:"0 2px 8px rgba(0,0,0,.05)" }}>
+                <div key={c.label} style={{ background:"rgba(255,255,255,0.78)",borderRadius:14,border:`1px solid rgba(255,255,255,0.88)`,padding:"18px 22px",boxShadow:"0 4px 16px rgba(0,0,0,.06)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)" }}>
                   <div style={{ fontSize:9,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:K3,marginBottom:8 }}>{c.label}</div>
                   <div style={{ fontSize:26,fontWeight:800,color:K,letterSpacing:"-.03em",lineHeight:1 }}>{c.value}</div>
                   <div style={{ fontSize:11,color:K3,marginTop:5 }}>{c.sub}</div>
@@ -790,7 +794,7 @@ export default function App() {
           )}
 
           {/* Toolbar */}
-          <div className="toolbar-row" style={{ background:W,borderRadius:12,border:`1px solid #e2e2e6`,padding:"12px 18px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,boxShadow:"0 2px 8px rgba(0,0,0,.05)" }}>
+          <div className="toolbar-row" style={{ background:"rgba(255,255,255,0.75)",borderRadius:14,border:`1px solid rgba(255,255,255,0.85)`,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,boxShadow:"0 4px 16px rgba(0,0,0,.06)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)" }}>
             <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
               {(["all","Strong Lead","Good Lead","Weak Lead"] as FilterLbl[]).map(f=>(
                 <button key={f} className={`filter-pill${filterLabel===f?" active":""}`} onClick={()=>setFilterLabel(f)}>
