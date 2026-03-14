@@ -6,9 +6,9 @@ import connectPgSimple from "connect-pg-simple";
 import OpenAI from "openai";
 import bcrypt from "bcryptjs";
 import { generateLeadsSchema, signupSchema, loginSchema } from "@shared/schema";
-import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail";
-import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places";
-import { storage } from "./storage";
+import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail } from "./gmail.js";
+import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places.js";
+import { storage } from "./storage.js";
 import { z } from "zod";
 
 function getOpenAI() {
