@@ -327,14 +327,27 @@ JSON format (exactly ${placeDetails.length} items in same order):
 {"contacts":[{"contactName":"","title":"","email":"","emailSubject":"","emailBody":""}]}`,
           },
         ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 8192,
+        max_tokens: 8192,
       });
 
-      const aiContent = completion.choices[0]?.message?.content;
-      if (!aiContent) return res.status(500).json({ error: "No response from AI" });
+      const rawContent = completion.choices[0]?.message?.content;
+      if (!rawContent) return res.status(500).json({ error: "No response from AI" });
 
-      const aiData = JSON.parse(aiContent);
+      // Strip markdown code fences that some models wrap JSON in
+      const aiContent = rawContent
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```\s*$/, "")
+        .trim();
+
+      let aiData: any;
+      try {
+        aiData = JSON.parse(aiContent);
+      } catch {
+        // Try to extract JSON object from response if model added extra text
+        const match = aiContent.match(/\{[\s\S]*\}/);
+        if (!match) return res.status(500).json({ error: "AI returned invalid JSON" });
+        aiData = JSON.parse(match[0]);
+      }
       const contacts: any[] = aiData.contacts || [];
 
       /* ── 6. Merge real Places data with AI contact/email data ─────── */
