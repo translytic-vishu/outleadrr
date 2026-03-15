@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import AppDashboard from "@/pages/app-dashboard";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import AppPage from "@/pages/app";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/dashboard" component={AppDashboard} />
       <Route path="/app" component={AppPage} />
       <Route path="/campaigns" component={Campaigns} />
       <Route path="/inbox" component={Inbox} />

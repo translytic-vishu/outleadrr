@@ -64,15 +64,15 @@ const GLOBAL_CSS = `
 /* ─── Persona definitions ─────────────────────────────────────────── */
 type Tone = "professional" | "friendly" | "direct" | "humorous" | "persuasive" | "casual" | "consultative" | "bold";
 
-const PERSONAS: { tone: Tone; name: string; title: string; desc: string; photo: string; color: string }[] = [
-  { tone: "professional", name: "Alex Morgan", title: "Enterprise AE", desc: "Formal, polished, results-driven", photo: "https://randomuser.me/api/portraits/men/32.jpg", color: "#3b82f6" },
-  { tone: "friendly",    name: "Jamie Chen",  title: "SMB Advisor",    desc: "Warm, approachable, conversational", photo: "https://randomuser.me/api/portraits/women/44.jpg", color: "#10b981" },
-  { tone: "direct",      name: "Marcus Reid", title: "Sales Director",  desc: "No fluff, straight to the point", photo: "https://randomuser.me/api/portraits/men/55.jpg", color: "#f59e0b" },
-  { tone: "humorous",    name: "Zoe Park",    title: "Growth Hacker",   desc: "Witty, memorable, stands out", photo: "https://randomuser.me/api/portraits/women/68.jpg", color: "#ec4899" },
-  { tone: "persuasive",  name: "Jordan Blake", title: "Revenue Lead",  desc: "Compelling hooks, urgency-driven", photo: "https://randomuser.me/api/portraits/men/14.jpg", color: "#8b5cf6" },
-  { tone: "casual",      name: "Sam Torres",  title: "BDR",             desc: "Relaxed, peer-to-peer energy", photo: "https://randomuser.me/api/portraits/women/22.jpg", color: "#06b6d4" },
-  { tone: "consultative",name: "Dana Kim",    title: "Solutions Consul.", desc: "Advisory, insight-led, trusted", photo: "https://randomuser.me/api/portraits/women/37.jpg", color: "#6366f1" },
-  { tone: "bold",        name: "Ryder Fox",   title: "Founder",          desc: "Disruptive, confident, direct", photo: "https://randomuser.me/api/portraits/men/78.jpg", color: "#ef4444" },
+const PERSONAS: { tone: Tone; name: string; title: string; desc: string; color: string }[] = [
+  { tone: "professional", name: "Alex Morgan",  title: "Enterprise AE",     desc: "Formal, polished, results-driven",    color: "#3b82f6" },
+  { tone: "friendly",    name: "Jamie Chen",    title: "SMB Advisor",       desc: "Warm, approachable, conversational",  color: "#10b981" },
+  { tone: "direct",      name: "Marcus Reid",   title: "Sales Director",    desc: "No fluff, straight to the point",     color: "#f59e0b" },
+  { tone: "humorous",    name: "Zoe Park",      title: "Growth Hacker",     desc: "Witty, memorable, stands out",        color: "#ec4899" },
+  { tone: "persuasive",  name: "Jordan Blake",  title: "Revenue Lead",      desc: "Compelling hooks, urgency-driven",    color: "#8b5cf6" },
+  { tone: "casual",      name: "Sam Torres",    title: "BDR",               desc: "Relaxed, peer-to-peer energy",        color: "#06b6d4" },
+  { tone: "consultative",name: "Dana Kim",      title: "Solutions Consul.", desc: "Advisory, insight-led, trusted",      color: "#6366f1" },
+  { tone: "bold",        name: "Ryder Fox",     title: "Founder",           desc: "Disruptive, confident, direct",       color: "#ef4444" },
 ];
 
 /* ─── Lead score badge ────────────────────────────────────────────── */
@@ -322,11 +322,11 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
 
 /* ─── Generation Progress Tracker ────────────────────────────────── */
 const GEN_STEPS = [
-  { icon: "🔍", label: (b: string, l: string) => `Scanning Google Maps for ${b} in ${l}` },
-  { icon: "📊", label: (_b: string, _l: string, n?: number) => `Analyzing ${n ?? "–"} businesses found` },
-  { icon: "🏆", label: () => "Scoring leads by quality and reachability" },
-  { icon: "✍️", label: (_b: string, _l: string, _n?: number, t?: string) => `Writing ${t ?? ""} cold emails with AI` },
-  { icon: "✅", label: (_b: string, _l: string, n?: number) => `${n ?? "–"} personalized emails ready` },
+  { label: (b: string, l: string) => `Scanning Google Maps for ${b} in ${l}` },
+  { label: (_b: string, _l: string, n?: number) => `Analyzing ${n ?? "–"} businesses found` },
+  { label: () => "Scoring leads by quality and reachability" },
+  { label: (_b: string, _l: string, _n?: number, t?: string) => `Writing ${t ?? ""} cold emails with AI` },
+  { label: (_b: string, _l: string, n?: number) => `${n ?? "–"} personalized emails ready` },
 ];
 
 function GenerationProgress({ bizType, location_, tone, leadCount, done, resultCount }: {
@@ -707,7 +707,7 @@ export default function AppPage() {
                         boxShadow: active ? `0 0 0 3px ${p.color}15` : "none",
                       }}
                     >
-                      <img src={p.photo} alt={p.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: `2px solid ${active ? p.color : "#e4e4e8"}`, flexShrink: 0 }} />
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${p.color}22`, border: `2px solid ${active ? p.color : "#e4e4e8"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: p.color, flexShrink: 0 }}>{p.name[0]}</div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : K, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                         <div style={{ fontSize: 10, color: K3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.desc}</div>
