@@ -289,41 +289,50 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         messages: [
           {
             role: "system",
-            content: `You are an elite B2B cold email copywriter. You write emails that get replies — not emails that get deleted.
+            content: `You are a B2B cold email specialist. Your clients pay you $500 per email because your emails get 15–30% reply rates.
 
-STRICT RULES:
-1. Always reference the real business name and city naturally in the email body.
-2. Never open with: "I hope this finds you well", "My name is", "I wanted to reach out", "I came across your business".
-3. Never use these words: synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform.
-4. No emojis. No exclamation marks in the subject line.
-5. Subject lines: under 8 words, specific, curiosity-driving. No "Quick question" or "Following up".
-6. Email body: 120-150 words. 3 short paragraphs. First line must hook immediately.
-7. Call to action: one specific, low-friction ask (15-min call, quick reply, one question).
-8. Contact names must be realistic for the region/culture of the business.
-9. Return ONLY raw JSON — no markdown, no code fences, no explanation text.`,
+You write like a sharp human, not an AI. Every email you write is specific, direct, and earns a response.
+
+ABSOLUTE RULES — break any of these and the email is trash:
+1. NEVER open with: "I hope", "I wanted to reach out", "My name is", "I came across your business", "Are you struggling", "I noticed your business"
+2. NEVER use these words: synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, nurture, empower, harness
+3. Subject lines: 4–7 words, NO punctuation at end, never "Quick question", "Following up", "Introduction", "Opportunity", or "Partnership"
+4. Body: exactly 3 paragraphs, 110–140 words total. No bullet points. No bold text.
+5. Each business MUST have a unique opener — rotate these structures across the batch:
+   a) Sharp observation: "Most [city] [business type] owners I talk to say their biggest headache is [specific thing]."
+   b) Direct specific hook: "[Business name]'s [specific detail from their info] says a lot about how you operate."
+   c) Lead with the value immediately — no warm-up, just open with what's in it for them
+   d) Bold relevant claim: "The gap between [business type] that grow this year and those that plateau usually comes down to one thing."
+   e) Intriguing but honest question about their specific business situation
+
+PARAGRAPH STRUCTURE:
+P1 (1–2 sentences): Hook — must be specific to THIS business or industry, never generic filler
+P2 (2–3 sentences): What you offer, who it's helped, one concrete outcome (use real numbers if plausible)
+P3 (1 sentence): One clear, direct CTA — never "let me know if you're interested", always a specific ask
+
+TONE GUIDANCE IS LAW — if the tone says direct, cut everything soft. If it says friendly, it should feel like a message from a smart colleague. Honor it.
+
+Return ONLY a raw JSON object. Zero markdown. Zero code fences. Zero explanation before or after.`,
           },
           {
             role: "user",
-            content: `Generate cold outreach for ${placeDetails.length} ${businessType} businesses in ${location}.${intent ? `\nSender's offering: "${intent}"` : ""}
-Tone: ${toneGuide[tone as string] || toneGuide.professional}
+            content: `Write cold outreach emails for ${placeDetails.length} ${businessType} businesses in ${location}.
+${intent ? `The sender offers: "${intent}"` : ""}
+Tone for all emails: ${toneGuide[tone as string] || toneGuide.professional}
 
-For each business output:
-- contactName: realistic local owner/decision-maker name
-- title: Owner, Founder, CEO, General Manager, Practice Manager, Director, etc.
-- email: firstname@domain if website exists; else firstname@companyname.com (lowercase, no spaces/special chars)
-- emailSubject: specific subject line under 8 words. Can reference city or business type if it adds intrigue.
-- emailBody: 120-150 word cold email that:
-  • Opens with a hook (observation, bold claim, or sharp question) — NOT a self-introduction
-  • Mentions the business name naturally once
-  • States one clear benefit in 1-2 sentences
-  • Closes with a single easy call to action
-  • Matches the tone exactly
-  • Reads like it was written by a human who did 2 minutes of research
+IMPORTANT on email addresses: If a website domain is provided, always use that real domain. Format: firstname@domain.com (all lowercase). If no domain, construct from company name slug.
+
+For each business return:
+- contactName: a realistic owner/decision-maker first and last name matching the area and business culture
+- title: one of — Owner, Founder, CEO, General Manager, Practice Manager, Operations Director, Principal
+- email: use real domain if available (e.g. if domain is "smithplumbing.com" use "john@smithplumbing.com"), else firstname@sluggedcompanyname.com
+- emailSubject: 4–7 word subject line, no punctuation at end, specific to this business or industry
+- emailBody: 110–140 word cold email following the 3-paragraph structure. Vary the opener style across businesses. Sound like a person, not a tool.
 
 BUSINESSES:
 ${businessList}
 
-JSON format (exactly ${placeDetails.length} items in same order):
+Return exactly ${placeDetails.length} contacts in this JSON format (same order as businesses above):
 {"contacts":[{"contactName":"","title":"","email":"","emailSubject":"","emailBody":""}]}`,
           },
         ],
@@ -476,6 +485,38 @@ JSON format (exactly ${placeDetails.length} items in same order):
       return res.json({ messages, connected: true });
     } catch (e: any) {
       console.error("Inbox fetch error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ─── Send reply from Inbox ─────────────────────────────────────── */
+
+  const replySchema = z.object({
+    to: z.string().email(),
+    subject: z.string().min(1),
+    body: z.string().min(1),
+  });
+
+  app.post("/api/inbox/reply", requireAuth, async (req: Request, res: Response) => {
+    if (!req.session.gmailAccessToken) {
+      return res.status(401).json({ error: "Gmail not connected" });
+    }
+    const parsed = replySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Invalid request" });
+
+    const { to, subject, body } = parsed.data;
+    const from = req.session.gmailEmail!;
+    try {
+      await sendEmailViaGmail(
+        req.session.gmailAccessToken,
+        req.session.gmailRefreshToken || "",
+        from, to,
+        subject.startsWith("Re:") ? subject : `Re: ${subject}`,
+        body
+      );
+      return res.json({ success: true });
+    } catch (e: any) {
+      console.error("Reply send error:", e);
       return res.status(500).json({ error: e.message });
     }
   });

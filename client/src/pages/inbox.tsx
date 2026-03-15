@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AppLayout } from "@/components/AppLayout";
 import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
@@ -63,6 +63,23 @@ function InitialAvatar({ name }: { name: string }) {
 export default function Inbox() {
   const [active, setActive] = useState<GmailMessage | null>(null);
   const [reply, setReply] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const replyMutation = useMutation({
+    mutationFn: (data: { to: string; subject: string; body: string }) =>
+      apiRequest("POST", "/api/inbox/reply", data).then(r => r.json()),
+    onSuccess: () => {
+      setReply("");
+      setSent(true);
+      setTimeout(() => setSent(false), 3000);
+    },
+  });
+
+  function sendReply() {
+    if (!active || !reply.trim()) return;
+    const { email } = parseFrom(active.from);
+    replyMutation.mutate({ to: email, subject: active.subject, body: reply.trim() });
+  }
 
   const { data: gmailStatus } = useQuery<AuthStatus>({
     queryKey: ["/api/auth/status"],
@@ -202,17 +219,26 @@ export default function Inbox() {
                     style={{ width: "100%", padding: "12px 16px", background: "transparent", border: "none", outline: "none", fontSize: 13, color: K, lineHeight: 1.6 }}
                   />
                   <div style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "flex-end", borderTop: `1px solid ${BDR}`, gap: 8 }}>
+                    {sent && (
+                      <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#16a34a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        Sent
+                      </span>
+                    )}
                     <button
-                      disabled={!reply.trim()}
+                      onClick={sendReply}
+                      disabled={!reply.trim() || replyMutation.isPending}
                       style={{
                         padding: "7px 18px", borderRadius: 8, border: "none",
                         background: reply.trim() ? IND : "#e4e4e8",
                         color: reply.trim() ? W : K3,
-                        fontSize: 13, fontWeight: 700, cursor: reply.trim() ? "pointer" : "not-allowed",
+                        fontSize: 13, fontWeight: 700,
+                        cursor: reply.trim() && !replyMutation.isPending ? "pointer" : "not-allowed",
                         fontFamily: F, transition: "all .15s",
+                        display: "flex", alignItems: "center", gap: 6,
                       }}
                     >
-                      Send Reply
+                      {replyMutation.isPending ? "Sending..." : "Send Reply"}
                     </button>
                   </div>
                 </div>

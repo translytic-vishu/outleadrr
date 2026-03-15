@@ -232,6 +232,23 @@ export default function AppPage() {
     if (me === null || (me && !(me as any).id)) setLocation("/login");
   }, [me]);
 
+  // Load template pre-fill when arriving from Templates page
+  const [loadedTemplate, setLoadedTemplate] = useState<string | null>(null);
+  useEffect(() => {
+    const stored = localStorage.getItem("outleadrr_active_template");
+    if (stored) {
+      try {
+        const t = JSON.parse(stored);
+        if (t.tone && ["professional","friendly","direct","humorous","persuasive","casual","consultative","bold"].includes(t.tone)) {
+          setTone(t.tone as Tone);
+        }
+        if (t.name) { setLoadedTemplate(t.name); setIntent(t.name); }
+        localStorage.removeItem("outleadrr_active_template");
+      } catch { /* ignore */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const params = new URLSearchParams(window.location.search);
   useEffect(() => {
     if (params.get("connected") === "true") {
@@ -325,6 +342,17 @@ export default function AppPage() {
           </div>
         )}
       </div>
+
+      {/* ── Template loaded banner ── */}
+      {loadedTemplate && (
+        <div style={{ margin: "16px 36px 0", padding: "11px 18px", borderRadius: 10, background: "#f0f0ff", border: "1px solid #c7d2fe", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#6366f1" strokeWidth="1.4"/><path d="M5 6h6M5 9h4" stroke="#6366f1" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            <span style={{ fontSize: 13, color: "#4338ca", fontWeight: 600 }}>Template loaded: <span style={{ fontWeight: 700 }}>{loadedTemplate}</span> — tone and intent pre-filled below.</span>
+          </div>
+          <button onClick={() => setLoadedTemplate(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+        </div>
+      )}
 
       {/* ── Billing error banner ── */}
       {billingError && (

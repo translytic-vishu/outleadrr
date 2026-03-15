@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { AppLayout } from "@/components/AppLayout";
 import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
+
+export const TEMPLATE_STORAGE_KEY = "outleadrr_active_template";
 
 const F   = "'Inter','Helvetica Neue',Arial,sans-serif";
 const K   = "#0a0a0a";
@@ -205,6 +208,17 @@ const TAGS = ["All", "Professional", "Friendly", "Direct", "Persuasive", "Consul
 export default function Templates() {
   const [active, setActive] = useState<typeof TEMPLATES[0] | null>(null);
   const [filter, setFilter] = useState("All");
+  const [, setLocation] = useLocation();
+
+  function useInBuilder(t: typeof TEMPLATES[0]) {
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify({
+      name: t.name,
+      subject: t.subject,
+      body: t.body,
+      tone: t.tag.toLowerCase(),
+    }));
+    setLocation("/app");
+  }
 
   const visible = filter === "All" ? TEMPLATES : TEMPLATES.filter(t => t.tag === filter);
 
@@ -326,17 +340,19 @@ export default function Templates() {
 
               {/* CTA */}
               <button
-                onClick={() => setActive(null)}
+                onClick={() => active && useInBuilder(active)}
                 style={{
                   width: "100%", padding: "13px", borderRadius: 10, border: "none",
                   background: K, color: W, fontSize: 14, fontWeight: 700,
                   cursor: "pointer", fontFamily: F,
                   boxShadow: "0 2px 10px rgba(0,0,0,.12)",
                   transition: "all .15s",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#222"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = K; }}
               >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
                 Use This Template in Builder
               </button>
             </div>
