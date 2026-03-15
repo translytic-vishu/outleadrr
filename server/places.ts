@@ -1,4 +1,11 @@
-const PLACES_BASE = "https://maps.googleapis.com/maps/api/place";
+/**
+ * SerpAPI — Google Local API
+ * Replaces the Google Places API (which required billing enabled).
+ * Env var: SERPAPI_KEY
+ * Docs: https://serpapi.com/local-results
+ */
+
+const SERP_BASE = "https://serpapi.com/search.json";
 
 export interface PlaceDetails {
   placeId: string;
@@ -11,51 +18,88 @@ export interface PlaceDetails {
   types: string[];
 }
 
-export async function searchPlaces(query: string): Promise<{ placeId: string; name: string }[]> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key) throw new Error("GOOGLE_PLACES_API_KEY not configured");
+/**
+ * Search local businesses via SerpAPI Google Local.
+ * Returns up to `limit` results with full details in one request.
+ */
+export async function searchLocalBusinesses(
+  businessType: string,
+  location: string,
+  limit = 15
+): Promise<PlaceDetails[]> {
+  const key = process.env.SERPAPI_KEY;
+  if (!key) throw new Error("SERPAPI_KEY is not configured. Add it in your Vercel environment variables.");
 
-  const url = `${PLACES_BASE}/textsearch/json?query=${encodeURIComponent(query)}&key=${key}`;
+  const params = new URLSearchParams({
+    engine: "google_local",
+    q: businessType,
+    location,
+    api_key: key,
+    hl: "en",
+    gl: "us",
+    num: String(Math.min(limit, 20)),
+  });
+
+  const url = `${SERP_BASE}?${params}`;
   const res = await fetch(url);
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`SerpAPI request failed (${res.status}): ${text}`);
+  }
+
   const data = (await res.json()) as any;
 
-  if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-    throw new Error(`Places API: ${data.status} — ${data.error_message || ""}`);
-  }
-  return ((data.results as any[]) || []).slice(0, 10).map((p: any) => ({
-    placeId: p.place_id as string,
-    name: p.name as string,
+  // SerpAPI error handling
+  if (data.error) throw new Error(`SerpAPI: ${data.error}`);
+
+  const results: any[] = data.local_results || [];
+
+  return results.slice(0, limit).map((r: any, i: number) => ({
+    placeId: r.place_id || `serp_${i}_${Date.now()}`,
+    name: r.title || r.name || "Unknown",
+    address: r.address || "",
+    phone: r.phone || "",
+    website: r.website || "",
+    rating: typeof r.rating === "number" ? r.rating : parseFloat(r.rating) || 0,
+    reviewCount: r.reviews || r.review_count || 0,
+    types: r.type ? [r.type] : [],
   }));
 }
 
+/** Legacy shim — routes.ts calls searchPlaces(query) + getPlaceDetails(id) separately.
+ *  We cache the SerpAPI results in a Map so the second call is free.
+ */
+const _cache = new Map<string, PlaceDetails[]>();
+
+export async function searchPlaces(query: string): Promise<{ placeId: string; name: string }[]> {
+  // query is "businessType in location" — split on " in "
+  const match = query.match(/^(.+?)\s+in\s+(.+)$/i);
+  const businessType = match ? match[1].trim() : query;
+  const location     = match ? match[2].trim() : "United States";
+
+  const results = await searchLocalBusinesses(businessType, location, 20);
+  _cache.set(query, results);
+
+  return results.map(r => ({ placeId: r.placeId, name: r.name }));
+}
+
 export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key) throw new Error("GOOGLE_PLACES_API_KEY not configured");
-
-  const fields = "name,formatted_phone_number,website,rating,user_ratings_total,types,formatted_address";
-  const url = `${PLACES_BASE}/details/json?place_id=${encodeURIComponent(placeId)}&fields=${encodeURIComponent(fields)}&key=${key}`;
-  const res = await fetch(url);
-  const data = (await res.json()) as any;
-  const r = data.result || {};
-
-  return {
-    placeId,
-    name: r.name || "",
-    address: r.formatted_address || "",
-    phone: r.formatted_phone_number || "",
-    website: r.website || "",
-    rating: r.rating || 0,
-    reviewCount: r.user_ratings_total || 0,
-    types: r.types || [],
-  };
+  // Search the cache for a matching record
+  for (const results of _cache.values()) {
+    const found = results.find(r => r.placeId === placeId);
+    if (found) return found;
+  }
+  // Fallback — shouldn't happen in normal flow
+  throw new Error(`Place details not found for id: ${placeId}. This is a cache miss — ensure searchPlaces() is called first.`);
 }
 
 export function scorePlace(details: PlaceDetails, businessType: string) {
   const { rating, reviewCount, phone, website, types } = details;
-  const hasPhone = !!phone;
+  const hasPhone   = !!phone;
   const hasWebsite = !!website;
 
-  const btype = businessType.toLowerCase().replace(/s$/, "");
+  const btype   = businessType.toLowerCase().replace(/s$/, "");
   const typeStr = types.join(" ").toLowerCase();
   const industryFit =
     typeStr.includes(btype) || typeStr.includes(businessType.toLowerCase()) ? 90 : 68;

@@ -234,7 +234,7 @@ export default function AppPage() {
       setBillingError(false);
     },
     onError: (err) => {
-      if (err.message?.includes("REQUEST_DENIED") || err.message?.toLowerCase().includes("billing")) {
+      if (err.message?.includes("REQUEST_DENIED") || err.message?.toLowerCase().includes("billing") || err.message?.includes("SERPAPI_KEY")) {
         setBillingError(true);
       } else {
         toast({ title: "Generation failed", description: err.message, variant: "destructive" });
@@ -312,9 +312,9 @@ export default function AppPage() {
         <div style={{ margin: "16px 36px 0", padding: "12px 18px", borderRadius: 10, background: "#fff7ed", border: "1px solid #fed7aa", display: "flex", gap: 12, alignItems: "flex-start" }}>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M9 2L1.5 15.5h15L9 2z" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 8v3M9 13.5v.5" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round"/></svg>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#c2410c" }}>Google Places API Billing Required</div>
-            <div style={{ fontSize: 12, color: "#9a3412", marginTop: 2 }}>Enable billing on your Google Cloud project to use the Places API. It stays free within quota limits.</div>
-            <a href="https://console.cloud.google.com/billing" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#ea580c", fontWeight: 600, marginTop: 4, display: "inline-block" }}>Enable billing in Google Cloud Console</a>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#c2410c" }}>SerpAPI key not configured</div>
+            <div style={{ fontSize: 12, color: "#9a3412", marginTop: 2 }}>Add your SERPAPI_KEY to Vercel environment variables. You can get a free API key at serpapi.com.</div>
+            <a href="https://serpapi.com/manage-api-key" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#ea580c", fontWeight: 600, marginTop: 4, display: "inline-block" }}>Get your SerpAPI key</a>
           </div>
         </div>
       )}
