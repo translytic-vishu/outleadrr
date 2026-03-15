@@ -272,43 +272,59 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ].join("\n");
       }).join("\n\n");
 
-      /* ── 5. Use OpenAI only for contact person + cold email ──────── */
+      /* ── 5. Generate contact + cold email via AI ────────────────── */
+      const toneGuide: Record<string, string> = {
+        professional:  "Formal and polished. No contractions. Business-focused language. Credibility through specificity.",
+        friendly:      "Warm and conversational. Use contractions. Feel like a peer reaching out, not a salesperson.",
+        direct:        "Short sentences. No filler. One clear ask. Respect the reader's time above all else.",
+        humorous:      "Light wit and a single clever observation. Never try-hard. One joke max, then straight to value.",
+        persuasive:    "Highlight a pain they might not know they have. Create mild urgency. End with a compelling reason to reply.",
+        casual:        "Write like a smart friend texting. Informal but credible. Short paragraphs.",
+        consultative:  "Lead with insight before offer. Position as an advisor, not a vendor. Ask a thoughtful question.",
+        bold:          "Open with a strong, slightly provocative statement. Confident claims backed by specifics.",
+      };
+
       const completion = await getOpenAI().chat.completions.create({
         model: getModel(),
         messages: [
           {
             role: "system",
-            content: "You are a B2B sales assistant. For each real business provided, generate a plausible decision-maker contact and a personalised cold email. Do not invent business names, addresses, or phone numbers — those are already provided.",
+            content: `You are an elite B2B cold email copywriter. You write emails that get replies — not emails that get deleted.
+
+STRICT RULES:
+1. Always reference the real business name and city naturally in the email body.
+2. Never open with: "I hope this finds you well", "My name is", "I wanted to reach out", "I came across your business".
+3. Never use these words: synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform.
+4. No emojis. No exclamation marks in the subject line.
+5. Subject lines: under 8 words, specific, curiosity-driving. No "Quick question" or "Following up".
+6. Email body: 120-150 words. 3 short paragraphs. First line must hook immediately.
+7. Call to action: one specific, low-friction ask (15-min call, quick reply, one question).
+8. Contact names must be realistic for the region/culture of the business.
+9. Return ONLY raw JSON — no markdown, no code fences, no explanation text.`,
           },
           {
             role: "user",
-            content: `Here are ${placeDetails.length} real ${businessType} businesses in ${location}. For each, generate:
-- "contactName": a realistic owner/decision-maker full name
-- "title": a realistic job title (Owner, CEO, Founder, General Manager, etc.)
-- "email": if a website domain is available use firstname@domain (e.g. sarah@torresplumbing.com); otherwise construct a plausible one from the business name
-- "emailSubject": a compelling, specific cold email subject line (do NOT use generic phrases like "Quick question")
-- "emailBody": 150-200 word personalized cold email. Reference the actual business name and city. Include a clear value proposition and specific call to action.${intent ? ` The sender is pitching: "${intent}" — make every email relevant to this offering.` : ""}
-Tone: ${{
-              professional:  "formal, polished and business-focused",
-              friendly:      "warm, conversational and genuinely approachable",
-              direct:        "concise and straight to the point — no fluff, no pleasantries",
-              humorous:      "light, witty and memorable — make them smile",
-              persuasive:    "compelling and benefit-driven — focus on outcomes and ROI",
-              casual:        "relaxed and peer-to-peer — like texting a colleague",
-              consultative:  "advisory and insight-led — lead with expertise, not a pitch",
-              bold:          "confident and disruptive — challenge assumptions, stand out",
-            }[tone] ?? "professional and business-focused"}.
+            content: `Generate cold outreach for ${placeDetails.length} ${businessType} businesses in ${location}.${intent ? `\nSender's offering: "${intent}"` : ""}
+Tone: ${toneGuide[tone as string] || toneGuide.professional}
+
+For each business output:
+- contactName: realistic local owner/decision-maker name
+- title: Owner, Founder, CEO, General Manager, Practice Manager, Director, etc.
+- email: firstname@domain if website exists; else firstname@companyname.com (lowercase, no spaces/special chars)
+- emailSubject: specific subject line under 8 words. Can reference city or business type if it adds intrigue.
+- emailBody: 120-150 word cold email that:
+  • Opens with a hook (observation, bold claim, or sharp question) — NOT a self-introduction
+  • Mentions the business name naturally once
+  • States one clear benefit in 1-2 sentences
+  • Closes with a single easy call to action
+  • Matches the tone exactly
+  • Reads like it was written by a human who did 2 minutes of research
 
 BUSINESSES:
 ${businessList}
 
-Return JSON:
-{
-  "contacts": [
-    { "contactName": "...", "title": "...", "email": "...", "emailSubject": "...", "emailBody": "..." }
-  ]
-}
-Return ONLY valid JSON. The "contacts" array must have exactly ${placeDetails.length} items in the same order as the businesses listed.`,
+JSON format (exactly ${placeDetails.length} items in same order):
+{"contacts":[{"contactName":"","title":"","email":"","emailSubject":"","emailBody":""}]}`,
           },
         ],
         response_format: { type: "json_object" },
