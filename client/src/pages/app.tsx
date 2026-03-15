@@ -154,11 +154,30 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
         <div style={{ fontSize: 12, color: K3, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 520 }}>
           <span style={{ fontWeight: 600, color: K2 }}>Subject: </span>{lead.emailSubject}
         </div>
-        {lead.rating && (
-          <div style={{ fontSize: 11, color: K4 }}>
-            {lead.rating}/5 stars · {lead.reviewCount?.toLocaleString()} reviews
+        {lead.rating ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+            {/* Circular rating indicator */}
+            <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
+              <svg width="36" height="36" viewBox="0 0 36 36" style={{ transform: "rotate(-90deg)" }}>
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                <circle
+                  cx="18" cy="18" r="15" fill="none"
+                  stroke={lead.rating >= 4.5 ? "#16a34a" : lead.rating >= 3.5 ? "#ca8a04" : "#dc2626"}
+                  strokeWidth="3"
+                  strokeDasharray={`${(lead.rating / 5) * 94.2} 94.2`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: lead.rating >= 4.5 ? "#16a34a" : lead.rating >= 3.5 ? "#ca8a04" : "#dc2626" }}>
+                {lead.rating.toFixed(1)}
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: K4 }}>
+              <div style={{ fontWeight: 600, color: K3 }}>{lead.rating >= 4.5 ? "Excellent" : lead.rating >= 3.5 ? "Good" : "Fair"}</div>
+              <div>{lead.reviewCount?.toLocaleString()} reviews</div>
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Preview btn */}

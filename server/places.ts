@@ -7,6 +7,56 @@
 
 const SERP_BASE = "https://serpapi.com/search.json";
 
+/* ─── US state abbreviation → full name ────────────────────────── */
+const STATE_MAP: Record<string, string> = {
+  AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",
+  CO:"Colorado",CT:"Connecticut",DE:"Delaware",FL:"Florida",GA:"Georgia",
+  HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",
+  KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",
+  MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",
+  NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",
+  NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",
+  OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",
+  SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",
+  VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",
+  DC:"Washington DC",
+};
+
+/**
+ * Normalise a user-typed location for SerpAPI.
+ * "Fulshear Tx" → "Fulshear, Texas"
+ * "Austin TX"   → "Austin, Texas"
+ * "New York"    → "New York"  (unchanged)
+ */
+function normalizeLocation(raw: string): string {
+  const trimmed = raw.trim();
+  // Already has a comma — trust the user
+  if (trimmed.includes(",")) return trimmed;
+
+  // Match "City ST" or "City State" patterns
+  const abbrevMatch = trimmed.match(/^(.+?)\s+([A-Za-z]{2})$/);
+  if (abbrevMatch) {
+    const city = abbrevMatch[1].trim();
+    const abbrev = abbrevMatch[2].toUpperCase();
+    const fullState = STATE_MAP[abbrev];
+    if (fullState) return `${city}, ${fullState}`;
+  }
+
+  // Match "City FullStateName" — e.g. "Austin Texas"
+  const words = trimmed.split(/\s+/);
+  if (words.length >= 2) {
+    for (const [abbr, full] of Object.entries(STATE_MAP)) {
+      const last = words[words.length - 1];
+      if (last.toLowerCase() === full.toLowerCase() || last.toUpperCase() === abbr) {
+        const city = words.slice(0, -1).join(" ");
+        return `${city}, ${full}`;
+      }
+    }
+  }
+
+  return trimmed;
+}
+
 export interface PlaceDetails {
   placeId: string;
   name: string;
@@ -78,7 +128,7 @@ export async function searchPlaces(query: string): Promise<{ placeId: string; na
   const businessType = match ? match[1].trim() : query;
   const location     = match ? match[2].trim() : "United States";
 
-  const results = await searchLocalBusinesses(businessType, location, 20);
+  const results = await searchLocalBusinesses(businessType, normalizeLocation(location), 20);
   _cache.set(query, results);
 
   return results.map(r => ({ placeId: r.placeId, name: r.name }));
@@ -86,8 +136,8 @@ export async function searchPlaces(query: string): Promise<{ placeId: string; na
 
 export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
   // Search the cache for a matching record
-  for (const results of _cache.values()) {
-    const found = results.find(r => r.placeId === placeId);
+  for (const results of Array.from(_cache.values())) {
+    const found = results.find((r: PlaceDetails) => r.placeId === placeId);
     if (found) return found;
   }
   // Fallback — shouldn't happen in normal flow
