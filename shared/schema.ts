@@ -34,7 +34,7 @@ export const generateLeadsSchema = z.object({
   location: z.string().min(1),
   intent: z.string().optional(),
   leadCount: z.number().int().min(1).max(50).optional(),
-  tone: z.enum(["professional", "friendly", "direct", "humorous"]).optional(),
+  tone: z.enum(["professional", "friendly", "direct", "humorous", "persuasive", "casual", "consultative", "bold"]).optional(),
 });
 
 export const leadSchema = z.object({

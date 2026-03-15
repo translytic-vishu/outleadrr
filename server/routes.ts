@@ -215,11 +215,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const { businessType, location, intent, leadCount = 10, tone = "professional" } = parsed.data;
 
-      /* ── 1. Require Google Places API key ────────────────────────── */
-      if (!process.env.GOOGLE_PLACES_API_KEY) {
+      /* ── 1. Require SerpAPI key ──────────────────────────────────── */
+      if (!process.env.SERPAPI_KEY) {
         return res.status(503).json({
-          error: "Google Places API key not configured",
-          message: "Add GOOGLE_PLACES_API_KEY to your environment secrets to enable lead generation.",
+          error: "SERPAPI_KEY not configured",
+          message: "Add SERPAPI_KEY to your Vercel environment variables to enable lead generation. Get a free key at serpapi.com.",
         });
       }
 
@@ -268,7 +268,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 - "email": if a website domain is available use firstname@domain (e.g. sarah@torresplumbing.com); otherwise construct a plausible one from the business name
 - "emailSubject": a compelling, specific cold email subject line (do NOT use generic phrases like "Quick question")
 - "emailBody": 150-200 word personalized cold email. Reference the actual business name and city. Include a clear value proposition and specific call to action.${intent ? ` The sender is pitching: "${intent}" — make every email relevant to this offering.` : ""}
-Tone: ${tone === "professional" ? "formal and business-focused" : tone === "friendly" ? "warm, conversational and approachable" : tone === "direct" ? "concise and straight to the point, no fluff" : "light, witty and memorable — make them smile"}.
+Tone: ${{
+              professional:  "formal, polished and business-focused",
+              friendly:      "warm, conversational and genuinely approachable",
+              direct:        "concise and straight to the point — no fluff, no pleasantries",
+              humorous:      "light, witty and memorable — make them smile",
+              persuasive:    "compelling and benefit-driven — focus on outcomes and ROI",
+              casual:        "relaxed and peer-to-peer — like texting a colleague",
+              consultative:  "advisory and insight-led — lead with expertise, not a pitch",
+              bold:          "confident and disruptive — challenge assumptions, stand out",
+            }[tone] ?? "professional and business-focused"}.
 
 BUSINESSES:
 ${businessList}
