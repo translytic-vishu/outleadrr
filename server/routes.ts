@@ -12,10 +12,22 @@ import { storage } from "./storage.js";
 import { z } from "zod";
 
 function getOpenAI() {
+  const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const isOpenRouter = baseURL.includes("openrouter.ai");
   return new OpenAI({
     apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "placeholder",
-    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
+    baseURL,
+    defaultHeaders: isOpenRouter ? {
+      "HTTP-Referer": process.env.APP_URL || "https://outleadrr.vercel.app",
+      "X-Title": "Outleadrr",
+    } : undefined,
   });
+}
+
+function getModel() {
+  // Allow override via OPENAI_MODEL env var
+  // For OpenRouter stepfun: set OPENAI_MODEL=step-1-8k (or your preferred stepfun model)
+  return process.env.OPENAI_MODEL || "gpt-4o";
 }
 
 declare module "express-session" {
@@ -32,8 +44,16 @@ const MemStore = MemoryStore(session);
 const PgSession = connectPgSimple(session);
 
 function buildSessionStore() {
-  // Use in-memory store for sessions — avoids blocking login if DB is unreachable.
-  // User data (accounts) still uses DATABASE_URL via storage.ts.
+  // In production (Vercel) sessions MUST be stored in Postgres.
+  // MemoryStore resets between serverless invocations, causing 401 on every request after login.
+  if (process.env.DATABASE_URL) {
+    return new PgSession({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true, // auto-creates "session" table
+      tableName: "session",
+    });
+  }
+  // Local dev fallback (no DB)
   return new MemStore({ checkPeriod: 86400000 });
 }
 
@@ -254,7 +274,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       /* ── 5. Use OpenAI only for contact person + cold email ──────── */
       const completion = await getOpenAI().chat.completions.create({
-        model: "gpt-4o",
+        model: getModel(),
         messages: [
           {
             role: "system",
