@@ -42,9 +42,11 @@ const GLOBAL_CSS = `
     transition:border-color .18s,box-shadow .18s;
   }
   .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(99,102,241,.1);}
-  .lead-card{
-    animation: fadeUp .3s ease both;
-  }
+  @keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(20px,-15px) scale(1.05)}66%{transform:translate(-10px,10px) scale(.97)}}
+  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+  @keyframes counterUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .lead-card{animation:fadeUp .35s cubic-bezier(.16,1,.3,1) both;}
+  .lead-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.1)!important;transition:transform .2s,box-shadow .2s!important;}
   .send-btn{
     padding:10px 20px;border-radius:9px;border:none;
     background:${IND};color:${W};font-size:13px;font-weight:700;
@@ -197,6 +199,126 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
   );
 }
 
+/* ─── Generation Progress Tracker ────────────────────────────────── */
+const GEN_STEPS = [
+  { icon: "🔍", label: (b: string, l: string) => `Scanning Google Maps for ${b} in ${l}` },
+  { icon: "📊", label: (_b: string, _l: string, n?: number) => `Analyzing ${n ?? "–"} businesses found` },
+  { icon: "🏆", label: () => "Scoring leads by quality and reachability" },
+  { icon: "✍️", label: (_b: string, _l: string, _n?: number, t?: string) => `Writing ${t ?? ""} cold emails with AI` },
+  { icon: "✅", label: (_b: string, _l: string, n?: number) => `${n ?? "–"} personalized emails ready` },
+];
+
+function GenerationProgress({ bizType, location_, tone, leadCount, done, resultCount }: {
+  bizType: string; location_: string; tone: string; leadCount: number; done: boolean; resultCount: number;
+}) {
+  const [activeStep, setActiveStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Step timings (ms)
+    const stepTimes = [0, 1000, 2400, 4200];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    stepTimes.forEach((t, i) => {
+      timers.push(setTimeout(() => setActiveStep(i), t));
+    });
+    // Progress bar: 0→78% over 14s, then stalls until done
+    let p = 0;
+    const interval = setInterval(() => {
+      p += (78 - p) * 0.04;
+      setProgress(Math.min(p, 78));
+    }, 160);
+    return () => { timers.forEach(clearTimeout); clearInterval(interval); };
+  }, []);
+
+  useEffect(() => {
+    if (done) { setActiveStep(4); setProgress(100); }
+  }, [done]);
+
+  const stepLabel = (i: number) => {
+    if (i === 0) return GEN_STEPS[0].label(bizType, location_);
+    if (i === 1) return GEN_STEPS[1].label(bizType, location_, leadCount);
+    if (i === 2) return GEN_STEPS[2].label(bizType, location_);
+    if (i === 3) return GEN_STEPS[3].label(bizType, location_, leadCount, tone);
+    return GEN_STEPS[4].label(bizType, location_, resultCount);
+  };
+
+  const IND = "#6366f1";
+  const W = "#ffffff";
+  const K = "#0a0a0a";
+  const K3 = "#888";
+
+  return (
+    <div style={{
+      background: W, borderRadius: 16, border: "1px solid rgba(0,0,0,0.07)",
+      padding: "28px 28px 24px", boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+      marginBottom: 24,
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: done ? "#16a34a" : IND, boxShadow: done ? "0 0 8px rgba(22,163,74,.5)" : "0 0 10px rgba(99,102,241,.6)", animation: done ? "none" : "pulse 1.4s ease infinite" }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: K }}>
+          {done ? `Generation complete — ${resultCount} leads ready` : "Generating your campaign..."}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 4, background: "#f1f5f9", borderRadius: 3, marginBottom: 22, overflow: "hidden" }}>
+        <div style={{
+          height: "100%", borderRadius: 3,
+          background: done ? "#16a34a" : `linear-gradient(90deg,${IND},#818cf8)`,
+          width: `${progress}%`,
+          transition: "width .4s ease, background .4s ease",
+          boxShadow: done ? "none" : "0 0 8px rgba(99,102,241,.4)",
+        }} />
+      </div>
+
+      {/* Steps */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {GEN_STEPS.map((step, i) => {
+          const isActive = i === activeStep && !done;
+          const isDone_ = i < activeStep || done;
+          const isFuture = i > activeStep && !done;
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, opacity: isFuture ? 0.3 : 1, transition: "opacity .3s" }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: isDone_ ? (done && i === 4 ? "#dcfce7" : "#f0f0ff") : isActive ? `rgba(99,102,241,0.1)` : "#f8f8f9",
+                border: `1.5px solid ${isDone_ ? (done && i === 4 ? "#bbf7d0" : "#c7d2fe") : isActive ? "rgba(99,102,241,0.3)" : "#e4e4e8"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 13,
+                transition: "all .3s",
+              }}>
+                {isDone_ ? (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6.5l3 3 5-5" stroke={done && i === 4 ? "#16a34a" : IND} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : isActive ? (
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: IND, animation: "pulse 1s ease infinite" }} />
+                ) : (
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#cbd5e1" }} />
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? K : isDone_ ? "#4338ca" : K3, transition: "color .3s" }}>
+                  {stepLabel(i)}
+                </div>
+                {isActive && (
+                  <div style={{ fontSize: 11, color: "rgba(99,102,241,0.6)", marginTop: 2, animation: "pulse 1.5s ease infinite" }}>
+                    Working on it...
+                  </div>
+                )}
+              </div>
+              {isDone_ && i < 4 && (
+                <div style={{ fontSize: 10, color: "#a5b4fc", fontWeight: 600, flexShrink: 0 }}>done</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main Page ───────────────────────────────────────────────────── */
 export default function AppPage() {
   const [, setLocation] = useLocation();
@@ -216,6 +338,7 @@ export default function AppPage() {
   const [selected, setSelected]   = useState<Set<number>>(new Set());
   const [previewLead, setPreviewLead] = useState<Lead | null>(null);
   const [billingError, setBillingError] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
 
   /* auth */
   const { data: me } = useQuery<MeResponse>({
@@ -303,6 +426,7 @@ export default function AppPage() {
     setBillingError(false);
     setLeads([]);
     setSelected(new Set());
+    setShowProgress(true);
     generateMutation.mutate({ businessType: bizType, location: location_, intent, leadCount, tone });
   };
 
@@ -372,7 +496,9 @@ export default function AppPage() {
         <div style={{ background: W, borderRadius: 16, border: `1px solid ${BDR}`, boxShadow: "0 1px 8px rgba(0,0,0,.05)", overflow: "hidden" }}>
 
           {/* Card header */}
-          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 10, position: "relative", overflow: "hidden" }}>
+            <div style={{ position:"absolute", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,.18) 0%,transparent 70%)", top:-80, right:-60, animation:"floatOrb 8s ease infinite", pointerEvents:"none" }} />
+            <div style={{ position:"absolute", width:200, height:200, borderRadius:"50%", background:"radial-gradient(circle,rgba(139,92,246,.14) 0%,transparent 70%)", bottom:-40, left:40, animation:"floatOrb 11s ease infinite reverse", pointerEvents:"none" }} />
             <div style={{ width: 32, height: 32, borderRadius: 9, background: IND2, border: `1px solid rgba(99,102,241,.2)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M2 12l3-4 3 2.5 3-5 3 2.5" stroke={IND} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -539,6 +665,17 @@ export default function AppPage() {
                 </button>
               </div>
             </div>
+
+            {showProgress && (
+              <GenerationProgress
+                bizType={bizType}
+                location_={location_}
+                tone={tone}
+                leadCount={leadCount}
+                done={!generateMutation.isPending && leads.length > 0}
+                resultCount={leads.length}
+              />
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {leads.map((lead, i) => (
