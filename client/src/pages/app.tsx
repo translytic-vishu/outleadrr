@@ -42,19 +42,23 @@ const GLOBAL_CSS = `
     transition:border-color .18s,box-shadow .18s;
   }
   .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(99,102,241,.1);}
-  @keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(20px,-15px) scale(1.05)}66%{transform:translate(-10px,10px) scale(.97)}}
-  @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-  @keyframes counterUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  .lead-card{animation:fadeUp .35s cubic-bezier(.16,1,.3,1) both;}
-  .lead-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.1)!important;transition:transform .2s,box-shadow .2s!important;}
+  @keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(22px,-18px) scale(1.06)}66%{transform:translate(-12px,12px) scale(.96)}}
+  @keyframes shimmer{0%{background-position:-400% 0}100%{background-position:400% 0}}
+  @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(99,102,241,.15)}50%{box-shadow:0 0 40px rgba(99,102,241,.4)}}
+  .lead-card{animation:fadeUp .38s cubic-bezier(.16,1,.3,1) both;}
+  .lead-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.11)!important;transition:transform .22s,box-shadow .22s!important;}
   .send-btn{
-    padding:10px 20px;border-radius:9px;border:none;
-    background:${IND};color:${W};font-size:13px;font-weight:700;
-    cursor:pointer;font-family:${F};transition:all .15s;
-    box-shadow:0 2px 10px rgba(99,102,241,.3);
+    padding:11px 24px;border-radius:10px;border:none;
+    background:${K};color:${W};font-size:13px;font-weight:700;
+    cursor:pointer;font-family:${F};transition:all .18s;
+    box-shadow:0 2px 12px rgba(0,0,0,.18);letter-spacing:-.01em;
   }
-  .send-btn:hover:not(:disabled){background:#4f46e5;transform:translateY(-1px);}
-  .send-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .send-btn:hover:not(:disabled){background:#1a1a1a;transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.24);}
+  .send-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .cb-input:focus{border-color:${IND};box-shadow:0 0 0 3.5px rgba(99,102,241,.1);background:#fafafe;}
+  .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3.5px rgba(99,102,241,.1);}
+  .field-label{font-size:12px;font-weight:700;color:${K2};margin-bottom:7px;display:block;letter-spacing:-.01em;}
+  .section-divider{height:1px;background:rgba(0,0,0,0.06);margin:18px 0;}
 `;
 
 /* ─── Persona definitions ─────────────────────────────────────────── */
@@ -82,33 +86,150 @@ function ScoreBadge({ label, score }: { label: string; score: number }) {
   );
 }
 
-/* ─── Email preview panel ─────────────────────────────────────────── */
+/* ─── Email preview panel — real email client look ───────────────── */
 function EmailPanel({ lead, onClose }: { lead: Lead; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  function copyEmail() {
+    const full = `To: ${lead.contactName} <${lead.email}>\nSubject: ${lead.emailSubject}\n\n${lead.emailBody}`;
+    navigator.clipboard.writeText(full).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  // Split email body into paragraphs for proper rendering
+  const paragraphs = lead.emailBody
+    ? lead.emailBody.split(/\n\n+/).filter(p => p.trim())
+    : [];
+
+  const firstLetter = lead.contactName?.[0]?.toUpperCase() || "?";
+  const avatarColors = ["#6366f1","#10b981","#f59e0b","#ec4899","#3b82f6","#8b5cf6"];
+  const avatarColor = avatarColors[(lead.contactName?.charCodeAt(0) || 0) % avatarColors.length];
+
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 200,
-      background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)",
+      background: "rgba(5,5,10,0.6)", backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
       display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     }} onClick={onClose}>
       <div style={{
-        background: W, borderRadius: 16, width: "100%", maxWidth: 560,
-        boxShadow: "0 24px 80px rgba(0,0,0,.18)",
-        animation: "fadeUp .25s ease",
+        background: "#0d0d12", borderRadius: 18, width: "100%", maxWidth: 620,
+        boxShadow: "0 32px 96px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.07)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        animation: "fadeUp .22s cubic-bezier(.16,1,.3,1)",
+        overflow: "hidden",
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: K }}>{lead.contactName}</div>
-            <div style={{ fontSize: 12, color: K3, marginTop: 2 }}>{lead.title} · {lead.companyName}</div>
+
+        {/* ── Toolbar ── */}
+        <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="3" width="13" height="9" rx="1.5" stroke="#818cf8" strokeWidth="1.4"/><path d="M1 5l6.5 4.5L14 5" stroke="#818cf8" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>Email Preview</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{lead.companyName}</div>
+            </div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: K3, fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={copyEmail}
+              style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.12)", background: copied ? "rgba(22,163,74,0.15)" : "rgba(255,255,255,0.07)", color: copied ? "#4ade80" : "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, display: "flex", alignItems: "center", gap: 6, transition: "all .2s" }}
+            >
+              {copied ? (
+                <><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 5.5l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Copied</>
+              ) : (
+                <><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M3 3V2a1 1 0 011-1h5a1 1 0 011 1v6a1 1 0 01-1 1H8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>Copy</>
+              )}
+            </button>
+            <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.13)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.07)"; }}
+            >×</button>
+          </div>
         </div>
-        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${BDR}` }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: K3, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>Subject</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: K }}>{lead.emailSubject}</div>
+
+        {/* ── Email meta ── */}
+        <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { label: "To", value: `${lead.contactName} — ${lead.title}`, sub: lead.email },
+            { label: "Subject", value: lead.emailSubject },
+          ].map(row => (
+            <div key={row.label} style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: ".08em", width: 48, flexShrink: 0 }}>{row.label}</div>
+              <div>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: row.label === "Subject" ? 600 : 400 }}>{row.value}</span>
+                {row.sub && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginLeft: 8 }}>{row.sub}</span>}
+              </div>
+            </div>
+          ))}
         </div>
-        <div style={{ padding: "16px 24px 24px" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: K3, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>Body</div>
-          <div style={{ fontSize: 13, color: K2, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{lead.emailBody}</div>
+
+        {/* ── Email body ── */}
+        <div style={{ padding: "20px 20px 24px", maxHeight: "55vh", overflowY: "auto" }}>
+          {/* Avatar + sender line */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div style={{ width: 38, height: 38, borderRadius: "50%", background: avatarColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: W, flexShrink: 0, boxShadow: `0 0 16px ${avatarColor}40` }}>
+              {firstLetter}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>You</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>via connected Gmail</div>
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Now</div>
+              </div>
+
+              {/* The actual email */}
+              <div style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 12,
+                padding: "20px 22px",
+                fontFamily: "Georgia, 'Times New Roman', serif",
+              }}>
+                {paragraphs.length > 0 ? (
+                  paragraphs.map((para, i) => {
+                    const isSignatureLine = para.includes("{{YourName}}") || para.trim() === "{{YourName}}";
+                    const isClosing = /^(warm regards|kind regards|cheers|best|talk soon|sincerely|regards),?$/i.test(para.trim());
+                    return (
+                      <p key={i} style={{
+                        fontSize: 14,
+                        lineHeight: 1.8,
+                        color: isSignatureLine ? "rgba(255,255,255,0.35)" : isClosing ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.82)",
+                        margin: i === 0 ? "0 0 16px 0" : "0 0 16px 0",
+                        fontStyle: isSignatureLine ? "italic" : "normal",
+                        fontWeight: i === 0 ? 500 : 400,
+                        textIndent: (!isClosing && !isSignatureLine && i > 0 && i < paragraphs.length - 2) ? "1.5em" : 0,
+                      }}>
+                        {para.replace("{{YourName}}", "[Your Name]")}
+                      </p>
+                    );
+                  })
+                ) : (
+                  <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{lead.emailBody}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Score footer ── */}
+        <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {lead.score && (
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: lead.scoreLabel === "Strong Lead" ? "rgba(22,163,74,0.15)" : "rgba(202,138,4,0.15)", color: lead.scoreLabel === "Strong Lead" ? "#4ade80" : "#fbbf24" }}>
+                {lead.scoreLabel} · {lead.score}
+              </span>
+            )}
+            {lead.rating && (
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{lead.rating}/5 · {lead.reviewCount?.toLocaleString()} reviews</span>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Replace {"{{"+"YourName}}"} before sending</div>
         </div>
       </div>
     </div>
@@ -457,12 +578,16 @@ export default function AppPage() {
       {/* ── Page header ── */}
       <div style={{ padding: "28px 36px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: K, letterSpacing: "-.03em" }}>Campaign Builder</h1>
-          <p style={{ fontSize: 13, color: K3, marginTop: 3 }}>Find leads, generate personalized emails, and launch outreach in one flow.</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: K, letterSpacing: "-.03em", margin: 0 }}>Campaign Builder</h1>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: `${IND}12`, color: IND, letterSpacing: ".06em", textTransform: "uppercase" }}>AI-Powered</span>
+          </div>
+          <p style={{ fontSize: 13, color: K3, margin: 0 }}>Find leads, craft world-class cold emails, and launch outreach in one flow.</p>
         </div>
         {leads.length > 0 && (
-          <div style={{ fontSize: 12, color: K3, background: W, border: `1px solid ${BDR}`, borderRadius: 8, padding: "6px 14px" }}>
-            {leads.length} leads generated
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 9, padding: "7px 16px", fontWeight: 700 }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {leads.length} leads ready
           </div>
         )}
       </div>

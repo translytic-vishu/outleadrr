@@ -344,7 +344,21 @@ For each business return:
 - title: one of — Owner, Founder, CEO, General Manager, Practice Manager, Operations Director, Principal
 - email: use real domain if available (e.g. if domain is "smithplumbing.com" use "john@smithplumbing.com"), else firstname@sluggedcompanyname.com
 - emailSubject: 4–7 word subject line, no punctuation at end, specific to this business or industry
-- emailBody: 110–140 word cold email following the 3-paragraph structure. Vary the opener style across businesses. Sound like a person, not a tool.
+- emailBody: A fully formatted, send-ready cold email using this EXACT structure (include all blank lines):
+
+[Salutation based on tone: "Hi [FirstName]," for friendly/casual/direct/humorous/persuasive/bold — "Dear [FirstName]," for professional/consultative]
+
+[Hook — 1-2 sentences. Specific to THIS business using opener rotation A/B/C/D/E.]
+
+[Value/proof — 2-3 sentences. What you offer, who it helped, one real outcome or number.]
+
+[CTA — 1 sentence only. Use one of the approved CTAs.]
+
+[Closing based on tone: "Warm regards," for professional, "Kind regards," for consultative, "Cheers," for friendly/humorous, "Talk soon," for casual, "Best," for direct/persuasive/bold]
+
+{{YourName}}
+
+Rules: 100-130 words in the body paragraphs only (not counting salutation/closing/signature). Vary opener styles across businesses. Every email must feel individually researched, not templated.
 
 BUSINESSES:
 ${businessList}
