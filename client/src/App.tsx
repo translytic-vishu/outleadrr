@@ -11,11 +11,8 @@ import AppDashboard from "@/pages/app-dashboard";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import AppPage from "@/pages/app";
-import Campaigns from "@/pages/campaigns";
 import Inbox from "@/pages/inbox";
 import Templates from "@/pages/templates";
-import Leads from "@/pages/leads";
-import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 
 /* Redirect logged-in users from "/" to "/dashboard" */
@@ -46,12 +43,13 @@ function Router() {
       <Route path="/signup" component={Signup} />
       <Route path="/dashboard" component={AppDashboard} />
       <Route path="/app" component={AppPage} />
-      <Route path="/campaigns" component={Campaigns} />
       <Route path="/inbox" component={Inbox} />
       <Route path="/templates" component={Templates} />
-      <Route path="/leads" component={Leads} />
-      <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
+      {/* Legacy routes — redirect to dashboard */}
+      <Route path="/campaigns" component={() => { const [,s]=useLocation(); useEffect(()=>s("/dashboard"),[s]); return null; }} />
+      <Route path="/leads" component={() => { const [,s]=useLocation(); useEffect(()=>s("/dashboard"),[s]); return null; }} />
+      <Route path="/analytics" component={() => { const [,s]=useLocation(); useEffect(()=>s("/dashboard"),[s]); return null; }} />
       <Route component={NotFound} />
     </Switch>
   );

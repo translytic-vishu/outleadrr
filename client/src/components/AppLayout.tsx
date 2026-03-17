@@ -63,24 +63,12 @@ const NAV_ITEMS = [
     icon: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 11L5.5 7l3 2.5 4.5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12.5" cy="3" r="1.5" stroke="currentColor" strokeWidth="1.4"/></svg>,
   },
   {
-    label: "Campaigns", path: "/campaigns",
-    icon: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="2.5" width="12" height="2" rx="1" fill="currentColor" opacity=".35"/><rect x="1.5" y="6.5" width="8" height="2" rx="1" fill="currentColor" opacity=".6"/><rect x="1.5" y="10.5" width="5" height="2" rx="1" fill="currentColor"/></svg>,
-  },
-  {
     label: "Inbox", path: "/inbox",
     icon: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="3" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><path d="M1.5 5l6 4 6-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
   },
   {
     label: "Templates", path: "/templates",
     icon: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1.5" y="1.5" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M4.5 5.5h6M4.5 8.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  },
-  {
-    label: "Leads", path: "/leads",
-    icon: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M2.5 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  },
-  {
-    label: "Analytics", path: "/analytics",
-    icon: <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M1.5 11.5l3.5-4.5 3 2.5 3.5-6L14 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   },
 ];
 
