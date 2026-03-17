@@ -3,23 +3,35 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AppLayout } from "@/components/AppLayout";
 import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
-import type { AuthStatus } from "@shared/schema";
+import type { AuthStatus } from "@/../../shared/schema";
 
 const F   = "'Inter','Helvetica Neue',Arial,sans-serif";
-const K   = "#0a0a0a";
-const K2  = "#3a3a3a";
-const K3  = "#888";
-const W   = "#ffffff";
-const BG  = "#f8f8f9";
-const BDR = "rgba(0,0,0,0.07)";
-const IND = "#6366f1";
+const K   = "rgba(255,255,255,0.9)";
+const K2  = "rgba(255,255,255,0.65)";
+const K3  = "rgba(255,255,255,0.32)";
+const CARD = "rgba(255,255,255,0.03)";
+const BDR  = "rgba(255,255,255,0.07)";
+const BDR2 = "rgba(255,255,255,0.11)";
+const IND  = "#8b5cf6";
+const PANEL_BG = "#0d0d10";
+const DETAIL_BG = "#0a0a0c";
 
 const CSS = `
   *,*::before,*::after{box-sizing:border-box;}
   textarea{font-family:${F};resize:none;}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .thread-row{cursor:pointer;transition:background .12s;}
-  .thread-row:hover{background:#fafafa;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideRight{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  .thread-row{
+    cursor:pointer;
+    transition:background .12s,border-left-color .12s;
+    border-left:3px solid transparent;
+  }
+  .thread-row:hover{background:rgba(255,255,255,.04);}
+  .thread-row.active-thread{
+    background:rgba(139,92,246,.08);
+    border-left-color:${IND};
+  }
 `;
 
 interface GmailMessage {
@@ -54,7 +66,7 @@ function InitialAvatar({ name }: { name: string }) {
   const colors = ["#6366f1","#10b981","#f59e0b","#ec4899","#3b82f6","#8b5cf6","#06b6d4","#ef4444"];
   const idx = name.charCodeAt(0) % colors.length;
   return (
-    <div style={{ width: 36, height: 36, borderRadius: "50%", background: colors[idx], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: W, flexShrink: 0 }}>
+    <div style={{ width: 36, height: 36, borderRadius: "50%", background: colors[idx] + "33", border: `1px solid ${colors[idx]}50`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: colors[idx], flexShrink: 0 }}>
       {letter}
     </div>
   );
@@ -101,8 +113,14 @@ export default function Inbox() {
 
       <div style={{ display: "flex", height: "100%", fontFamily: F, overflow: "hidden" }}>
 
-        {/* Thread list */}
-        <div style={{ width: 300, flexShrink: 0, borderRight: `1px solid ${BDR}`, overflowY: "auto", background: W, display: "flex", flexDirection: "column" }}>
+        {/* ── Thread list panel ── */}
+        <div style={{
+          width: 300, flexShrink: 0,
+          borderRight: `1px solid ${BDR}`,
+          overflowY: "auto",
+          background: PANEL_BG,
+          display: "flex", flexDirection: "column",
+        }}>
           <div style={{ padding: "18px 18px 14px", borderBottom: `1px solid ${BDR}`, flexShrink: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: K, letterSpacing: "-.02em" }}>Inbox</div>
             {messages.length > 0 && (
@@ -114,12 +132,12 @@ export default function Inbox() {
 
           {!gmailStatus?.connected ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", textAlign: "center" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${IND}10`, border: `1px solid ${IND}25`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${IND}15`, border: `1px solid ${IND}30`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke={IND} strokeWidth="1.5"/><path d="M2 7l8 5 8-5" stroke={IND} strokeWidth="1.5" strokeLinecap="round"/></svg>
               </div>
               <div style={{ fontSize: 13, fontWeight: 600, color: K, marginBottom: 6 }}>Gmail not connected</div>
               <div style={{ fontSize: 12, color: K3, marginBottom: 14 }}>Connect Gmail to see your inbox here.</div>
-              <a href="/api/auth/google" style={{ padding: "8px 16px", borderRadius: 8, background: IND, color: W, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Connect Gmail</a>
+              <a href="/api/auth/google" style={{ padding: "8px 16px", borderRadius: 8, background: "linear-gradient(135deg,#7c3aed,#8b5cf6)", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Connect Gmail</a>
             </div>
           ) : isLoading ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -133,26 +151,21 @@ export default function Inbox() {
           ) : (
             <div style={{ flex: 1, overflowY: "auto" }}>
               {messages.map(msg => {
-                const { name, email } = parseFrom(msg.from);
-                const isActive = active?.id === msg.id;
+                const { name } = parseFrom(msg.from);
+                const isActiveMail = active?.id === msg.id;
                 return (
                   <div
                     key={msg.id}
-                    className="thread-row"
+                    className={`thread-row${isActiveMail ? " active-thread" : ""}`}
                     onClick={() => setActive(msg)}
-                    style={{
-                      padding: "13px 16px",
-                      borderBottom: `1px solid ${BDR}`,
-                      background: isActive ? `${IND}08` : "transparent",
-                      borderLeft: isActive ? `3px solid ${IND}` : "3px solid transparent",
-                    }}
+                    style={{ padding: "13px 16px", borderBottom: `1px solid ${BDR}` }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <InitialAvatar name={name} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
                           <div style={{ fontSize: 13, fontWeight: msg.isUnread ? 700 : 500, color: K, display: "flex", alignItems: "center", gap: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                            {msg.isUnread && <div style={{ width: 6, height: 6, borderRadius: "50%", background: IND, flexShrink: 0 }} />}
+                            {msg.isUnread && <div style={{ width: 6, height: 6, borderRadius: "50%", background: IND, flexShrink: 0, boxShadow: `0 0 6px ${IND}80` }} />}
                             {name}
                           </div>
                           <div style={{ fontSize: 10, color: K3, flexShrink: 0, marginLeft: 6 }}>{formatDate(msg.date)}</div>
@@ -168,12 +181,12 @@ export default function Inbox() {
           )}
         </div>
 
-        {/* Message detail */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* ── Message detail panel ── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: DETAIL_BG }}>
           {!active ? (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: BG }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: `${IND}10`, border: `1px solid ${IND}20`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke={IND} strokeWidth="1.5"/><path d="M2 8l10 7 10-7" stroke={IND} strokeWidth="1.5" strokeLinecap="round"/></svg>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: `${IND}12`, border: `1px solid ${IND}25`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke={IND} strokeWidth="1.5" strokeOpacity=".7"/><path d="M2 8l10 7 10-7" stroke={IND} strokeWidth="1.5" strokeLinecap="round" strokeOpacity=".7"/></svg>
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: K, marginBottom: 6 }}>Select a message</div>
               <div style={{ fontSize: 13, color: K3 }}>{gmailStatus?.connected ? "Click a message on the left to read it." : "Connect Gmail to see your inbox."}</div>
@@ -181,7 +194,7 @@ export default function Inbox() {
           ) : (
             <>
               {/* Header */}
-              <div style={{ padding: "18px 28px", borderBottom: `1px solid ${BDR}`, background: W, flexShrink: 0 }}>
+              <div style={{ padding: "18px 28px", borderBottom: `1px solid ${BDR}`, background: PANEL_BG, flexShrink: 0 }}>
                 <div style={{ fontSize: 17, fontWeight: 700, color: K, marginBottom: 4 }}>{active.subject || "(no subject)"}</div>
                 <div style={{ fontSize: 12, color: K3 }}>
                   From: {active.from} · {formatDate(active.date)}
@@ -189,27 +202,28 @@ export default function Inbox() {
               </div>
 
               {/* Message body */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px", background: BG }}>
-                <div style={{ background: W, borderRadius: 12, border: `1px solid ${BDR}`, padding: "20px 22px", boxShadow: "0 1px 4px rgba(0,0,0,.04)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+                <div style={{ background: CARD, borderRadius: 14, border: `1px solid ${BDR}`, padding: "20px 22px", animation: "slideRight .2s ease both" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                     <InitialAvatar name={parseFrom(active.from).name} />
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: K }}>{parseFrom(active.from).name}</div>
                       <div style={{ fontSize: 11, color: K3 }}>{parseFrom(active.from).email}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 13, color: K2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{active.snippet}</div>
-                  <div style={{ marginTop: 16, padding: "10px 14px", background: BG, borderRadius: 8, border: `1px solid ${BDR}`, fontSize: 11, color: K3 }}>
+                  <div style={{ fontSize: 13, color: K2, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{active.snippet}</div>
+                  <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 8, border: `1px solid ${BDR}`, fontSize: 11, color: K3 }}>
                     Full message preview — open in Gmail for complete view.
                   </div>
                 </div>
               </div>
 
               {/* Reply box */}
-              <div style={{ padding: "14px 28px 18px", borderTop: `1px solid ${BDR}`, background: W, flexShrink: 0 }}>
-                <div style={{ background: BG, borderRadius: 10, border: `1.5px solid #e4e4e8`, overflow: "hidden", transition: "border-color .18s" }}
-                  onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = IND; }}
-                  onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "#e4e4e8"; }}
+              <div style={{ padding: "14px 28px 18px", borderTop: `1px solid ${BDR}`, background: PANEL_BG, flexShrink: 0 }}>
+                <div
+                  style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, border: `1.5px solid ${BDR2}`, overflow: "hidden", transition: "border-color .18s" }}
+                  onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(139,92,246,.5)"; }}
+                  onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = BDR2; }}
                 >
                   <textarea
                     value={reply}
@@ -220,8 +234,8 @@ export default function Inbox() {
                   />
                   <div style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "flex-end", borderTop: `1px solid ${BDR}`, gap: 8 }}>
                     {sent && (
-                      <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
-                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#16a34a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span style={{ fontSize: 12, color: "#4ade80", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 7l3.5 3.5L11 3" stroke="#4ade80" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         Sent
                       </span>
                     )}
@@ -230,21 +244,25 @@ export default function Inbox() {
                       disabled={!reply.trim() || replyMutation.isPending}
                       style={{
                         padding: "7px 18px", borderRadius: 8, border: "none",
-                        background: reply.trim() ? IND : "#e4e4e8",
-                        color: reply.trim() ? W : K3,
+                        background: reply.trim() ? "linear-gradient(135deg,#7c3aed,#8b5cf6)" : "rgba(255,255,255,.08)",
+                        color: reply.trim() ? "#fff" : K3,
                         fontSize: 13, fontWeight: 700,
                         cursor: reply.trim() && !replyMutation.isPending ? "pointer" : "not-allowed",
                         fontFamily: F, transition: "all .15s",
                         display: "flex", alignItems: "center", gap: 6,
                       }}
                     >
-                      {replyMutation.isPending ? "Sending..." : "Send Reply"}
+                      {replyMutation.isPending
+                        ? <><svg style={{ animation: "spin 1s linear infinite" }} width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v2M6 9v2M1 6h2M9 6h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>Sending...</>
+                        : "Send Reply"}
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: K3, marginTop: 8 }}>
-                  Replies are sent via your connected Gmail: {gmailStatus?.email}
-                </div>
+                {gmailStatus?.email && (
+                  <div style={{ fontSize: 11, color: K3, marginTop: 8 }}>
+                    Replies sent via your connected Gmail: {gmailStatus.email}
+                  </div>
+                )}
               </div>
             </>
           )}

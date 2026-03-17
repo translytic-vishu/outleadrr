@@ -257,7 +257,7 @@ export default function AppDashboard() {
           <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
         </div>
 
-        <div style={{ position: "relative", zIndex: 1, padding: "32px 36px 56px", maxWidth: 1140, margin: "0 auto" }}>
+        <div style={{ position: "relative", zIndex: 1, padding: "32px 40px 56px" }}>
 
           {/* ── Header ── */}
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, animation: "fadeUp .5s cubic-bezier(.16,1,.3,1) both" }}>

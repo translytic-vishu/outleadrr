@@ -31,7 +31,7 @@ export default function Login() {
       }
       return res.json();
     },
-    onSuccess: () => { sessionStorage.setItem("outleadrr_new_login", "1"); navigate("/app"); },
+    onSuccess: () => { sessionStorage.setItem("outleadrr_new_login", "1"); navigate("/dashboard"); },
     onError: (err: any) => { toast({ title: err.message, variant: "destructive" }); },
   });
 

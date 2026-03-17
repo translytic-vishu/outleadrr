@@ -124,11 +124,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       }}>
 
         {/* Logo */}
-        <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${BDR}` }}>
+        <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${BDR}`, display: "flex", justifyContent: "center" }}>
           <SidebarLogo />
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", marginTop: 5, letterSpacing: ".06em", textTransform: "uppercase", fontWeight: 600 }}>
-            Outreach Platform
-          </div>
         </div>
 
         {/* Nav */}
