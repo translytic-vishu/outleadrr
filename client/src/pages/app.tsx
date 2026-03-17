@@ -29,6 +29,7 @@ const GLOBAL_CSS = `
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
   @keyframes genPulse{0%,100%{opacity:.6;transform:scaleX(1)}50%{opacity:1;transform:scaleX(1.01)}}
+  @keyframes spin-slow{to{transform:rotate(360deg)}}
   .cb-input{
     width:100%;padding:10px 14px;
     background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.09);
@@ -67,15 +68,15 @@ const GLOBAL_CSS = `
 /* ─── Persona definitions ─────────────────────────────────────────── */
 type Tone = "professional" | "friendly" | "direct" | "humorous" | "persuasive" | "casual" | "consultative" | "bold";
 
-const PERSONAS: { tone: Tone; name: string; title: string; desc: string; color: string }[] = [
-  { tone: "professional", name: "Alex Morgan",  title: "Enterprise AE",     desc: "Formal, polished, results-driven",    color: "#3b82f6" },
-  { tone: "friendly",    name: "Jamie Chen",    title: "SMB Advisor",       desc: "Warm, approachable, conversational",  color: "#10b981" },
-  { tone: "direct",      name: "Marcus Reid",   title: "Sales Director",    desc: "No fluff, straight to the point",     color: "#f59e0b" },
-  { tone: "humorous",    name: "Zoe Park",      title: "Growth Hacker",     desc: "Witty, memorable, stands out",        color: "#ec4899" },
-  { tone: "persuasive",  name: "Jordan Blake",  title: "Revenue Lead",      desc: "Compelling hooks, urgency-driven",    color: "#8b5cf6" },
-  { tone: "casual",      name: "Sam Torres",    title: "BDR",               desc: "Relaxed, peer-to-peer energy",        color: "#06b6d4" },
-  { tone: "consultative",name: "Dana Kim",      title: "Solutions Consul.", desc: "Advisory, insight-led, trusted",      color: "#6366f1" },
-  { tone: "bold",        name: "Ryder Fox",     title: "Founder",           desc: "Disruptive, confident, direct",       color: "#ef4444" },
+const PERSONAS: { tone: Tone; name: string; title: string; desc: string; color: string; photo: string }[] = [
+  { tone: "professional", name: "Alex Morgan",   title: "Enterprise AE",      desc: "Formal, polished, results-driven",   color: "#3b82f6", photo: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "friendly",    name: "Jamie Chen",     title: "SMB Advisor",        desc: "Warm, approachable, conversational", color: "#10b981", photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "direct",      name: "Marcus Reid",    title: "Sales Director",     desc: "No fluff, straight to the point",    color: "#f59e0b", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "humorous",    name: "Zoe Park",       title: "Growth Hacker",      desc: "Witty, memorable, stands out",       color: "#ec4899", photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "persuasive",  name: "Jordan Blake",   title: "Revenue Lead",       desc: "Compelling hooks, urgency-driven",   color: "#8b5cf6", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "casual",      name: "Sam Torres",     title: "BDR",                desc: "Relaxed, peer-to-peer energy",       color: "#06b6d4", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "consultative",name: "Dana Kim",       title: "Solutions Consult.", desc: "Advisory, insight-led, trusted",    color: "#6366f1", photo: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=72&h=72&fit=crop&crop=face&q=80" },
+  { tone: "bold",        name: "Ryder Fox",      title: "Founder",            desc: "Disruptive, confident, direct",      color: "#ef4444", photo: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=72&h=72&fit=crop&crop=face&q=80" },
 ];
 
 /* ─── Lead score badge ────────────────────────────────────────────── */
@@ -240,9 +241,56 @@ function EmailPanel({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   );
 }
 
+/* ─── Edit Email Modal ────────────────────────────────────────────── */
+function EditEmailModal({ lead, onSave, onClose }: { lead: Lead; onSave: (updated: Lead) => void; onClose: () => void }) {
+  const [subject, setSubject] = useState(lead.emailSubject);
+  const [body, setBody] = useState(lead.emailBody);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(12px)" }} />
+      {/* Modal */}
+      <div style={{
+        position:"fixed",zIndex:201,top:"50%",left:"50%",transform:"translate(-50%,-50%)",
+        width:"calc(100% - 32px)",maxWidth:640,
+        background:"rgba(12,12,18,0.95)",
+        border:"1px solid rgba(255,255,255,0.1)",
+        borderRadius:18,boxShadow:"0 32px 80px rgba(0,0,0,0.7)",
+        backdropFilter:"blur(40px)",
+        fontFamily:"'Inter',sans-serif",overflow:"hidden",
+      }}>
+        {/* Header */}
+        <div style={{ padding:"16px 22px",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+          <div>
+            <div style={{ fontSize:14,fontWeight:700,color:"rgba(255,255,255,0.9)" }}>Edit Email — {lead.companyName}</div>
+            <div style={{ fontSize:11,color:"rgba(255,255,255,0.35)",marginTop:2 }}>Changes apply only to this lead</div>
+          </div>
+          <button onClick={onClose} style={{ width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+        </div>
+        {/* Body */}
+        <div style={{ padding:"20px 22px",display:"flex",flexDirection:"column",gap:14 }}>
+          <div>
+            <label style={{ fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:".08em",textTransform:"uppercase",display:"block",marginBottom:6 }}>Subject Line</label>
+            <input value={subject} onChange={e=>setSubject(e.target.value)} style={{ width:"100%",padding:"10px 14px",background:"rgba(255,255,255,0.05)",border:"1.5px solid rgba(255,255,255,0.1)",borderRadius:10,fontSize:13,color:"rgba(255,255,255,0.88)",outline:"none",fontFamily:"'Inter',sans-serif",colorScheme:"dark" } as React.CSSProperties} onFocus={e=>{e.target.style.borderColor="#8b5cf6";}} onBlur={e=>{e.target.style.borderColor="rgba(255,255,255,0.1)";}} />
+          </div>
+          <div>
+            <label style={{ fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:".08em",textTransform:"uppercase",display:"block",marginBottom:6 }}>Email Body</label>
+            <textarea value={body} onChange={e=>setBody(e.target.value)} rows={12} style={{ width:"100%",padding:"12px 14px",background:"rgba(255,255,255,0.05)",border:"1.5px solid rgba(255,255,255,0.1)",borderRadius:10,fontSize:12.5,color:"rgba(255,255,255,0.82)",outline:"none",fontFamily:"'Georgia',serif",lineHeight:1.75,resize:"vertical",colorScheme:"dark" } as React.CSSProperties} onFocus={e=>{e.target.style.borderColor="#8b5cf6";}} onBlur={e=>{e.target.style.borderColor="rgba(255,255,255,0.1)";}} />
+          </div>
+          <div style={{ display:"flex",gap:8,justifyContent:"flex-end" }}>
+            <button onClick={onClose} style={{ padding:"9px 20px",borderRadius:9,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.55)",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"'Inter',sans-serif" }}>Cancel</button>
+            <button onClick={()=>{ onSave({...lead,emailSubject:subject,emailBody:body}); onClose(); }} style={{ padding:"9px 20px",borderRadius:9,border:"none",background:"linear-gradient(135deg,#7c3aed,#6d28d9)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Inter',sans-serif",boxShadow:"0 4px 16px rgba(109,40,217,0.35)" }}>Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 /* ─── Lead Card ───────────────────────────────────────────────────── */
-function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
-  lead: Lead; selected: boolean; onToggle: () => void; onPreview: () => void; idx: number;
+function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
+  lead: Lead; selected: boolean; onToggle: () => void; onPreview: () => void; onEdit: () => void; idx: number;
 }) {
   return (
     <div
@@ -311,21 +359,28 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
         ) : null}
       </div>
 
-      {/* Preview btn */}
-      <button
-        onClick={onPreview}
-        style={{
-          padding: "6px 14px", borderRadius: 8,
-          border: `1px solid rgba(255,255,255,0.1)`,
-          background: "rgba(255,255,255,0.05)",
-          fontSize: 12, fontWeight: 600, color: K2, cursor: "pointer", flexShrink: 0,
-          transition: "all .15s",
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = IND; (e.currentTarget as HTMLButtonElement).style.color = "#c4b5fd"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.1)"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = K2; (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
-      >
-        Preview
-      </button>
+      {/* Action buttons */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+        <button
+          onClick={onPreview}
+          style={{
+            padding: "6px 14px", borderRadius: 8,
+            border: `1px solid rgba(255,255,255,0.1)`,
+            background: "rgba(255,255,255,0.05)",
+            fontSize: 12, fontWeight: 600, color: K2, cursor: "pointer",
+            transition: "all .15s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = IND; (e.currentTarget as HTMLButtonElement).style.color = "#c4b5fd"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.1)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = K2; (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
+        >
+          Preview
+        </button>
+        <button onClick={onEdit} style={{ padding:"6px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.45)",cursor:"pointer",transition:"all .15s" }}
+          onMouseEnter={e=>{(e.target as HTMLElement).style.borderColor="#8b5cf6";(e.target as HTMLElement).style.color="#c4b5fd";}}
+          onMouseLeave={e=>{(e.target as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";(e.target as HTMLElement).style.color="rgba(255,255,255,0.45)";}}>
+          Edit
+        </button>
+      </div>
     </div>
   );
 }
@@ -492,6 +547,7 @@ export default function AppPage() {
   const [leads, setLeads]         = useState<Lead[]>([]);
   const [selected, setSelected]   = useState<Set<number>>(new Set());
   const [previewLead, setPreviewLead] = useState<Lead | null>(null);
+  const [editLead, setEditLead]   = useState<{ lead: Lead; idx: number } | null>(null);
   const [billingError, setBillingError] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
 
@@ -608,6 +664,7 @@ export default function AppPage() {
       <style>{GLOBAL_CSS}</style>
 
       {previewLead && <EmailPanel lead={previewLead} onClose={() => setPreviewLead(null)} />}
+      {editLead && <EditEmailModal lead={editLead.lead} onSave={(updated) => { const next = [...leads]; next[editLead.idx] = updated; setLeads(next); }} onClose={() => setEditLead(null)} />}
 
       {/* ── Page header ── */}
       <div style={{ padding: "28px 36px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -626,16 +683,6 @@ export default function AppPage() {
         )}
       </div>
 
-      {/* ── Template loaded banner ── */}
-      {loadedTemplate && (
-        <div style={{ margin: "16px 36px 0", padding: "11px 18px", borderRadius: 10, background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#a78bfa" strokeWidth="1.4"/><path d="M5 6h6M5 9h4" stroke="#a78bfa" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            <span style={{ fontSize: 12, color: "#c4b5fd", fontWeight: 500 }}>Template: <strong style={{ fontWeight: 700, color:"#e9d5ff" }}>{loadedTemplate}</strong> — tone pre-filled</span>
-          </div>
-          <button onClick={() => setLoadedTemplate(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
-        </div>
-      )}
 
       {/* ── Billing error banner ── */}
       {billingError && (
@@ -742,7 +789,7 @@ export default function AppPage() {
                         boxShadow: active ? `0 0 0 3px ${p.color}18, 0 4px 16px rgba(0,0,0,0.2)` : "none",
                       }}
                     >
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${p.color}20`, border: `2px solid ${active ? p.color : "rgba(255,255,255,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: p.color, flexShrink: 0 }}>{p.name[0]}</div>
+                      <img src={p.photo} alt={p.name} style={{ width:32, height:32, borderRadius:"50%", objectFit:"cover", border: `2px solid ${active ? p.color : "rgba(255,255,255,0.1)"}`, flexShrink:0 }} onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : "rgba(255,255,255,0.8)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                         <div style={{ fontSize: 10, color: K3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.desc}</div>
@@ -751,6 +798,28 @@ export default function AppPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Template selector */}
+            <div style={{ marginBottom:16,display:"flex",alignItems:"center",gap:10 }}>
+              <button
+                onClick={() => {
+                  setLocation("/templates");
+                }}
+                style={{ display:"flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"rgba(255,255,255,0.55)",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"all .15s" }}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="#8b5cf6";(e.currentTarget as HTMLElement).style.color="#c4b5fd";}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";(e.currentTarget as HTMLElement).style.color="rgba(255,255,255,0.55)";}}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 5h6M4 7.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                Template
+                <span style={{ fontSize:10,color:"rgba(255,255,255,0.28)",fontWeight:400 }}>(optional)</span>
+              </button>
+              {loadedTemplate && (
+                <span style={{ fontSize:12,color:"#c4b5fd",background:"rgba(139,92,246,0.1)",border:"1px solid rgba(139,92,246,0.2)",borderRadius:7,padding:"4px 10px" }}>
+                  {loadedTemplate}
+                  <button onClick={()=>setLoadedTemplate(null)} style={{ background:"none",border:"none",color:"rgba(255,255,255,0.4)",cursor:"pointer",marginLeft:6,fontSize:14,lineHeight:1,padding:0 }}>×</button>
+                </span>
+              )}
             </div>
 
             {/* Generate button */}
@@ -871,6 +940,7 @@ export default function AppPage() {
                     setSelected(next);
                   }}
                   onPreview={() => setPreviewLead(lead)}
+                  onEdit={() => setEditLead({ lead, idx: i })}
                 />
               ))}
             </div>
@@ -879,15 +949,42 @@ export default function AppPage() {
 
         {/* ── Empty state ── */}
         {leads.length === 0 && !generateMutation.isPending && (
-          <div style={{ textAlign: "center", padding: "52px 24px" }}>
-            <div style={{ width:56,height:56,borderRadius:16,background:"rgba(139,92,246,0.08)",border:"1px solid rgba(139,92,246,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M3 12l5-6 4 5 4-7 5 8" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="10" stroke="rgba(139,92,246,0.3)" strokeWidth="1.2"/>
+          <div style={{ display:"flex",flexDirection:"column",alignItems:"center",padding:"48px 24px",gap:32 }}>
+            {/* Animated orbit visualization */}
+            <div style={{ position:"relative",width:160,height:160 }}>
+              {/* Center circle */}
+              <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:44,height:44,borderRadius:"50%",background:"rgba(139,92,246,0.15)",border:"2px solid rgba(139,92,246,0.4)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 10l4-5 3 3 4-5 4 4" stroke="#8b5cf6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              {/* Orbit ring */}
+              <svg width="160" height="160" style={{ position:"absolute",top:0,left:0,animation:"spin-slow 12s linear infinite" }}>
+                <circle cx="80" cy="80" r="60" fill="none" stroke="rgba(139,92,246,0.15)" strokeWidth="1" strokeDasharray="6 4"/>
+                <circle cx="80" cy="20" r="7" fill="rgba(139,92,246,0.5)" stroke="rgba(139,92,246,0.8)" strokeWidth="1.5"/>
+              </svg>
+              {/* Second orbit ring */}
+              <svg width="160" height="160" style={{ position:"absolute",top:0,left:0,animation:"spin-slow 8s linear infinite reverse" }}>
+                <circle cx="80" cy="80" r="40" fill="none" stroke="rgba(99,102,241,0.1)" strokeWidth="1" strokeDasharray="4 3"/>
+                <circle cx="80" cy="40" r="5" fill="rgba(99,102,241,0.5)" stroke="rgba(99,102,241,0.8)" strokeWidth="1.5"/>
               </svg>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 6 }}>Your leads will appear here</div>
-            <div style={{ fontSize: 13, color: K3, maxWidth:300, margin:"0 auto" }}>Fill in the campaign details above and click Generate Leads to find your first prospects.</div>
+            {/* Labels */}
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:16,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:8 }}>Ready to find your leads</div>
+              <div style={{ fontSize:13,color:"rgba(255,255,255,0.33)",maxWidth:300,lineHeight:1.65 }}>Fill in business type and location above, then click Generate. The AI will find, score, and write personalized emails for each prospect.</div>
+            </div>
+            {/* Mini step list */}
+            <div style={{ display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:320 }}>
+              {[
+                { n:"01", label:"Search Google Maps for real businesses" },
+                { n:"02", label:"Score each lead by rating and opportunity" },
+                { n:"03", label:"Write a personalized cold email for each" },
+              ].map(s => (
+                <div key={s.n} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)" }}>
+                  <span style={{ fontSize:10,fontWeight:800,color:"rgba(139,92,246,0.6)",letterSpacing:".08em",fontFamily:"monospace",flexShrink:0 }}>{s.n}</span>
+                  <span style={{ fontSize:12,color:"rgba(255,255,255,0.45)" }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
