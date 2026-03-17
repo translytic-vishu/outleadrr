@@ -6,59 +6,62 @@ import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } 
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/AppLayout";
 
-/* ─── Design Tokens ───────────────────────────────────────────────── */
+/* ─── Design Tokens ─── dark premium theme ───────────────────────── */
 const F    = "'Inter','Helvetica Neue',Arial,sans-serif";
-const W    = "#ffffff";
-const K    = "#0a0a0a";
-const K2   = "#3a3a3a";
-const K3   = "#888";
-const K4   = "#c4c4c8";
-const BDR  = "rgba(0,0,0,0.07)";
-const BDR2 = "rgba(0,0,0,0.12)";
-const IND  = "#6366f1";
-const IND2 = "rgba(99,102,241,0.08)";
+const W    = "rgba(255,255,255,0.9)";   // primary text
+const K    = "#111114";                  // card background
+const K2   = "rgba(255,255,255,0.65)";  // secondary text
+const K3   = "rgba(255,255,255,0.38)";  // muted text
+const K4   = "rgba(255,255,255,0.22)";  // placeholder
+const BDR  = "rgba(255,255,255,0.07)";
+const BDR2 = "rgba(255,255,255,0.11)";
+const IND  = "#8b5cf6";
+const IND2 = "rgba(139,92,246,0.1)";
 
 const GLOBAL_CSS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body,#root{font-family:${F};}
   input,button,select,textarea{font-family:${F};}
-  input::placeholder,textarea::placeholder{color:${K4};}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22);}
+  select option { background:#1a1a1f; color:#e5e5e5; }
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes genPulse{0%,100%{opacity:.6;transform:scaleX(1)}50%{opacity:1;transform:scaleX(1.01)}}
   .cb-input{
     width:100%;padding:10px 14px;
-    background:${W};border:1.5px solid #e4e4e8;
-    border-radius:9px;font-size:14px;color:${K};outline:none;
-    transition:border-color .18s,box-shadow .18s;
+    background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.09);
+    border-radius:10px;font-size:14px;color:rgba(255,255,255,0.88);outline:none;
+    transition:border-color .18s,box-shadow .18s,background .18s;
+    color-scheme:dark;
   }
-  .cb-input:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(99,102,241,.1);}
+  .cb-input:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(139,92,246,.12);background:rgba(139,92,246,0.05);}
   .cb-select{
     width:100%;padding:10px 14px;
-    background:${W};border:1.5px solid #e4e4e8;
-    border-radius:9px;font-size:14px;color:${K};outline:none;
+    background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.09);
+    border-radius:10px;font-size:14px;color:rgba(255,255,255,0.88);outline:none;
     appearance:none;cursor:pointer;
     transition:border-color .18s,box-shadow .18s;
+    color-scheme:dark;
   }
-  .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(99,102,241,.1);}
+  .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(139,92,246,.12);}
   @keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(22px,-18px) scale(1.06)}66%{transform:translate(-12px,12px) scale(.96)}}
   @keyframes shimmer{0%{background-position:-400% 0}100%{background-position:400% 0}}
-  @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(99,102,241,.15)}50%{box-shadow:0 0 40px rgba(99,102,241,.4)}}
+  @keyframes glow{0%,100%{box-shadow:0 0 24px rgba(139,92,246,.2)}50%{box-shadow:0 0 48px rgba(139,92,246,.5)}}
+  @keyframes scanLine{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
   .lead-card{animation:fadeUp .38s cubic-bezier(.16,1,.3,1) both;}
-  .lead-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.11)!important;transition:transform .22s,box-shadow .22s!important;}
+  .lead-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.4)!important;border-color:rgba(139,92,246,0.25)!important;transition:transform .22s,box-shadow .22s,border-color .22s!important;}
   .send-btn{
     padding:11px 24px;border-radius:10px;border:none;
-    background:${K};color:${W};font-size:13px;font-weight:700;
+    background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:13px;font-weight:700;
     cursor:pointer;font-family:${F};transition:all .18s;
-    box-shadow:0 2px 12px rgba(0,0,0,.18);letter-spacing:-.01em;
+    box-shadow:0 4px 16px rgba(109,40,217,.35);letter-spacing:-.01em;
   }
-  .send-btn:hover:not(:disabled){background:#1a1a1a;transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.24);}
-  .send-btn:disabled{opacity:.45;cursor:not-allowed;}
-  .cb-input:focus{border-color:${IND};box-shadow:0 0 0 3.5px rgba(99,102,241,.1);background:#fafafe;}
-  .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3.5px rgba(99,102,241,.1);}
-  .field-label{font-size:12px;font-weight:700;color:${K2};margin-bottom:7px;display:block;letter-spacing:-.01em;}
-  .section-divider{height:1px;background:rgba(0,0,0,0.06);margin:18px 0;}
+  .send-btn:hover:not(:disabled){box-shadow:0 8px 28px rgba(109,40,217,.5);transform:translateY(-1px);}
+  .send-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .field-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.38);margin-bottom:6px;display:block;letter-spacing:.07em;text-transform:uppercase;}
+  .section-divider{height:1px;background:rgba(255,255,255,0.05);margin:18px 0;}
 `;
 
 /* ─── Persona definitions ─────────────────────────────────────────── */
@@ -77,11 +80,12 @@ const PERSONAS: { tone: Tone; name: string; title: string; desc: string; color: 
 
 /* ─── Lead score badge ────────────────────────────────────────────── */
 function ScoreBadge({ label, score }: { label: string; score: number }) {
-  const bg = label === "Strong Lead" ? "#dcfce7" : label === "Good Lead" ? "#fef9c3" : "#fee2e2";
-  const col = label === "Strong Lead" ? "#16a34a" : label === "Good Lead" ? "#ca8a04" : "#dc2626";
+  const bg  = label === "Strong Lead" ? "rgba(34,197,94,0.12)"  : label === "Good Lead" ? "rgba(234,179,8,0.12)"  : "rgba(239,68,68,0.12)";
+  const col = label === "Strong Lead" ? "#4ade80"                : label === "Good Lead" ? "#fbbf24"                : "#f87171";
+  const bdr = label === "Strong Lead" ? "rgba(74,222,128,0.25)" : label === "Good Lead" ? "rgba(251,191,36,0.25)" : "rgba(248,113,113,0.25)";
   return (
-    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: bg, color: col, letterSpacing: ".03em" }}>
-      {label} · {score}
+    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: bg, color: col, border: `1px solid ${bdr}`, letterSpacing: ".04em", textTransform: "uppercase" }}>
+      {label.replace(" Lead","")} · {score}
     </span>
   );
 }
@@ -244,19 +248,23 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
     <div
       className="lead-card"
       style={{
-        background: W, borderRadius: 12, border: selected ? `1.5px solid ${IND}` : `1px solid ${BDR2}`,
+        background: selected ? "rgba(139,92,246,0.05)" : "rgba(255,255,255,0.03)",
+        borderRadius: 14,
+        border: selected ? `1.5px solid rgba(139,92,246,0.35)` : `1px solid ${BDR}`,
         padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 14,
-        transition: "border-color .15s, box-shadow .15s",
+        transition: "border-color .15s, box-shadow .15s, background .15s",
         animationDelay: `${idx * 0.04}s`,
-        boxShadow: selected ? `0 0 0 3px rgba(99,102,241,.08)` : "0 1px 4px rgba(0,0,0,.05)",
+        boxShadow: selected ? `0 0 0 3px rgba(139,92,246,.08), 0 4px 20px rgba(0,0,0,.3)` : "0 2px 12px rgba(0,0,0,.2)",
       }}
     >
       {/* Checkbox */}
       <button
         onClick={onToggle}
         style={{
-          width: 18, height: 18, borderRadius: 5, border: selected ? `2px solid ${IND}` : `2px solid #d1d5db`,
-          background: selected ? IND : W, cursor: "pointer", flexShrink: 0, marginTop: 2,
+          width: 18, height: 18, borderRadius: 5,
+          border: selected ? `2px solid ${IND}` : `2px solid rgba(255,255,255,0.18)`,
+          background: selected ? IND : "rgba(255,255,255,0.04)",
+          cursor: "pointer", flexShrink: 0, marginTop: 2,
           display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s",
         }}
       >
@@ -266,12 +274,12 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: K }}>{lead.companyName}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>{lead.companyName}</div>
           <ScoreBadge label={lead.scoreLabel || ""} score={lead.score || 0} />
         </div>
         <div style={{ fontSize: 12, color: K3, marginBottom: 8, display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
           {lead.contactName && <span>{lead.contactName} · {lead.title}</span>}
-          {lead.email && <span style={{ color: IND }}>{lead.email}</span>}
+          {lead.email && <span style={{ color: "#a78bfa" }}>{lead.email}</span>}
           {lead.phone && <span>{lead.phone}</span>}
         </div>
         <div style={{ fontSize: 12, color: K3, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 520 }}>
@@ -282,7 +290,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
             {/* Circular rating indicator */}
             <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
               <svg width="36" height="36" viewBox="0 0 36 36" style={{ transform: "rotate(-90deg)" }}>
-                <circle cx="18" cy="18" r="15" fill="none" stroke="#f1f5f9" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
                 <circle
                   cx="18" cy="18" r="15" fill="none"
                   stroke={lead.rating >= 4.5 ? "#16a34a" : lead.rating >= 3.5 ? "#ca8a04" : "#dc2626"}
@@ -307,12 +315,14 @@ function LeadCard({ lead, selected, onToggle, onPreview, idx }: {
       <button
         onClick={onPreview}
         style={{
-          padding: "6px 12px", borderRadius: 7, border: `1px solid ${BDR2}`, background: W,
+          padding: "6px 14px", borderRadius: 8,
+          border: `1px solid rgba(255,255,255,0.1)`,
+          background: "rgba(255,255,255,0.05)",
           fontSize: 12, fontWeight: 600, color: K2, cursor: "pointer", flexShrink: 0,
           transition: "all .15s",
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = IND; (e.currentTarget as HTMLButtonElement).style.color = IND; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = BDR2; (e.currentTarget as HTMLButtonElement).style.color = K2; }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = IND; (e.currentTarget as HTMLButtonElement).style.color = "#c4b5fd"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(139,92,246,0.1)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = K2; (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
       >
         Preview
       </button>
@@ -363,74 +373,98 @@ function GenerationProgress({ bizType, location_, tone, leadCount, done, resultC
     return GEN_STEPS[4].label(bizType, location_, resultCount);
   };
 
-  const IND = "#6366f1";
-  const W = "#ffffff";
-  const K = "#0a0a0a";
-  const K3 = "#888";
+  const IND_ = "#8b5cf6";
 
   return (
     <div style={{
-      background: W, borderRadius: 16, border: "1px solid rgba(0,0,0,0.07)",
-      padding: "28px 28px 24px", boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+      background: "rgba(255,255,255,0.03)",
+      borderRadius: 16,
+      border: "1px solid rgba(255,255,255,0.07)",
+      padding: "24px 28px 22px",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)",
       marginBottom: 24,
+      position: "relative",
+      overflow: "hidden",
     }}>
+      {/* Animated scan line */}
+      {!done && (
+        <div style={{
+          position: "absolute", left: 0, right: 0, height: 1,
+          background: "linear-gradient(90deg,transparent,rgba(139,92,246,0.4),transparent)",
+          animation: "scanLine 3s linear infinite",
+          pointerEvents: "none",
+        }} />
+      )}
+      {/* Purple ambient glow */}
+      <div style={{ position:"absolute",width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle,rgba(139,92,246,0.06) 0%,transparent 70%)",top:-100,right:-80,pointerEvents:"none" }} />
+
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: done ? "#16a34a" : IND, boxShadow: done ? "0 0 8px rgba(22,163,74,.5)" : "0 0 10px rgba(99,102,241,.6)", animation: done ? "none" : "pulse 1.4s ease infinite" }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: K }}>
-          {done ? `Generation complete — ${resultCount} leads ready` : "Generating your campaign..."}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, position:"relative" }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: "50%",
+          background: done ? "#4ade80" : IND_,
+          boxShadow: done ? "0 0 10px rgba(74,222,128,.7)" : "0 0 12px rgba(139,92,246,.8)",
+          animation: done ? "none" : "pulse 1.2s ease infinite",
+          flexShrink: 0,
+        }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: done ? "#4ade80" : "rgba(255,255,255,0.88)" }}>
+          {done ? `${resultCount} leads generated — ready to send` : "Running AI lead generation..."}
         </span>
+        {!done && (
+          <span style={{ marginLeft:"auto", fontSize:11, color:"rgba(255,255,255,0.25)", fontWeight:600, fontFamily:"'JetBrains Mono',monospace" }}>
+            {Math.round(progress)}%
+          </span>
+        )}
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 4, background: "#f1f5f9", borderRadius: 3, marginBottom: 22, overflow: "hidden" }}>
+      <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 99, marginBottom: 20, overflow: "hidden", position:"relative" }}>
         <div style={{
-          height: "100%", borderRadius: 3,
-          background: done ? "#16a34a" : `linear-gradient(90deg,${IND},#818cf8)`,
+          height: "100%", borderRadius: 99,
+          background: done ? "linear-gradient(90deg,#4ade80,#22c55e)" : "linear-gradient(90deg,#6d28d9,#8b5cf6,#a78bfa)",
           width: `${progress}%`,
-          transition: "width .4s ease, background .4s ease",
-          boxShadow: done ? "none" : "0 0 8px rgba(99,102,241,.4)",
+          transition: "width .5s cubic-bezier(.16,1,.3,1), background .5s",
+          boxShadow: done ? "0 0 8px rgba(74,222,128,.5)" : "0 0 10px rgba(139,92,246,.6)",
         }} />
       </div>
 
       {/* Steps */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {GEN_STEPS.map((step, i) => {
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, position:"relative" }}>
+        {GEN_STEPS.map((_step, i) => {
           const isActive = i === activeStep && !done;
           const isDone_ = i < activeStep || done;
           const isFuture = i > activeStep && !done;
           return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, opacity: isFuture ? 0.3 : 1, transition: "opacity .3s" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, opacity: isFuture ? 0.25 : 1, transition: "opacity .4s" }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                background: isDone_ ? (done && i === 4 ? "#dcfce7" : "#f0f0ff") : isActive ? `rgba(99,102,241,0.1)` : "#f8f8f9",
-                border: `1.5px solid ${isDone_ ? (done && i === 4 ? "#bbf7d0" : "#c7d2fe") : isActive ? "rgba(99,102,241,0.3)" : "#e4e4e8"}`,
+                width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                background: isDone_ ? (done && i === 4 ? "rgba(74,222,128,0.12)" : "rgba(139,92,246,0.12)") : isActive ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.03)",
+                border: `1.5px solid ${isDone_ ? (done && i === 4 ? "rgba(74,222,128,0.3)" : "rgba(139,92,246,0.3)") : isActive ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.08)"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13,
-                transition: "all .3s",
+                transition: "all .35s",
               }}>
                 {isDone_ ? (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6.5l3 3 5-5" stroke={done && i === 4 ? "#16a34a" : IND} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                    <path d="M1.5 5.5l3 3 5-5" stroke={done && i === 4 ? "#4ade80" : IND_} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 ) : isActive ? (
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: IND, animation: "pulse 1s ease infinite" }} />
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: IND_, animation: "pulse 0.9s ease infinite" }} />
                 ) : (
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#cbd5e1" }} />
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,255,255,0.15)" }} />
                 )}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: isActive ? K : isDone_ ? "#4338ca" : K3, transition: "color .3s" }}>
+                <div style={{ fontSize: 12.5, fontWeight: isActive ? 600 : 500, color: isActive ? "rgba(255,255,255,0.9)" : isDone_ ? "#c4b5fd" : "rgba(255,255,255,0.35)", transition: "color .35s", letterSpacing:"-.01em" }}>
                   {stepLabel(i)}
                 </div>
                 {isActive && (
-                  <div style={{ fontSize: 11, color: "rgba(99,102,241,0.6)", marginTop: 2, animation: "pulse 1.5s ease infinite" }}>
-                    Working on it...
+                  <div style={{ fontSize: 10, color: "rgba(139,92,246,0.6)", marginTop: 2 }}>
+                    processing...
                   </div>
                 )}
               </div>
               {isDone_ && i < 4 && (
-                <div style={{ fontSize: 10, color: "#a5b4fc", fontWeight: 600, flexShrink: 0 }}>done</div>
+                <div style={{ fontSize: 9, color: "rgba(139,92,246,0.5)", fontWeight: 700, letterSpacing:".06em", textTransform:"uppercase", flexShrink: 0 }}>done</div>
               )}
             </div>
           );
@@ -578,15 +612,15 @@ export default function AppPage() {
       {/* ── Page header ── */}
       <div style={{ padding: "28px 36px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: K, letterSpacing: "-.03em", margin: 0 }}>Campaign Builder</h1>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, background: `${IND}12`, color: IND, letterSpacing: ".06em", textTransform: "uppercase" }}>AI-Powered</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.94)", letterSpacing: "-.03em", margin: 0 }}>Campaign Builder</h1>
+            <span style={{ fontSize: 9, fontWeight: 800, padding: "3px 9px", borderRadius: 5, background: "rgba(139,92,246,0.12)", color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase", border: "1px solid rgba(139,92,246,0.2)" }}>AI-Powered</span>
           </div>
           <p style={{ fontSize: 13, color: K3, margin: 0 }}>Find leads, craft world-class cold emails, and launch outreach in one flow.</p>
         </div>
         {leads.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 9, padding: "7px 16px", fontWeight: 700 }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#4ade80", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 9, padding: "7px 14px", fontWeight: 700 }}>
+            <div style={{ width:6, height:6, borderRadius:"50%", background:"#4ade80", boxShadow:"0 0 6px rgba(74,222,128,0.7)" }} />
             {leads.length} leads ready
           </div>
         )}
@@ -594,23 +628,23 @@ export default function AppPage() {
 
       {/* ── Template loaded banner ── */}
       {loadedTemplate && (
-        <div style={{ margin: "16px 36px 0", padding: "11px 18px", borderRadius: 10, background: "#f0f0ff", border: "1px solid #c7d2fe", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ margin: "16px 36px 0", padding: "11px 18px", borderRadius: 10, background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#6366f1" strokeWidth="1.4"/><path d="M5 6h6M5 9h4" stroke="#6366f1" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            <span style={{ fontSize: 13, color: "#4338ca", fontWeight: 600 }}>Template loaded: <span style={{ fontWeight: 700 }}>{loadedTemplate}</span> — tone and intent pre-filled below.</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="#a78bfa" strokeWidth="1.4"/><path d="M5 6h6M5 9h4" stroke="#a78bfa" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            <span style={{ fontSize: 12, color: "#c4b5fd", fontWeight: 500 }}>Template: <strong style={{ fontWeight: 700, color:"#e9d5ff" }}>{loadedTemplate}</strong> — tone pre-filled</span>
           </div>
-          <button onClick={() => setLoadedTemplate(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#6366f1", fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+          <button onClick={() => setLoadedTemplate(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
         </div>
       )}
 
       {/* ── Billing error banner ── */}
       {billingError && (
-        <div style={{ margin: "16px 36px 0", padding: "12px 18px", borderRadius: 10, background: "#fff7ed", border: "1px solid #fed7aa", display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M9 2L1.5 15.5h15L9 2z" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 8v3M9 13.5v.5" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        <div style={{ margin: "16px 36px 0", padding: "12px 18px", borderRadius: 10, background: "rgba(234,88,12,0.08)", border: "1px solid rgba(234,88,12,0.2)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M9 2L1.5 15.5h15L9 2z" stroke="#fb923c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 8v3M9 13.5v.5" stroke="#fb923c" strokeWidth="1.5" strokeLinecap="round"/></svg>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#c2410c" }}>SerpAPI key not configured</div>
-            <div style={{ fontSize: 12, color: "#9a3412", marginTop: 2 }}>Add your SERPAPI_KEY to Vercel environment variables. You can get a free API key at serpapi.com.</div>
-            <a href="https://serpapi.com/manage-api-key" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#ea580c", fontWeight: 600, marginTop: 4, display: "inline-block" }}>Get your SerpAPI key</a>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fb923c" }}>SerpAPI key not configured</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>Add your SERPAPI_KEY to Vercel environment variables. Free key at serpapi.com.</div>
+            <a href="https://serpapi.com/manage-api-key" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#fb923c", fontWeight: 600, marginTop: 4, display: "inline-block" }}>Get your SerpAPI key</a>
           </div>
         </div>
       )}
@@ -618,19 +652,19 @@ export default function AppPage() {
       <div style={{ padding: "20px 36px 36px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* ── Campaign builder card ── */}
-        <div style={{ background: W, borderRadius: 16, border: `1px solid ${BDR}`, boxShadow: "0 1px 8px rgba(0,0,0,.05)", overflow: "hidden" }}>
+        <div style={{ background: "rgba(255,255,255,0.025)", borderRadius: 16, border: `1px solid ${BDR}`, boxShadow: "0 4px 32px rgba(0,0,0,0.3)", overflow: "hidden" }}>
 
           {/* Card header */}
           <div style={{ padding: "18px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 10, position: "relative", overflow: "hidden" }}>
             <div style={{ position:"absolute", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,.18) 0%,transparent 70%)", top:-80, right:-60, animation:"floatOrb 8s ease infinite", pointerEvents:"none" }} />
             <div style={{ position:"absolute", width:200, height:200, borderRadius:"50%", background:"radial-gradient(circle,rgba(139,92,246,.14) 0%,transparent 70%)", bottom:-40, left:40, animation:"floatOrb 11s ease infinite reverse", pointerEvents:"none" }} />
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: IND2, border: `1px solid rgba(99,102,241,.2)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: IND2, border: `1px solid rgba(139,92,246,.2)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M2 12l3-4 3 2.5 3-5 3 2.5" stroke={IND} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: K }}>New Campaign</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>New Campaign</div>
               <div style={{ fontSize: 11, color: K3 }}>Define your target and let AI build the outreach</div>
             </div>
           </div>
@@ -639,7 +673,7 @@ export default function AppPage() {
           <div style={{ padding: "24px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: K2, display: "block", marginBottom: 6 }}>Business Type</label>
+                <label className="field-label">Business Type</label>
                 <input
                   className="cb-input"
                   placeholder="e.g. Dental clinics, Law firms"
@@ -648,7 +682,7 @@ export default function AppPage() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: K2, display: "block", marginBottom: 6 }}>Location</label>
+                <label className="field-label">Location</label>
                 <input
                   className="cb-input"
                   placeholder="e.g. Austin TX, Manhattan"
@@ -659,7 +693,7 @@ export default function AppPage() {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: K2, display: "block", marginBottom: 6 }}>What are you pitching? <span style={{ color: K4, fontWeight: 400 }}>(optional)</span></label>
+              <label className="field-label">What are you pitching? <span style={{ color: K4, fontWeight: 400, textTransform:"none", letterSpacing:"normal" }}>(optional)</span></label>
               <input
                 className="cb-input"
                 placeholder="e.g. Website redesign services, CRM software for small teams"
@@ -670,7 +704,7 @@ export default function AppPage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: K2, display: "block", marginBottom: 6 }}>Number of Leads</label>
+                <label className="field-label">Number of Leads</label>
                 <div style={{ position: "relative" }}>
                   <select className="cb-select" value={leadCount} onChange={e => setLeadCount(+e.target.value)}>
                     {[5, 10, 15, 20].map(n => <option key={n} value={n}>{n} leads</option>)}
@@ -679,7 +713,7 @@ export default function AppPage() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: K2, display: "block", marginBottom: 6 }}>Campaign Name <span style={{ color: K4, fontWeight: 400 }}>(optional)</span></label>
+                <label className="field-label">Campaign Name <span style={{ color: K4, fontWeight: 400, textTransform:"none", letterSpacing:"normal" }}>(optional)</span></label>
                 <input
                   className="cb-input"
                   placeholder="e.g. Q1 Dental Outreach"
@@ -691,7 +725,7 @@ export default function AppPage() {
 
             {/* Persona selector */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: K2, display: "block", marginBottom: 10 }}>Email Persona & Tone</label>
+              <label className="field-label">Email Persona & Tone</label>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
                 {PERSONAS.map(p => {
                   const active = tone === p.tone;
@@ -701,15 +735,16 @@ export default function AppPage() {
                       onClick={() => setTone(p.tone)}
                       style={{
                         display: "flex", alignItems: "center", gap: 8, padding: "9px 10px",
-                        borderRadius: 10, border: active ? `1.5px solid ${p.color}` : `1.5px solid #e4e4e8`,
-                        background: active ? `${p.color}0f` : W,
+                        borderRadius: 10,
+                        border: active ? `1.5px solid ${p.color}55` : `1.5px solid rgba(255,255,255,0.07)`,
+                        background: active ? `${p.color}14` : "rgba(255,255,255,0.03)",
                         cursor: "pointer", textAlign: "left", transition: "all .15s",
-                        boxShadow: active ? `0 0 0 3px ${p.color}15` : "none",
+                        boxShadow: active ? `0 0 0 3px ${p.color}18, 0 4px 16px rgba(0,0,0,0.2)` : "none",
                       }}
                     >
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${p.color}22`, border: `2px solid ${active ? p.color : "#e4e4e8"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: p.color, flexShrink: 0 }}>{p.name[0]}</div>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${p.color}20`, border: `2px solid ${active ? p.color : "rgba(255,255,255,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: p.color, flexShrink: 0 }}>{p.name[0]}</div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : K, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : "rgba(255,255,255,0.8)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                         <div style={{ fontSize: 10, color: K3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.desc}</div>
                       </div>
                     </button>
@@ -723,23 +758,37 @@ export default function AppPage() {
               onClick={handleGenerate}
               disabled={generateMutation.isPending}
               style={{
-                width: "100%", padding: "12px", borderRadius: 10, border: "none",
-                background: K, color: W, fontSize: 14, fontWeight: 700,
+                width: "100%", padding: "13px", borderRadius: 11, border: "none",
+                background: generateMutation.isPending
+                  ? "rgba(139,92,246,0.4)"
+                  : "linear-gradient(135deg,#7c3aed 0%,#8b5cf6 50%,#6d28d9 100%)",
+                color: "#fff", fontSize: 14, fontWeight: 700,
                 cursor: generateMutation.isPending ? "not-allowed" : "pointer",
-                opacity: generateMutation.isPending ? 0.7 : 1,
-                transition: "all .15s", fontFamily: F,
+                transition: "all .2s", fontFamily: F,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                boxShadow: "0 2px 12px rgba(0,0,0,.15)",
+                boxShadow: generateMutation.isPending ? "none" : "0 4px 20px rgba(109,40,217,.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+                letterSpacing: "-.01em",
+                position: "relative", overflow: "hidden",
               }}
-              onMouseEnter={e => { if (!generateMutation.isPending) (e.currentTarget as HTMLButtonElement).style.background = "#222"; }}
-              onMouseLeave={e => { if (!generateMutation.isPending) (e.currentTarget as HTMLButtonElement).style.background = K; }}
             >
+              {!generateMutation.isPending && (
+                <div style={{ position:"absolute",inset:0,background:"linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.04) 50%,transparent 100%)",backgroundSize:"200% 100%",animation:"shimmer 3s ease infinite",pointerEvents:"none" }} />
+              )}
               {generateMutation.isPending ? (
                 <>
-                  <svg style={{ animation: "spin 1s linear infinite" }} width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1.5v2M7.5 11.5v2M1.5 7.5h2M11.5 7.5h2M3.4 3.4l1.42 1.42M10.18 10.18l1.42 1.42M3.4 11.6l1.42-1.42M10.18 4.82l1.42-1.42" stroke="rgba(255,255,255,.8)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  <div style={{ display:"flex",gap:4 }}>
+                    {[0,1,2].map(i => (
+                      <div key={i} style={{ width:5,height:5,borderRadius:"50%",background:"rgba(255,255,255,0.7)",animation:`pulse 1.2s ease ${i*0.2}s infinite` }} />
+                    ))}
+                  </div>
                   Generating leads...
                 </>
-              ) : "Generate Leads"}
+              ) : (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L9.18 5.5H14L10.41 8.5L11.73 13L7.5 10.2L3.27 13L4.59 8.5L1 5.5H5.82L7.5 1Z" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" fill="rgba(255,255,255,0.15)" strokeLinejoin="round"/></svg>
+                  Generate Leads
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -750,7 +799,8 @@ export default function AppPage() {
             {/* Results header + sticky send bar */}
             <div style={{
               position: "sticky", top: 0, zIndex: 10,
-              background: "rgba(248,248,249,0.92)", backdropFilter: "blur(12px)",
+              background: "rgba(10,10,12,0.85)", backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
               borderBottom: `1px solid ${BDR}`,
               padding: "12px 0 12px", marginBottom: 16,
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -760,8 +810,11 @@ export default function AppPage() {
                   onClick={toggleAll}
                   style={{
                     display: "flex", alignItems: "center", gap: 6,
-                    padding: "6px 12px", borderRadius: 7, border: `1px solid ${BDR2}`,
-                    background: W, fontSize: 12, fontWeight: 600, color: K2, cursor: "pointer",
+                    padding: "6px 12px", borderRadius: 7,
+                    border: `1px solid rgba(255,255,255,0.1)`,
+                    background: "rgba(255,255,255,0.05)",
+                    fontSize: 12, fontWeight: 600, color: K2, cursor: "pointer",
+                    transition: "all .15s",
                   }}
                 >
                   {selected.size === leads.length ? "Deselect all" : "Select all"}
@@ -773,9 +826,12 @@ export default function AppPage() {
                   <a
                     href="/api/auth/google"
                     style={{
-                      padding: "9px 16px", borderRadius: 9, border: `1px solid ${BDR2}`,
-                      background: W, color: K2, fontSize: 13, fontWeight: 600,
+                      padding: "9px 16px", borderRadius: 9,
+                      border: `1px solid rgba(255,255,255,0.1)`,
+                      background: "rgba(255,255,255,0.05)",
+                      color: K2, fontSize: 12, fontWeight: 600,
                       textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6,
+                      transition: "all .15s",
                     }}
                   >
                     Connect Gmail
@@ -823,13 +879,15 @@ export default function AppPage() {
 
         {/* ── Empty state ── */}
         {leads.length === 0 && !generateMutation.isPending && (
-          <div style={{ textAlign: "center", padding: "48px 24px", color: K3 }}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: "0 auto 16px" }}>
-              <circle cx="24" cy="24" r="22" stroke="#e4e4e8" strokeWidth="2"/>
-              <path d="M16 28l5-6 4 4 5-7 6 4" stroke="#d1d5db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <div style={{ fontSize: 14, fontWeight: 600, color: K2, marginBottom: 6 }}>No leads yet</div>
-            <div style={{ fontSize: 13, color: K3 }}>Fill in the campaign details above and click Generate Leads.</div>
+          <div style={{ textAlign: "center", padding: "52px 24px" }}>
+            <div style={{ width:56,height:56,borderRadius:16,background:"rgba(139,92,246,0.08)",border:"1px solid rgba(139,92,246,0.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 12l5-6 4 5 4-7 5 8" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="rgba(139,92,246,0.3)" strokeWidth="1.2"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.65)", marginBottom: 6 }}>Your leads will appear here</div>
+            <div style={{ fontSize: 13, color: K3, maxWidth:300, margin:"0 auto" }}>Fill in the campaign details above and click Generate Leads to find your first prospects.</div>
           </div>
         )}
       </div>

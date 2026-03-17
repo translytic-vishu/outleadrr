@@ -225,7 +225,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* ── Main content ── */}
-      <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "#f4f4f6" }}>
+      <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", background: "#0a0a0c" }}>
         {children}
       </main>
     </div>
