@@ -144,6 +144,65 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
   throw new Error(`Place details not found for id: ${placeId}. This is a cache miss — ensure searchPlaces() is called first.`);
 }
 
+/**
+ * Scrape a real contact email from a business website.
+ * Checks homepage + /contact + /contact-us. Prefers mailto: links.
+ * Falls back to info@ / contact@ pattern if nothing scraped.
+ */
+export async function scrapeEmailFromWebsite(website: string): Promise<string | null> {
+  if (!website) return null;
+  const base = (website.startsWith("http") ? website : `https://${website}`).replace(/\/+$/, "");
+
+  const skipPattern = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|wix\.|squarespace|wordpress|googleapis|cloudflare|jsdelivr|jquery|bootstrap|facebook|twitter|instagram|linkedin/i;
+
+  const pagesToTry = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`];
+
+  for (const url of pagesToTry) {
+    try {
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(7000),
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Outleadrr/1.0; email-finder)",
+          "Accept": "text/html,application/xhtml+xml",
+        },
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+
+      // Priority 1: mailto: href links (most reliable)
+      const mailtoReg = /href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']/gi;
+      const mailtoEmails: string[] = [];
+      let m: RegExpExecArray | null;
+      while ((m = mailtoReg.exec(html)) !== null) mailtoEmails.push(m[1].toLowerCase());
+
+      // Priority 2: plain text emails
+      const plainReg = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/g;
+      const plainEmails: string[] = [];
+      while ((m = plainReg.exec(html)) !== null) plainEmails.push(m[1].toLowerCase());
+
+      const allEmails = [...new Set([...mailtoEmails, ...plainEmails])].filter(
+        e => !skipPattern.test(e)
+      );
+
+      if (allEmails.length > 0) {
+        // Prefer generic contact addresses over specific ones (they're more reliable)
+        const preferred = allEmails.find(e => /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir)@/i.test(e));
+        return preferred || allEmails[0];
+      }
+    } catch {
+      // continue to next URL
+    }
+  }
+
+  // If no email scraped but we have a domain, return info@ (high delivery rate vs guessed firstname@)
+  try {
+    const domainMatch = base.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
+    if (domainMatch?.[1]) return `info@${domainMatch[1]}`;
+  } catch { /* ignore */ }
+
+  return null;
+}
+
 export function scorePlace(details: PlaceDetails, businessType: string) {
   const { rating, reviewCount, phone, website, types } = details;
   const hasPhone   = !!phone;

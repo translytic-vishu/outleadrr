@@ -7,7 +7,7 @@ import OpenAI from "openai";
 import bcrypt from "bcryptjs";
 import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema.js";
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail, fetchInboxMessages } from "./gmail.js";
-import { searchPlaces, getPlaceDetails, scorePlace, PlaceDetails } from "./places.js";
+import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, PlaceDetails } from "./places.js";
 import { storage } from "./storage.js";
 import { z } from "zod";
 
@@ -342,9 +342,8 @@ Match the tone: professional/consultative → "Kind regards," | friendly/casual/
 Tone controls word choice, rhythm, formality, and CTA style. Every word must reflect it.
 
 ━━━ EMAIL ADDRESS LOGIC ━━━
-If a website domain exists in the data, use firstname@thatdomain.com (lowercase, no www).
-If no domain, build from company slug: john@houstonplumbingco.com.
-Make the first name match realistic demographics for the city and business type.
+IMPORTANT: Do NOT generate email addresses — leave the "email" field as an empty string "".
+Real emails will be found separately. Focus only on the email body quality.
 
 Return ONLY a raw JSON object. No markdown. No code fences. Nothing else.`,
           },
@@ -396,10 +395,23 @@ Rules:
       }
       const contacts: any[] = aiData.contacts || [];
 
-      /* ── 6. Merge real Places data with AI contact/email data ─────── */
+      /* ── 6. Scrape real emails from business websites (parallel) ─────── */
+      const scrapedEmails = await Promise.all(
+        placeDetails.map(async (p) => {
+          if (!p.website) return null;
+          try { return await scrapeEmailFromWebsite(p.website); }
+          catch { return null; }
+        })
+      );
+
+      /* ── 7. Merge real Places data with AI contact/email data ─────── */
       const leads = placeDetails.map((place, idx) => {
         const contact = contacts[idx] || {};
         const scoring = scorePlace(place, businessType);
+        const scrapedEmail = scrapedEmails[idx];
+        // Use scraped/real email (from website) if found. Otherwise leave blank — never guess.
+        const emailToUse = scrapedEmail || "";
+        const emailVerified = !!scrapedEmail;
 
         return {
           id: idx + 1,
@@ -413,7 +425,8 @@ Rules:
           /* ── AI-generated contact + outreach ── */
           contactName:  contact.contactName  || "",
           title:        contact.title        || "",
-          email:        contact.email        || "",
+          email:        emailToUse,
+          emailVerified,
           emailSubject: contact.emailSubject || "",
           emailBody:    contact.emailBody    || "",
           /* ── metadata ── */
@@ -554,6 +567,48 @@ Rules:
       return res.json({ success: true });
     } catch (e: any) {
       console.error("Reply send error:", e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ─── AI Inbox: Summarize email ─────────────────────────────────── */
+  app.post("/api/inbox/summarize", requireAuth, async (req: Request, res: Response) => {
+    const { subject, snippet, from } = req.body;
+    if (!snippet) return res.status(400).json({ error: "snippet required" });
+    try {
+      const completion = await getOpenAI().chat.completions.create({
+        model: getModel(),
+        max_tokens: 300,
+        messages: [
+          { role: "system", content: "You are an email assistant. Given an email snippet, write a concise 1-2 sentence summary and 2-3 key bullet points. Return raw JSON only: {\"summary\":\"...\",\"keyPoints\":[\"...\",\"...\"]}." },
+          { role: "user", content: `Subject: ${subject || "(none)"}\nFrom: ${from || "unknown"}\n\n${snippet}` },
+        ],
+      });
+      const raw = (completion.choices[0]?.message?.content || "").replace(/```(?:json)?/g, "").trim();
+      const data = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || raw);
+      return res.json(data);
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /* ─── AI Inbox: Smart reply suggestions ─────────────────────────── */
+  app.post("/api/inbox/smart-replies", requireAuth, async (req: Request, res: Response) => {
+    const { subject, snippet, from } = req.body;
+    if (!snippet) return res.status(400).json({ error: "snippet required" });
+    try {
+      const completion = await getOpenAI().chat.completions.create({
+        model: getModel(),
+        max_tokens: 200,
+        messages: [
+          { role: "system", content: "You are a smart reply assistant like Gmail. Given an email, generate exactly 3 short natural reply options (under 12 words each). Return raw JSON only: {\"replies\":[\"...\",\"...\",\"...\"]}." },
+          { role: "user", content: `Subject: ${subject || "(none)"}\nFrom: ${from || "unknown"}\n\n${snippet}` },
+        ],
+      });
+      const raw = (completion.choices[0]?.message?.content || "").replace(/```(?:json)?/g, "").trim();
+      const data = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || raw);
+      return res.json(data);
+    } catch (e: any) {
       return res.status(500).json({ error: e.message });
     }
   });
