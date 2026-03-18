@@ -109,17 +109,17 @@ export default function Inbox() {
   const messages = data?.messages || [];
 
   // Theme tokens
-  const panelBg   = isDark ? "#0d0d10" : tokens.panel;
-  const detailBg  = isDark ? "#0a0a0c" : tokens.bg;
-  const cardBg    = isDark ? "rgba(255,255,255,0.03)" : "#ffffff";
+  const panelBg   = isDark ? "#111111" : tokens.panel;
+  const detailBg  = isDark ? "#0a0a0a" : tokens.bg;
+  const cardBg    = isDark ? "rgba(255,255,255,0.035)" : "#ffffff";
   const bdr       = tokens.border;
   const bdr2      = tokens.border2;
   const text1     = tokens.text;
   const text2     = tokens.text2;
   const text3     = tokens.text3;
-  const rowHover  = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)";
+  const rowHover  = isDark ? "rgba(255,255,255,0.04)" : "#f4f4f5";
   const rowActive = isDark ? "rgba(139,92,246,0.08)" : "rgba(124,58,237,0.06)";
-  const inputBg   = isDark ? "rgba(255,255,255,0.04)" : "#f8f8fb";
+  const inputBg   = isDark ? "rgba(255,255,255,0.04)" : "#f4f4f5";
   const smartChipBg  = isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6";
   const smartChipHov = isDark ? "rgba(139,92,246,0.15)" : "rgba(124,58,237,0.08)";
   const smartChipTxt = text2;
@@ -226,7 +226,7 @@ export default function Inbox() {
                         </div>
                       </div>
                       <div style={{ fontSize:13, color:text2, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{active.snippet}</div>
-                      <div style={{ marginTop:16, padding:"10px 14px", background:isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)", borderRadius:8, border:`1px solid ${bdr}`, fontSize:11, color:text3 }}>
+                      <div style={{ marginTop:16, padding:"10px 14px", background:isDark ? "rgba(255,255,255,0.035)" : "#f4f4f5", borderRadius:8, border:`1px solid ${bdr}`, fontSize:11, color:text3 }}>
                         Showing preview — full message available in Gmail.
                       </div>
                     </div>

@@ -5,16 +5,17 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/AppLayout";
+import { useTheme } from "@/lib/theme";
 
 /* ─── Design Tokens ─── dark premium theme ───────────────────────── */
 const F    = "'Inter','Helvetica Neue',Arial,sans-serif";
-const W    = "rgba(255,255,255,0.9)";   // primary text
-const K    = "#111114";                  // card background
-const K2   = "rgba(255,255,255,0.65)";  // secondary text
-const K3   = "rgba(255,255,255,0.38)";  // muted text
-const K4   = "rgba(255,255,255,0.22)";  // placeholder
-const BDR  = "rgba(255,255,255,0.07)";
-const BDR2 = "rgba(255,255,255,0.11)";
+const W    = "#ededed";                  // primary text — zinc-100
+const K    = "#111111";                  // card background
+const K2   = "#a1a1aa";                  // secondary text — zinc-400
+const K3   = "#71717a";                  // muted text — zinc-500
+const K4   = "#52525b";                  // placeholder — zinc-600
+const BDR  = "rgba(255,255,255,0.08)";
+const BDR2 = "rgba(255,255,255,0.12)";
 const IND  = "#8b5cf6";
 const IND2 = "rgba(139,92,246,0.1)";
 
@@ -22,8 +23,8 @@ const GLOBAL_CSS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body,#root{font-family:${F};}
   input,button,select,textarea{font-family:${F};}
-  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.22);}
-  select option { background:#1a1a1f; color:#e5e5e5; }
+  input::placeholder,textarea::placeholder{color:#52525b;}
+  select option { background:#111111; color:#ededed; }
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
@@ -53,6 +54,17 @@ const GLOBAL_CSS = `
   @keyframes scanLine{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
   .lead-card{animation:fadeUp .38s cubic-bezier(.16,1,.3,1) both;}
   .lead-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.4)!important;border-color:rgba(139,92,246,0.25)!important;transition:transform .22s,box-shadow .22s,border-color .22s!important;}
+  [data-theme="light"] .cb-input{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.1);color:#0f0f13;color-scheme:light;}
+  [data-theme="light"] .cb-input::placeholder{color:rgba(0,0,0,0.28);}
+  [data-theme="light"] .cb-input:focus{border-color:rgba(124,58,237,0.6);background:rgba(124,58,237,0.03);box-shadow:0 0 0 3px rgba(124,58,237,0.08);}
+  [data-theme="light"] .cb-select{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.1);color:#0f0f13;color-scheme:light;}
+  [data-theme="light"] .cb-select:focus{border-color:rgba(124,58,237,0.6);box-shadow:0 0 0 3px rgba(124,58,237,0.08);}
+  [data-theme="light"] select option{background:#fff;color:#0f0f13;}
+  [data-theme="light"] input::placeholder,[data-theme="light"] textarea::placeholder{color:rgba(0,0,0,0.28);}
+  [data-theme="light"] .field-label{color:rgba(0,0,0,0.4);}
+  [data-theme="light"] .section-divider{background:rgba(0,0,0,0.06);}
+  [data-theme="light"] .lead-card{background:#fff!important;border-color:rgba(0,0,0,0.08)!important;box-shadow:0 2px 10px rgba(0,0,0,.06)!important;}
+  [data-theme="light"] .lead-card:hover{border-color:rgba(124,58,237,0.3)!important;box-shadow:0 6px 24px rgba(0,0,0,.1)!important;}
   .send-btn{
     padding:11px 24px;border-radius:10px;border:none;
     background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:13px;font-weight:700;
@@ -534,6 +546,18 @@ export default function AppPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isDark } = useTheme();
+
+  // Shadow tokens for theme support — zinc scale
+  const W    = isDark ? "#ededed"                : "#09090b";
+  const K    = isDark ? "#111111"                : "#ffffff";
+  const K2   = isDark ? "#a1a1aa"                : "#3f3f46";
+  const K3   = isDark ? "#71717a"                : "#71717a";
+  const K4   = isDark ? "#52525b"                : "#a1a1aa";
+  const BDR  = isDark ? "rgba(255,255,255,0.08)" : "#e4e4e7";
+  const IND2 = isDark ? "rgba(139,92,246,0.1)"   : "rgba(124,58,237,0.08)";
+  const cardBg   = isDark ? "rgba(255,255,255,0.035)" : "#ffffff";
+  const stickyBg = isDark ? "rgba(10,10,10,0.88)" : "rgba(250,250,250,0.92)";
 
   /* form state */
   const [bizType, setBizType]    = useState("");
@@ -670,7 +694,7 @@ export default function AppPage() {
       <div style={{ padding: "28px 36px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "rgba(255,255,255,0.94)", letterSpacing: "-.03em", margin: 0 }}>Campaign Builder</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: W, letterSpacing: "-.03em", margin: 0 }}>Campaign Builder</h1>
             <span style={{ fontSize: 9, fontWeight: 800, padding: "3px 9px", borderRadius: 5, background: "rgba(139,92,246,0.12)", color: "#a78bfa", letterSpacing: ".1em", textTransform: "uppercase", border: "1px solid rgba(139,92,246,0.2)" }}>AI-Powered</span>
           </div>
           <p style={{ fontSize: 13, color: K3, margin: 0 }}>Find leads, craft world-class cold emails, and launch outreach in one flow.</p>
@@ -699,7 +723,7 @@ export default function AppPage() {
       <div style={{ padding: "20px 36px 36px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* ── Campaign builder card ── */}
-        <div style={{ background: "rgba(255,255,255,0.025)", borderRadius: 16, border: `1px solid ${BDR}`, boxShadow: "0 4px 32px rgba(0,0,0,0.3)", overflow: "hidden" }}>
+        <div style={{ background: cardBg, borderRadius: 16, border: `1px solid ${BDR}`, boxShadow: isDark ? "0 4px 32px rgba(0,0,0,0.3)" : "0 2px 16px rgba(0,0,0,0.08)", overflow: "hidden" }}>
 
           {/* Card header */}
           <div style={{ padding: "18px 24px", borderBottom: `1px solid ${BDR}`, display: "flex", alignItems: "center", gap: 10, position: "relative", overflow: "hidden" }}>
@@ -868,7 +892,7 @@ export default function AppPage() {
             {/* Results header + sticky send bar */}
             <div style={{
               position: "sticky", top: 0, zIndex: 10,
-              background: "rgba(10,10,12,0.85)", backdropFilter: "blur(20px)",
+              background: stickyBg, backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
               borderBottom: `1px solid ${BDR}`,
               padding: "12px 0 12px", marginBottom: 16,

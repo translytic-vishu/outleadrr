@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "@/lib/theme";
 
 const F = "'Inter','Helvetica Neue',Arial,sans-serif";
 const SESSION_KEY = "outleadrr_new_login";
@@ -237,6 +238,7 @@ export function OnboardingModal({ gmailConnected, gmailEmail }: { gmailConnected
   const [visible, setVisible] = useState(false);
   const [step,    setStep]    = useState(0);
   const [exiting, setExiting] = useState(false);
+  const { theme, toggle, isDark } = useTheme();
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY)) setVisible(true);
@@ -339,6 +341,27 @@ export function OnboardingModal({ gmailConnected, gmailEmail }: { gmailConnected
             <button className="ob-cta" onClick={() => go(1)}>
               {isLast ? "Start finding leads" : isFirst ? "Get started" : "Continue"}
             </button>
+          )}
+          {isLast && (
+            <div style={{ display:"flex",alignItems:"center",gap:10,marginTop:4 }}>
+              <span style={{ fontSize:12,color:"rgba(255,255,255,.3)" }}>Display:</span>
+              <button onClick={toggle} style={{
+                display:"flex",alignItems:"center",gap:6,
+                padding:"6px 14px",borderRadius:8,
+                border:"1px solid rgba(255,255,255,.12)",
+                background:"rgba(255,255,255,.07)",
+                color:"rgba(255,255,255,.65)",
+                fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:F,
+                transition:"all .15s",
+              }}
+                onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,.12)")}
+                onMouseLeave={e=>(e.currentTarget.style.background="rgba(255,255,255,.07)")}>
+                {isDark
+                  ? <><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v1M7 12v1M1 7h1M12 7h1M2.9 2.9l.7.7M10.4 10.4l.7.7M2.9 11.1l.7-.7M10.4 3.6l.7-.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>Switch to Light</>
+                  : <><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M12 7.5A5 5 0 117 2c-.5 2 .5 5 3 5.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>Switch to Dark</>
+                }
+              </button>
+            </div>
           )}
         </div>
 

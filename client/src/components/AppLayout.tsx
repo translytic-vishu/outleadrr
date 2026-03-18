@@ -78,38 +78,55 @@ interface AppLayoutProps { children: React.ReactNode }
 export function AppLayout({ children }: AppLayoutProps) {
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { theme, toggle, isDark } = useTheme();
+  const { theme, isDark } = useTheme();
 
-  const sidebarBg  = isDark ? "#09090b" : "#ffffff";
-  const sidebarBdr = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
-  const mainBg     = isDark ? "#0a0a0c" : "#f5f5f8";
-  const gmailConnectedBg  = isDark ? "rgba(22,163,74,0.08)"  : "rgba(22,163,74,0.06)";
-  const gmailConnectedBdr = isDark ? "rgba(22,163,74,0.18)"  : "rgba(22,163,74,0.25)";
+  // Zinc-scale tokens — Vercel/TurboLearn inspired
+  const sidebarBg  = isDark ? "#111111"  : "#ffffff";
+  const sidebarBdr = isDark ? "rgba(255,255,255,0.08)" : "#e4e4e7";
+  const mainBg     = isDark ? "#0a0a0a"  : "#fafafa";
+  const gmailConnectedBg  = isDark ? "rgba(22,163,74,0.08)"  : "rgba(22,163,74,0.05)";
+  const gmailConnectedBdr = isDark ? "rgba(22,163,74,0.2)"   : "rgba(22,163,74,0.2)";
   const gmailConnectedTxt = "#22c55e";
-  const gmailConnectedSub = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)";
-  const gmailConnectBg  = isDark ? "rgba(99,102,241,0.12)" : "rgba(124,58,237,0.08)";
-  const gmailConnectBdr = isDark ? "rgba(99,102,241,0.22)" : "rgba(124,58,237,0.2)";
-  const gmailConnectTxt = isDark ? "rgba(255,255,255,0.75)" : "rgba(90,30,170,0.9)";
-  const userEmail   = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)";
-  const logoutColor = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)";
-  const logoutHover = isDark ? "rgba(255,255,255,0.7)"  : "rgba(0,0,0,0.7)";
+  const gmailConnectedSub = isDark ? "#71717a" : "#71717a";
+  const gmailConnectBg  = isDark ? "rgba(167,139,250,0.08)" : "rgba(124,58,237,0.06)";
+  const gmailConnectBdr = isDark ? "rgba(167,139,250,0.18)" : "rgba(124,58,237,0.15)";
+  const gmailConnectTxt = isDark ? "#a78bfa" : "#7c3aed";
+  const userEmail   = isDark ? "#71717a" : "#71717a";
+  const logoutColor = isDark ? "#52525b" : "#a1a1aa";
+  const logoutHover = isDark ? "#ededed" : "#09090b";
 
-  // Inject CSS custom properties so child pages can use them
+  // Inject CSS custom properties + global smooth theme-switch transitions
   const cssVars = `
     :root {
       --t-bg: ${mainBg};
-      --t-card: ${isDark ? "rgba(255,255,255,0.03)" : "#ffffff"};
-      --t-border: ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"};
-      --t-text: ${isDark ? "rgba(255,255,255,0.9)" : "#0f0f13"};
-      --t-text2: ${isDark ? "rgba(255,255,255,0.62)" : "#454550"};
-      --t-text3: ${isDark ? "rgba(255,255,255,0.32)" : "#888"};
-      --t-accent: ${isDark ? "#8b5cf6" : "#7c3aed"};
-      --nav-dim: ${isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.45)"};
-      --nav-hover: ${isDark ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.04)"};
-      --nav-text: ${isDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.85)"};
-      --nav-active: ${isDark ? "#ffffff" : "#5b21b6"};
-      --nav-label: ${isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.3)"};
+      --t-sidebar: ${sidebarBg};
+      --t-card: ${isDark ? "rgba(255,255,255,0.035)" : "#ffffff"};
+      --t-border: ${isDark ? "rgba(255,255,255,0.08)" : "#e4e4e7"};
+      --t-border2: ${isDark ? "rgba(255,255,255,0.12)" : "#d4d4d8"};
+      --t-text: ${isDark ? "#ededed" : "#09090b"};
+      --t-text2: ${isDark ? "#a1a1aa" : "#3f3f46"};
+      --t-text3: ${isDark ? "#71717a" : "#71717a"};
+      --t-text4: ${isDark ? "#52525b" : "#a1a1aa"};
+      --t-accent: ${isDark ? "#a78bfa" : "#7c3aed"};
+      --t-accent-dim: ${isDark ? "rgba(167,139,250,0.12)" : "rgba(124,58,237,0.08)"};
+      --t-input-bg: ${isDark ? "rgba(255,255,255,0.05)" : "#ffffff"};
+      --t-input-bdr: ${isDark ? "rgba(255,255,255,0.1)" : "#d4d4d8"};
+      --t-row-hover: ${isDark ? "rgba(255,255,255,0.04)" : "#f4f4f5"};
+      --t-panel: ${isDark ? "#161616" : "#f4f4f5"};
+      --nav-dim: ${isDark ? "#71717a" : "#71717a"};
+      --nav-hover: ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)"};
+      --nav-text: ${isDark ? "#ededed" : "#09090b"};
+      --nav-active: ${isDark ? "#ededed" : "#09090b"};
+      --nav-label: ${isDark ? "#52525b" : "#a1a1aa"};
     }
+    /* Smooth theme transitions — all bg/border/color changes are animated */
+    *, *::before, *::after {
+      transition-property: background-color, border-color, color, box-shadow, opacity;
+      transition-duration: 0.15s;
+      transition-timing-function: ease;
+    }
+    /* Exempt elements that have their own animations */
+    *[class*="animate"], *[style*="animation"], svg *, canvas { transition: none !important; }
   `;
 
   const { data: me } = useQuery<MeResponse>({
@@ -145,18 +162,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       }}>
 
         {/* Logo */}
-        <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${sidebarBdr}`, display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
-          {/* Theme toggle */}
-          <button onClick={toggle} title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", padding: 4, borderRadius: 6, transition: "color .15s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.3)"; }}
-          >
-            {isDark
-              ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M7 1v1M7 12v1M1 7h1M12 7h1M2.9 2.9l.7.7M10.4 10.4l.7.7M2.9 11.1l.7-.7M10.4 3.6l.7-.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-              : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 7.5A5 5 0 117 2c-.5 2 .5 5 3 5.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
-            }
-          </button>
+        <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${sidebarBdr}`, display: "flex", justifyContent: "center", alignItems: "center" }}>
           <SidebarLogo />
         </div>
 

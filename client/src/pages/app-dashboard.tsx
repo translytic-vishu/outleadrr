@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { AppLayout } from "@/components/AppLayout";
+import { useTheme } from "@/lib/theme";
 import type { MeResponse } from "@shared/schema";
 
 const F = "'Inter','Helvetica Neue',Arial,sans-serif";
@@ -30,24 +31,24 @@ const CSS = `
   @keyframes barGrow{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}
   @keyframes pulseRing{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
   .d-card{
-    background:rgba(255,255,255,0.03);
-    border:1px solid rgba(255,255,255,0.07);
+    background:rgba(255,255,255,0.035);
+    border:1px solid rgba(255,255,255,0.08);
     border-radius:18px;
     transition:border-color .25s,box-shadow .25s,transform .25s;
     cursor:default;
     position:relative;overflow:hidden;
   }
-  .d-card:hover{border-color:rgba(255,255,255,0.13);box-shadow:0 12px 40px rgba(0,0,0,.5);transform:translateY(-1px);}
+  .d-card:hover{border-color:rgba(255,255,255,0.14);box-shadow:0 12px 40px rgba(0,0,0,.5);transform:translateY(-1px);}
   .stat-num{animation:countIn .6s cubic-bezier(.16,1,.3,1) both;}
   .row-in{animation:fadeUp .45s cubic-bezier(.16,1,.3,1) both;}
   .qbtn{
     display:flex;align-items:center;gap:10px;
     padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
-    background:rgba(255,255,255,.03);color:rgba(255,255,255,.65);
+    background:rgba(255,255,255,.035);color:#a1a1aa;
     font-size:13px;font-weight:600;font-family:${F};
     cursor:pointer;transition:all .2s;text-align:left;width:100%;
   }
-  .qbtn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#fff;transform:translateX(4px);}
+  .qbtn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#ededed;transform:translateX(4px);}
   .qbtn-primary{
     display:flex;align-items:center;justify-content:center;gap:8px;
     padding:12px 18px;border-radius:12px;border:none;
@@ -63,9 +64,16 @@ const CSS = `
     border-radius:18px;padding:22px 24px;
     position:relative;overflow:hidden;
     transition:transform .25s,box-shadow .25s;
-    border:1px solid rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.08);
   }
   .kpi-card:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,.5);}
+  [data-theme="light"] .d-card{background:#ffffff!important;border-color:#e4e4e7!important;}
+  [data-theme="light"] .d-card:hover{border-color:#d4d4d8!important;box-shadow:0 8px 28px rgba(0,0,0,.06)!important;}
+  [data-theme="light"] .kpi-card{border-color:#e4e4e7!important;}
+  [data-theme="light"] .kpi-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.08)!important;}
+  [data-theme="light"] .qbtn{background:#f4f4f5!important;border-color:#e4e4e7!important;color:#3f3f46!important;}
+  [data-theme="light"] .qbtn:hover{background:#e4e4e7!important;border-color:#d4d4d8!important;color:#09090b!important;}
+  [data-theme="light"] .stat-num{color:#09090b!important;}
 `;
 
 function greeting(email: string) {
@@ -196,22 +204,35 @@ function KPICard({ label, value, sub, icon, bg, accent, sparkValues, delay = 0 }
   );
 }
 
-/* ── Delivery bar ── */
-function DeliveryBar({ sent, total }: { sent: number; total: number }) {
-  const pct = total > 0 ? Math.round((sent / total) * 100) : 0;
-  const color = pct >= 80 ? "#4ade80" : pct >= 50 ? "#facc15" : "#f87171";
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,.06)", borderRadius: 99, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
-      </div>
-      <span style={{ fontSize: 10, fontWeight: 700, color, minWidth: 28 }}>{pct}%</span>
-    </div>
-  );
-}
 
 export default function AppDashboard() {
   const [, setLocation] = useLocation();
+  const { isDark } = useTheme();
+
+  const dashBg   = isDark ? "#0a0a0a" : "#fafafa";
+  const headText  = isDark ? "#ededed" : "#09090b";
+  const subText   = isDark ? "#71717a" : "#71717a";
+  const dateText  = isDark ? "#52525b" : "#a1a1aa";
+  const cardTitle = isDark ? "#ededed" : "#09090b";
+  const cardSub   = isDark ? "#71717a" : "#71717a";
+  const tableHeaderColor = isDark ? "#52525b"  : "#a1a1aa";
+  const tableRowText     = isDark ? "#ededed"  : "#09090b";
+  const tableSubText     = isDark ? "#a1a1aa"  : "#3f3f46";
+  const tableSubText2    = isDark ? "#52525b"  : "#a1a1aa";
+  const tableRowBdr      = isDark ? "rgba(255,255,255,0.04)" : "#f4f4f5";
+  const tableHover       = isDark ? "rgba(255,255,255,0.025)" : "#f4f4f5";
+  const gridBg           = isDark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)";
+  const tableHeaderBdr   = isDark ? "rgba(255,255,255,0.05)"  : "#e4e4e7";
+  const pipelineLabel    = isDark ? "#a1a1aa"  : "#3f3f46";
+  const qaLabel          = isDark ? "#71717a"  : "#71717a";
+  const delivBarBg       = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+  const topCampText      = isDark ? "#ededed"  : "#09090b";
+  const topCampSub       = isDark ? "#52525b"  : "#a1a1aa";
+  const emptyText        = isDark ? "#a1a1aa"  : "#3f3f46";
+  const emptyText2       = isDark ? "#52525b"  : "#a1a1aa";
+  const barBg            = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
+  const tableCellGray    = isDark ? "#a1a1aa"  : "#3f3f46";
+  const tableNone        = isDark ? "#52525b"  : "#a1a1aa";
 
   const { data: me } = useQuery<MeResponse>({
     queryKey: ["/api/auth/me"],
@@ -247,14 +268,14 @@ export default function AppDashboard() {
     <AppLayout>
       <style>{CSS}</style>
 
-      <div style={{ flex: 1, background: "#0a0a0c", minHeight: "100vh", fontFamily: F, position: "relative", overflowX: "hidden" }}>
+      <div style={{ flex: 1, background: dashBg, minHeight: "100vh", fontFamily: F, position: "relative", overflowX: "hidden" }}>
 
         {/* Ambient background orbs */}
         <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
           <div style={{ position: "absolute", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle,rgba(139,92,246,.06) 0%,transparent 70%)", top: -200, right: -150, animation: "orb1 16s ease-in-out infinite" }} />
           <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(99,102,241,.04) 0%,transparent 70%)", bottom: -80, left: -100, animation: "orb2 20s ease-in-out infinite" }} />
           {/* Subtle grid */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px)", backgroundSize: "40px 40px" }} />
+          <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${gridBg} 1px,transparent 1px),linear-gradient(90deg,${gridBg} 1px,transparent 1px)`, backgroundSize: "40px 40px" }} />
         </div>
 
         <div style={{ position: "relative", zIndex: 1, padding: "32px 40px 56px" }}>
@@ -262,13 +283,13 @@ export default function AppDashboard() {
           {/* ── Header ── */}
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, animation: "fadeUp .5s cubic-bezier(.16,1,.3,1) both" }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.2)", letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: dateText, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 8 }}>
                 {formatDate()}
               </div>
-              <h1 style={{ fontSize: 30, fontWeight: 900, color: "#fff", letterSpacing: "-.05em", lineHeight: 1, marginBottom: 8 }}>
+              <h1 style={{ fontSize: 30, fontWeight: 900, color: headText, letterSpacing: "-.05em", lineHeight: 1, marginBottom: 8 }}>
                 {me?.email ? greeting(me.email) : "Dashboard"}
               </h1>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,.32)" }}>
+              <p style={{ fontSize: 13, color: subText }}>
                 {campaigns.length === 0
                   ? "Ready to launch your first outreach campaign."
                   : `${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""} · ${totalSent} email${totalSent !== 1 ? "s" : ""} sent`}
@@ -323,8 +344,8 @@ export default function AppDashboard() {
             <div className="d-card" style={{ padding: "24px 26px", animation: "fadeUp .5s ease both .28s" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>Outreach Activity</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,.28)", marginTop: 3 }}>Emails sent per campaign</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle }}>Outreach Activity</div>
+                  <div style={{ fontSize: 11, color: cardSub, marginTop: 3 }}>Emails sent per campaign</div>
                 </div>
                 {campaigns.length > 0 && (
                   <div style={{ fontSize: 10, fontWeight: 700, color: ACC, background: "rgba(139,92,246,.1)", border: "1px solid rgba(139,92,246,.2)", padding: "4px 10px", borderRadius: 8, letterSpacing: ".06em", textTransform: "uppercase" }}>
@@ -337,15 +358,15 @@ export default function AppDashboard() {
 
             {/* Top Campaigns */}
             <div className="d-card" style={{ padding: "24px", animation: "fadeUp .5s ease both .33s" }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,.85)", marginBottom: 4 }}>Top Campaigns</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,.28)", marginBottom: 20 }}>Highest lead volume</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle, marginBottom: 4 }}>Top Campaigns</div>
+              <div style={{ fontSize: 11, color: cardSub, marginBottom: 20 }}>Highest lead volume</div>
 
               {topCampaigns.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 0", gap: 10, textAlign: "center" }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3.5" stroke="rgba(139,92,246,0.6)" strokeWidth="1.3"/><path d="M2 14c0-3.31 2.69-6 6-6s6 2.69 6 6" stroke="rgba(139,92,246,0.6)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                   </div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", lineHeight: 1.6 }}>Run your first campaign<br/>to see results here.</div>
+                  <div style={{ fontSize: 12, color: emptyText2, lineHeight: 1.6 }}>Run your first campaign<br/>to see results here.</div>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -356,13 +377,13 @@ export default function AppDashboard() {
                     return (
                       <div key={c.id}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: "rgba(255,255,255,.78)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 }}>{c.name}</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: topCampText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 150 }}>{c.name}</div>
                           <div style={{ fontSize: 11, fontWeight: 700, color: col, flexShrink: 0 }}>{c.totalLeads} leads</div>
                         </div>
-                        <div style={{ height: 4, background: "rgba(255,255,255,.06)", borderRadius: 99, overflow: "hidden" }}>
+                        <div style={{ height: 4, background: delivBarBg, borderRadius: 99, overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${pct}%`, background: col, borderRadius: 99, transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
                         </div>
-                        <div style={{ fontSize: 10, color: "rgba(255,255,255,.25)", marginTop: 5 }}>{c.businessType} · {c.location}</div>
+                        <div style={{ fontSize: 10, color: topCampSub, marginTop: 5 }}>{c.businessType} · {c.location}</div>
                       </div>
                     );
                   })}
@@ -374,8 +395,8 @@ export default function AppDashboard() {
           {/* ── Row 3: Horizontal Bar Chart (Analytics) ── */}
           {campaigns.length > 0 && (
             <div className="d-card" style={{ padding: "24px 26px", marginBottom: 14, animation: "fadeUp .5s ease both .38s" }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,.85)", marginBottom: 4 }}>Emails Sent per Campaign</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,.28)", marginBottom: 20 }}>Campaign-level email delivery breakdown</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle, marginBottom: 4 }}>Emails Sent per Campaign</div>
+              <div style={{ fontSize: 11, color: cardSub, marginBottom: 20 }}>Campaign-level email delivery breakdown</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                 {campaigns.slice(0, 8).map((c, i) => {
                   const MAX = Math.max(...campaigns.map(x => x.sent), 1);
@@ -384,12 +405,12 @@ export default function AppDashboard() {
                   const barColor = delRate >= 80 ? "#4ade80" : delRate >= 50 ? "#fbbf24" : "#f87171";
                   return (
                     <div key={c.id} className="row-in" style={{ display: "flex", alignItems: "center", gap: 14, animationDelay: `${.38 + i * .05}s` }}>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", width: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{c.name}</div>
-                      <div style={{ flex: 1, height: 7, background: "rgba(255,255,255,.05)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ fontSize: 12, color: tableCellGray, width: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{c.name}</div>
+                      <div style={{ flex: 1, height: 7, background: barBg, borderRadius: 4, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${ACC},${barColor})`, borderRadius: 4, transition: "width .6s cubic-bezier(.16,1,.3,1)" }} />
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#10b981", width: 28, textAlign: "right", flexShrink: 0 }}>{c.sent}</div>
-                      <div style={{ fontSize: 11, color: "rgba(255,255,255,.3)", width: 36, textAlign: "right", flexShrink: 0 }}>{delRate}%</div>
+                      <div style={{ fontSize: 11, color: cardSub, width: 36, textAlign: "right", flexShrink: 0 }}>{delRate}%</div>
                     </div>
                   );
                 })}
@@ -401,8 +422,8 @@ export default function AppDashboard() {
           <div className="d-card" style={{ marginBottom: 14, animation: "fadeUp .5s ease both .43s" }}>
             <div style={{ padding: "20px 26px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>All Campaigns</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,.28)", marginTop: 3 }}>{campaigns.length} total · complete history</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle }}>All Campaigns</div>
+                <div style={{ fontSize: 11, color: cardSub, marginTop: 3 }}>{campaigns.length} total · complete history</div>
               </div>
               <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "9px 16px", fontSize: 12 }}>
                 <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -416,8 +437,8 @@ export default function AppDashboard() {
                   <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5.5-7 4.5 4 5.5-8" stroke="rgba(139,92,246,.7)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,.45)", marginBottom: 5 }}>No campaigns yet</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,.25)", marginBottom: 14 }}>Generate your first batch of leads and emails in minutes.</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: emptyText, marginBottom: 5 }}>No campaigns yet</div>
+                  <div style={{ fontSize: 12, color: emptyText2, marginBottom: 14 }}>Generate your first batch of leads and emails in minutes.</div>
                   <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "9px 20px", fontSize: 12 }}>Start a campaign</button>
                 </div>
               </div>
@@ -425,9 +446,9 @@ export default function AppDashboard() {
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,.05)" }}>
+                    <tr style={{ borderBottom: `1px solid ${tableHeaderBdr}` }}>
                       {["Campaign", "Industry / Location", "Leads", "Sent", "Failed", "Delivery", "Date"].map(h => (
-                        <th key={h} style={{ padding: "11px 20px", textAlign: "left", fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,.2)", letterSpacing: ".1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                        <th key={h} style={{ padding: "11px 20px", textAlign: "left", fontSize: 9, fontWeight: 800, color: tableHeaderColor, letterSpacing: ".1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -438,37 +459,37 @@ export default function AppDashboard() {
                       const date = (() => { try { return new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return "—"; } })();
                       return (
                         <tr key={c.id} className="row-in" style={{
-                          borderBottom: i < campaigns.length - 1 ? "1px solid rgba(255,255,255,.04)" : "none",
+                          borderBottom: i < campaigns.length - 1 ? `1px solid ${tableRowBdr}` : "none",
                           transition: "background .12s", animationDelay: `${.43 + i * .04}s`,
                         }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = "rgba(255,255,255,.025)"; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = tableHover; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
                         >
                           <td style={{ padding: "14px 20px" }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,.82)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{c.name}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: tableRowText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{c.name}</div>
                           </td>
                           <td style={{ padding: "14px 20px" }}>
-                            <div style={{ fontSize: 12, color: "rgba(255,255,255,.45)" }}>{c.businessType}</div>
-                            <div style={{ fontSize: 11, color: "rgba(255,255,255,.25)", marginTop: 2 }}>{c.location}</div>
+                            <div style={{ fontSize: 12, color: tableSubText }}>{c.businessType}</div>
+                            <div style={{ fontSize: 11, color: tableSubText2, marginTop: 2 }}>{c.location}</div>
                           </td>
-                          <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,.6)" }}>{c.totalLeads}</td>
+                          <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: tableCellGray }}>{c.totalLeads}</td>
                           <td style={{ padding: "14px 20px" }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80", background: "rgba(74,222,128,.1)", padding: "2px 8px", borderRadius: 6 }}>{c.sent}</span>
                           </td>
                           <td style={{ padding: "14px 20px" }}>
                             {c.failed > 0
                               ? <span style={{ fontSize: 12, fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,.1)", padding: "2px 8px", borderRadius: 6 }}>{c.failed}</span>
-                              : <span style={{ color: "rgba(255,255,255,.2)", fontSize: 12 }}>—</span>}
+                              : <span style={{ color: tableNone, fontSize: 12 }}>—</span>}
                           </td>
                           <td style={{ padding: "14px 20px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <div style={{ width: 64, height: 4, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ width: 64, height: 4, background: delivBarBg, borderRadius: 2, overflow: "hidden" }}>
                                 <div style={{ height: "100%", width: `${dr}%`, background: drColor, borderRadius: 2, transition: "width .6s cubic-bezier(.16,1,.3,1)" }} />
                               </div>
                               <span style={{ fontSize: 11, fontWeight: 700, color: drColor }}>{dr}%</span>
                             </div>
                           </td>
-                          <td style={{ padding: "14px 20px", fontSize: 11, color: "rgba(255,255,255,.28)", whiteSpace: "nowrap" }}>{date}</td>
+                          <td style={{ padding: "14px 20px", fontSize: 11, color: tableSubText2, whiteSpace: "nowrap" }}>{date}</td>
                         </tr>
                       );
                     })}
@@ -483,8 +504,8 @@ export default function AppDashboard() {
 
             {/* Lead Pipeline */}
             <div className="d-card" style={{ padding: "24px 26px", animation: "fadeUp .5s ease both .48s" }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,.85)", marginBottom: 4 }}>Lead Pipeline</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,.28)", marginBottom: 20 }}>Track leads through your sales stages</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle, marginBottom: 4 }}>Lead Pipeline</div>
+              <div style={{ fontSize: 11, color: cardSub, marginBottom: 20 }}>Track leads through your sales stages</div>
               <div style={{ display: "flex", gap: 10 }}>
                 {[
                   { label: "New",        color: "#8b5cf6", count: totalLeads },
@@ -496,11 +517,11 @@ export default function AppDashboard() {
                   <div key={col.label} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                       <div style={{ width: 7, height: 7, borderRadius: "50%", background: col.color }} />
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.4)", letterSpacing: ".05em" }}>{col.label.toUpperCase()}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: pipelineLabel, letterSpacing: ".05em" }}>{col.label.toUpperCase()}</span>
                     </div>
                     <div style={{ background: `${col.color}10`, border: `1.5px dashed ${col.color}30`, borderRadius: 10, padding: "18px 12px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
                       <div style={{ fontSize: 22, fontWeight: 900, color: col.color, letterSpacing: "-.04em", lineHeight: 1 }}>{col.count}</div>
-                      <div style={{ fontSize: 9, color: "rgba(255,255,255,.25)", marginTop: 4, textTransform: "uppercase", letterSpacing: ".08em" }}>leads</div>
+                      <div style={{ fontSize: 9, color: topCampSub, marginTop: 4, textTransform: "uppercase", letterSpacing: ".08em" }}>leads</div>
                     </div>
                   </div>
                 ))}
@@ -510,7 +531,7 @@ export default function AppDashboard() {
             {/* Quick Actions + Insights */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div className="d-card" style={{ padding: "20px", animation: "fadeUp .5s ease both .5s" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.3)", letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 12 }}>Quick Actions</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: qaLabel, letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 12 }}>Quick Actions</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ marginBottom: 2 }}>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -527,23 +548,23 @@ export default function AppDashboard() {
 
               {campaigns.length > 0 && (
                 <div className="d-card" style={{ padding: "18px 20px", animation: "fadeUp .5s ease both .55s" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.3)", letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 12 }}>Insights</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: qaLabel, letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 12 }}>Insights</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {bestDel && (
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Best delivery</div>
+                        <div style={{ fontSize: 11, color: pipelineLabel }}>Best delivery</div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80" }}>{bestDel.sent + bestDel.failed > 0 ? Math.round((bestDel.sent / (bestDel.sent + bestDel.failed)) * 100) : 0}%</div>
                       </div>
                     )}
                     {mostLeads && (
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Most leads</div>
+                        <div style={{ fontSize: 11, color: pipelineLabel }}>Most leads</div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>{mostLeads.totalLeads}</div>
                       </div>
                     )}
                     {latest && (
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Latest sent</div>
+                        <div style={{ fontSize: 11, color: pipelineLabel }}>Latest sent</div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>{latest.sent}</div>
                       </div>
                     )}

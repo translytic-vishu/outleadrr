@@ -2,16 +2,17 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/AppLayout";
 import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
+import { useTheme } from "@/lib/theme";
 
 export const TEMPLATE_STORAGE_KEY = "outleadrr_active_template";
 
 const F    = "'Inter','Helvetica Neue',Arial,sans-serif";
-const BG   = "#0a0a0c";
-const CARD = "rgba(255,255,255,0.03)";
-const CARD_BORDER = "rgba(255,255,255,0.07)";
-const TEXT  = "rgba(255,255,255,0.9)";
-const TEXT2 = "rgba(255,255,255,0.55)";
-const TEXT3 = "rgba(255,255,255,0.28)";
+const BG   = "#0a0a0a";
+const CARD = "rgba(255,255,255,0.035)";
+const CARD_BORDER = "rgba(255,255,255,0.08)";
+const TEXT  = "#ededed";
+const TEXT2 = "#a1a1aa";
+const TEXT3 = "#71717a";
 const IND  = "#8b5cf6";
 
 const CSS = `
@@ -36,6 +37,10 @@ const CSS = `
     transform:translateY(-1px);
     box-shadow:0 8px 24px rgba(139,92,246,.4)!important;
   }
+  [data-theme="light"] .tpl-card{background:#ffffff!important;border-color:#e4e4e7!important;}
+  [data-theme="light"] .tpl-card:hover{border-color:#d4d4d8!important;box-shadow:0 8px 24px rgba(0,0,0,.06)!important;}
+  [data-theme="light"] .filter-btn-inactive:hover{color:#09090b!important;background:#f4f4f5!important;}
+  [data-theme="light"] textarea{background:#f4f4f5!important;border-color:#e4e4e7!important;color:#09090b!important;color-scheme:light;}
 `;
 
 const TEMPLATES = [
@@ -317,6 +322,13 @@ export default function Templates() {
   const [active, setActive] = useState<typeof TEMPLATES[0] | null>(null);
   const [filter, setFilter] = useState("All");
   const [, setLocation] = useLocation();
+  const { isDark } = useTheme();
+  const tBg   = isDark ? BG   : "#fafafa";
+  const tText = isDark ? TEXT : "#09090b";
+  const tText2= isDark ? TEXT2: "#3f3f46";
+  const tText3= isDark ? TEXT3: "#71717a";
+  const tCard = isDark ? CARD : "#ffffff";
+  const tBdr  = isDark ? CARD_BORDER : "#e4e4e7";
 
   function useInBuilder(t: typeof TEMPLATES[0]) {
     localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify({
@@ -335,15 +347,15 @@ export default function Templates() {
       <style>{CSS}</style>
       <PageIntro config={PAGE_INTROS.templates} />
 
-      <div style={{ padding: "32px 40px", fontFamily: F, minHeight: "100vh", background: BG }}>
+      <div style={{ padding: "32px 40px", fontFamily: F, minHeight: "100vh", background: tBg }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 900, color: TEXT, letterSpacing: "-.04em", marginBottom: 4 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: tText, letterSpacing: "-.04em", marginBottom: 4 }}>
               Templates
             </h1>
-            <p style={{ fontSize: 13, color: TEXT3, marginTop: 4 }}>
+            <p style={{ fontSize: 13, color: tText3, marginTop: 4 }}>
               {TEMPLATES.length} ready-to-use email frameworks. Click any to preview and use.
             </p>
           </div>
@@ -363,13 +375,13 @@ export default function Templates() {
                   borderRadius: 8,
                   border: isActive
                     ? "1.5px solid rgba(139,92,246,0.4)"
-                    : "1.5px solid rgba(255,255,255,0.08)",
+                    : isDark ? "1.5px solid rgba(255,255,255,0.08)" : "1.5px solid rgba(0,0,0,0.1)",
                   background: isActive
                     ? "rgba(139,92,246,0.15)"
-                    : "rgba(255,255,255,0.04)",
+                    : isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
                   color: isActive
                     ? "#a78bfa"
-                    : "rgba(255,255,255,0.4)",
+                    : isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.45)",
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -391,16 +403,16 @@ export default function Templates() {
               className="tpl-card"
               onClick={() => setActive(t)}
               style={{
-                background: CARD,
+                background: tCard,
                 borderRadius: 14,
-                border: `1px solid ${CARD_BORDER}`,
+                border: `1px solid ${tBdr}`,
                 padding: "20px",
                 cursor: "pointer",
                 animationDelay: `${i * 0.04}s`,
               }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, lineHeight: 1.3, flex: 1, marginRight: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: tText, lineHeight: 1.3, flex: 1, marginRight: 8 }}>
                   {t.name}
                 </div>
                 <span style={{
@@ -415,15 +427,15 @@ export default function Templates() {
                   {t.tag}
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: TEXT3, marginBottom: 10, fontStyle: "italic" }}>
+              <div style={{ fontSize: 11, color: tText3, marginBottom: 10, fontStyle: "italic" }}>
                 {t.tone}
               </div>
-              <div style={{ fontSize: 12, color: TEXT2, fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: tText2, fontWeight: 600, marginBottom: 6 }}>
                 Subject:
               </div>
               <div style={{
                 fontSize: 12,
-                color: "rgba(255,255,255,0.35)",
+                color: isDark ? "rgba(255,255,255,0.35)" : "#888",
                 marginBottom: 12,
                 overflow: "hidden",
                 display: "-webkit-box",
@@ -433,7 +445,7 @@ export default function Templates() {
                 {t.subject}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ fontSize: 11, color: TEXT3 }}>Used {t.uses}×</div>
+                <div style={{ fontSize: 11, color: tText3 }}>Used {t.uses}×</div>
                 <div style={{ fontSize: 12, color: IND, fontWeight: 600 }}>Preview →</div>
               </div>
             </div>
@@ -462,9 +474,9 @@ export default function Templates() {
               bottom: 0,
               zIndex: 201,
               width: 500,
-              background: "#111114",
+              background: isDark ? "#111114" : "#ffffff",
               overflowY: "auto",
-              borderLeft: "1px solid rgba(255,255,255,0.08)",
+              borderLeft: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.1)",
               boxShadow: "-16px 0 64px rgba(0,0,0,.8)",
               animation: "slideIn .22s cubic-bezier(.16,1,.3,1)",
             }}
@@ -473,18 +485,18 @@ export default function Templates() {
             {/* Drawer header */}
             <div style={{
               padding: "20px 24px",
-              borderBottom: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)",
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
               position: "sticky",
               top: 0,
-              background: "#111114",
+              background: isDark ? "#111114" : "#ffffff",
               zIndex: 1,
             }}>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: TEXT }}>{active.name}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: tText }}>{active.name}</div>
                   <span style={{
                     fontSize: 10,
                     fontWeight: 700,
@@ -496,7 +508,7 @@ export default function Templates() {
                     {active.tag}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: TEXT3 }}>{active.tone} · Used {active.uses} times</div>
+                <div style={{ fontSize: 12, color: tText3 }}>{active.tone} · Used {active.uses} times</div>
               </div>
               <button
                 onClick={() => setActive(null)}
@@ -504,7 +516,7 @@ export default function Templates() {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: TEXT3,
+                  color: tText3,
                   fontSize: 22,
                   lineHeight: 1,
                   padding: 4,
@@ -522,7 +534,7 @@ export default function Templates() {
                 <div style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: TEXT3,
+                  color: tText3,
                   textTransform: "uppercase",
                   letterSpacing: ".07em",
                   marginBottom: 8,
@@ -530,13 +542,13 @@ export default function Templates() {
                   Subject Line
                 </div>
                 <div style={{
-                  background: "rgba(255,255,255,0.04)",
+                  background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
                   borderRadius: 9,
                   padding: "11px 14px",
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.85)",
+                  color: tText,
                   fontWeight: 600,
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: `1px solid ${tBdr}`,
                 }}>
                   {active.subject}
                 </div>
@@ -547,7 +559,7 @@ export default function Templates() {
                 <div style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: TEXT3,
+                  color: tText3,
                   textTransform: "uppercase",
                   letterSpacing: ".07em",
                   marginBottom: 8,
@@ -555,13 +567,13 @@ export default function Templates() {
                   Email Body
                 </div>
                 <div style={{
-                  background: "rgba(255,255,255,0.04)",
+                  background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
                   borderRadius: 9,
                   padding: "14px 16px",
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.85)",
+                  color: tText,
                   lineHeight: 1.75,
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: `1px solid ${tBdr}`,
                   whiteSpace: "pre-wrap",
                 }}>
                   {active.body}
