@@ -41,16 +41,11 @@ const CSS = `
 `;
 
 function SidebarLogo({ isDark }: { isDark: boolean }) {
-  const ratio = 28 / 36;
-  const imgH  = Math.round(130 * ratio);
-  const neg   = -Math.round(47 * ratio);
   return (
-    <div style={{ height: 28, overflow: "hidden", display: "flex", alignItems: "center" }}>
-      <img
-        src={logoSrc} alt="Outleadrr"
-        style={{ height: imgH, width: "auto", objectFit: "contain", marginTop: neg, marginBottom: neg, display: "block", filter: isDark ? "brightness(0) invert(1)" : "brightness(0)" }}
-      />
-    </div>
+    <img
+      src={logoSrc} alt="Outleadrr"
+      style={{ height: 22, width: "auto", objectFit: "contain", display: "block", filter: isDark ? "brightness(0) invert(1)" : "none" }}
+    />
   );
 }
 

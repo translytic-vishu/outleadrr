@@ -116,7 +116,7 @@ function AreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boole
   const data = slice.map(c => c.sent);
   const labels = slice.map(c => c.name.length > 9 ? c.name.slice(0, 9) + "…" : c.name);
 
-  const gridColor  = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.08)";
+  const gridColor  = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.14)";
   const labelColor = isDark ? "#71717a" : "#a1a1aa";
   const emptyColor = isDark ? "#52525b" : "#a1a1aa";
 
@@ -164,7 +164,7 @@ function AreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boole
         <g transform="translate(40,0)">
           <path d={areaPts} fill="url(#areaG)" style={{ animation: "areaFadeIn .8s ease both .3s", opacity: 0 }} />
           <path d={`M${linePts}`} fill="none" stroke={ACC} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            filter="url(#glow)"
+            filter={isDark ? "url(#glow)" : undefined}
             strokeDasharray="800" style={{ animation: "lineDrawAnim 1.6s cubic-bezier(.16,1,.3,1) both .1s" }} />
           {xs.map((x, i) => (
             <g key={i}>
