@@ -11,12 +11,19 @@ import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, Plac
 import { storage } from "./storage.js";
 import { z } from "zod";
 
-// ── Gemini Flash 2.5 (primary AI via MAIN_AI_OUTLEADR) ──────────────────────
-const GEMINI_MODEL  = "gemini-2.5-flash-preview-05-20";
-const GEMINI_BASE   = "https://generativelanguage.googleapis.com/v1beta/openai/";
+// ── Gemini 2.0 Flash via OpenRouter (primary AI — MAIN_AI_OUTLEADR) ──────────
+const GEMINI_MODEL = "google/gemini-2.0-flash-001";
+const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
 function getGeminiClient() {
-  return new OpenAI({ apiKey: process.env.MAIN_AI_OUTLEADR || "", baseURL: GEMINI_BASE });
+  return new OpenAI({
+    apiKey: process.env.MAIN_AI_OUTLEADR || "",
+    baseURL: OPENROUTER_BASE,
+    defaultHeaders: {
+      "HTTP-Referer": process.env.APP_URL || "https://outleadrr.vercel.app",
+      "X-Title": "Outleadrr",
+    },
+  });
 }
 
 // ── OpenAI fallback ──────────────────────────────────────────────────────────
