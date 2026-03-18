@@ -72,6 +72,34 @@ export interface PlaceDetails {
  * Search local businesses via SerpAPI Google Local.
  * Returns up to `limit` results with full details in one request.
  */
+async function fetchSerpResults(q: string, location: string | null, key: string, limit: number): Promise<any[]> {
+  const params: Record<string, string> = {
+    engine: "google_local",
+    q,
+    api_key: key,
+    hl: "en",
+    gl: "us",
+    num: String(Math.min(limit, 20)),
+  };
+  if (location) params.location = location;
+
+  const res = await fetch(`${SERP_BASE}?${new URLSearchParams(params)}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    // Bubble up so caller can decide whether to retry
+    const err: any = new Error(`SerpAPI request failed (${res.status}): ${text}`);
+    err.status = res.status;
+    throw err;
+  }
+  const data = (await res.json()) as any;
+  if (data.error) {
+    const err: any = new Error(`SerpAPI: ${data.error}`);
+    err.serpError = data.error;
+    throw err;
+  }
+  return data.local_results || [];
+}
+
 export async function searchLocalBusinesses(
   businessType: string,
   location: string,
@@ -80,30 +108,18 @@ export async function searchLocalBusinesses(
   const key = process.env.SERPAPI_KEY;
   if (!key) throw new Error("SERPAPI_KEY is not configured. Add it in your Vercel environment variables.");
 
-  const params = new URLSearchParams({
-    engine: "google_local",
-    q: businessType,
-    location,
-    api_key: key,
-    hl: "en",
-    gl: "us",
-    num: String(Math.min(limit, 20)),
-  });
+  let results: any[];
+  try {
+    // Primary: use location parameter (works for major cities)
+    results = await fetchSerpResults(businessType, location, key, limit);
+  } catch (err: any) {
+    const isLocationErr = err.status === 400 || (err.serpError && /unsupported.*location/i.test(err.serpError));
+    if (!isLocationErr) throw err;
 
-  const url = `${SERP_BASE}?${params}`;
-  const res = await fetch(url);
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`SerpAPI request failed (${res.status}): ${text}`);
+    // Fallback: embed location in query — works for any city/suburb/zip
+    console.warn(`[SerpAPI] location param unsupported for "${location}", retrying with q-embedded location`);
+    results = await fetchSerpResults(`${businessType} near ${location}`, null, key, limit);
   }
-
-  const data = (await res.json()) as any;
-
-  // SerpAPI error handling
-  if (data.error) throw new Error(`SerpAPI: ${data.error}`);
-
-  const results: any[] = data.local_results || [];
 
   return results.slice(0, limit).map((r: any, i: number) => ({
     placeId: r.place_id || `serp_${i}_${Date.now()}`,
