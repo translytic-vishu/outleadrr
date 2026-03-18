@@ -9,7 +9,8 @@ import type { MeResponse, AuthStatus } from "@shared/schema";
 import logoSrc from "@assets/outleadr_1773257073565.png";
 import { useTheme } from "@/lib/theme";
 
-const F = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F   = "'Inter','Helvetica Neue',Arial,sans-serif";
+const IND = "#8b5cf6";
 
 const CSS = `
   *,*::before,*::after{box-sizing:border-box;}
