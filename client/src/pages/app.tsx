@@ -62,7 +62,7 @@ const GLOBAL_CSS = `
   [data-theme="light"] select option{background:#fff;color:#0f0f13;}
   [data-theme="light"] input::placeholder,[data-theme="light"] textarea::placeholder{color:rgba(0,0,0,0.28);}
   [data-theme="light"] .field-label{color:rgba(0,0,0,0.4);}
-  [data-theme="light"] .section-divider{background:rgba(0,0,0,0.06);}
+  [data-theme="light"] .section-divider{background:#e4e4e7;}
   [data-theme="light"] .lead-card{background:#fff!important;border-color:rgba(0,0,0,0.08)!important;box-shadow:0 2px 10px rgba(0,0,0,.06)!important;}
   [data-theme="light"] .lead-card:hover{border-color:rgba(124,58,237,0.3)!important;box-shadow:0 6px 24px rgba(0,0,0,.1)!important;}
   .send-btn{
@@ -735,7 +735,7 @@ export default function AppPage() {
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>New Campaign</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: W }}>New Campaign</div>
               <div style={{ fontSize: 11, color: K3 }}>Define your target and let AI build the outreach</div>
             </div>
           </div>
@@ -807,15 +807,15 @@ export default function AppPage() {
                       style={{
                         display: "flex", alignItems: "center", gap: 8, padding: "9px 10px",
                         borderRadius: 10,
-                        border: active ? `1.5px solid ${p.color}55` : `1.5px solid rgba(255,255,255,0.07)`,
-                        background: active ? `${p.color}14` : "rgba(255,255,255,0.03)",
+                        border: active ? `1.5px solid ${p.color}55` : isDark ? `1.5px solid rgba(255,255,255,0.08)` : `1.5px solid #e4e4e7`,
+                        background: active ? `${p.color}14` : isDark ? "rgba(255,255,255,0.03)" : "#f8f8fc",
                         cursor: "pointer", textAlign: "left", transition: "all .15s",
                         boxShadow: active ? `0 0 0 3px ${p.color}18, 0 4px 16px rgba(0,0,0,0.2)` : "none",
                       }}
                     >
-                      <img src={p.photo} alt={p.name} style={{ width:32, height:32, borderRadius:"50%", objectFit:"cover", border: `2px solid ${active ? p.color : "rgba(255,255,255,0.1)"}`, flexShrink:0 }} onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      <img src={p.photo} alt={p.name} style={{ width:32, height:32, borderRadius:"50%", objectFit:"cover", border: `2px solid ${active ? p.color : isDark ? "rgba(255,255,255,0.1)" : "#d4d4d8"}`, flexShrink:0 }} onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : "rgba(255,255,255,0.8)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : W, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                         <div style={{ fontSize: 10, color: K3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.desc}</div>
                       </div>
                     </button>
@@ -830,13 +830,13 @@ export default function AppPage() {
                 onClick={() => {
                   setLocation("/templates");
                 }}
-                style={{ display:"flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"rgba(255,255,255,0.55)",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"all .15s" }}
-                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="#8b5cf6";(e.currentTarget as HTMLElement).style.color="#c4b5fd";}}
-                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";(e.currentTarget as HTMLElement).style.color="rgba(255,255,255,0.55)";}}
+                style={{ display:"flex",alignItems:"center",gap:7,padding:"9px 16px",borderRadius:10,border:isDark?"1px solid rgba(255,255,255,0.1)":"1px solid #e4e4e7",background:isDark?"rgba(255,255,255,0.04)":"#f4f4f5",color:K2,fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:"'Inter',sans-serif",transition:"all .15s" }}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="#8b5cf6";(e.currentTarget as HTMLElement).style.color=isDark?"#c4b5fd":"#7c3aed";}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e4e4e7";(e.currentTarget as HTMLElement).style.color=K2;}}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 5h6M4 7.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 Template
-                <span style={{ fontSize:10,color:"rgba(255,255,255,0.28)",fontWeight:400 }}>(optional)</span>
+                <span style={{ fontSize:10,color:K4,fontWeight:400 }}>(optional)</span>
               </button>
               {loadedTemplate && (
                 <span style={{ fontSize:12,color:"#c4b5fd",background:"rgba(139,92,246,0.1)",border:"1px solid rgba(139,92,246,0.2)",borderRadius:7,padding:"4px 10px" }}>

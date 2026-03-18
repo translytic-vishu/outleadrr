@@ -130,9 +130,9 @@ export default function Login() {
 
       {/* Header */}
       <header style={{ position:"relative", zIndex:10, padding:"22px 40px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
-        <div style={{ height:26, overflow:"hidden", display:"flex", alignItems:"center" }}>
+        <a href="/" style={{ height:26, overflow:"hidden", display:"flex", alignItems:"center", textDecoration:"none", cursor:"pointer" }}>
           <img src={logoSrc} alt="Outleadrr" style={{ height:Math.round(130*(26/36)), width:"auto", objectFit:"contain", marginTop:-Math.round(47*(26/36)), marginBottom:-Math.round(47*(26/36)), filter:"brightness(0) invert(1)" }} />
-        </div>
+        </a>
         <a href="/signup" style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.45)", textDecoration:"none", transition:"color .15s" }}
           onMouseEnter={e=>{(e.currentTarget as HTMLAnchorElement).style.color="rgba(255,255,255,0.85)";}}
           onMouseLeave={e=>{(e.currentTarget as HTMLAnchorElement).style.color="rgba(255,255,255,0.45)";}}

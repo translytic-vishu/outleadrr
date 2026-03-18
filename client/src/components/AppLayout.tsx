@@ -162,7 +162,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       }}>
 
         {/* Logo */}
-        <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${sidebarBdr}`, display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <div
+          onClick={() => setLocation("/dashboard")}
+          style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${sidebarBdr}`, display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer" }}
+        >
           <SidebarLogo isDark={isDark} />
         </div>
 
