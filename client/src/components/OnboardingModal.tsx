@@ -15,12 +15,31 @@ const CSS = `
   @keyframes ob-orb2  { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-26px,20px) scale(1.06)} 65%{transform:translate(22px,-18px) scale(.96)} }
   .ob-in  { animation: ob-in  .4s cubic-bezier(.16,1,.3,1) both; }
   .ob-out { animation: ob-out .22s cubic-bezier(.4,0,1,1) both; }
+  /* Modal always dark — immune to light-mode theme transitions */
+  .ob-backdrop {
+    position:fixed;inset:0;z-index:900;
+    background:rgba(0,0,0,.65);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    transition:none!important;
+  }
+  .ob-card {
+    position:fixed;z-index:901;
+    top:50%;left:50%;transform:translate(-50%,-50%);
+    width:calc(100% - 32px);max-width:500px;
+    background:#0d0d12;
+    border:1px solid rgba(255,255,255,.11);
+    border-radius:22px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 48px 120px rgba(0,0,0,.9),0 8px 32px rgba(99,102,241,.1);
+    font-family:${F};overflow:hidden;
+    color-scheme:dark;
+    transition:none!important;
+  }
   .ob-cta {
     display:flex;align-items:center;justify-content:center;gap:8px;
     padding:13px 28px;border-radius:11px;border:none;
     background:rgba(255,255,255,.96);color:#0a0a0a;
     font-size:14px;font-weight:700;font-family:${F};letter-spacing:-.01em;
-    cursor:pointer;transition:all .18s;
+    cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s;
     box-shadow:0 4px 16px rgba(0,0,0,.22);
     flex:1;
   }
@@ -36,9 +55,10 @@ const CSS = `
     flex:1;
   }
   .ob-cta-ghost:hover{background:rgba(255,255,255,.09);color:rgba(255,255,255,.88);border-color:rgba(255,255,255,.2);}
-  .ob-check{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .ob-check{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07);}
   .ob-check:last-child{border-bottom:none;}
-  .ob-mini-card{padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;}
+  .ob-mini-card{padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;}
+  .ob-step-num{font-size:9px;font-weight:700;color:rgba(139,92,246,.7);letter-spacing:.07em;margin-bottom:6px;}
 `;
 
 function Dots({ n, i }: { n: number; i: number }) {
@@ -78,9 +98,9 @@ function SlideWelcome() {
           { label:"Gmail sending",       desc:"Sent from your real inbox",        num:"04" },
         ].map(f => (
           <div key={f.label} className="ob-mini-card">
-            <div style={{ fontSize:9,fontWeight:700,color:"rgba(255,255,255,.2)",letterSpacing:".07em",marginBottom:6 }}>{f.num}</div>
-            <div style={{ fontSize:12,fontWeight:700,color:"rgba(255,255,255,.88)",marginBottom:3 }}>{f.label}</div>
-            <div style={{ fontSize:11,color:"rgba(255,255,255,.34)",lineHeight:1.45 }}>{f.desc}</div>
+            <div className="ob-step-num">{f.num}</div>
+            <div style={{ fontSize:12,fontWeight:700,color:"rgba(255,255,255,.92)",marginBottom:3 }}>{f.label}</div>
+            <div style={{ fontSize:11,color:"rgba(255,255,255,.48)",lineHeight:1.45 }}>{f.desc}</div>
           </div>
         ))}
       </div>
@@ -399,28 +419,11 @@ export function OnboardingModal() {
     <>
       <style>{CSS}</style>
 
-      {/* Backdrop — slight blur so page is visible underneath */}
-      <div onClick={dismiss} style={{
-        position:"fixed",inset:0,zIndex:900,
-        background:"rgba(0,0,0,.52)",
-        backdropFilter:"blur(4px)",
-        WebkitBackdropFilter:"blur(4px)",
-      }} />
+      {/* Backdrop */}
+      <div className="ob-backdrop" onClick={dismiss} />
 
-      {/* Glass modal — centered on full viewport */}
-      <div style={{
-        position:"fixed",zIndex:901,
-        top:"50%",left:"50%",
-        transform:"translate(-50%,-50%)",
-        width:"calc(100% - 32px)",maxWidth:500,
-        background:"rgba(8,8,14,0.88)",
-        backdropFilter:"blur(48px) saturate(160%)",
-        WebkitBackdropFilter:"blur(48px) saturate(160%)",
-        border:"1px solid rgba(255,255,255,.1)",
-        borderRadius:22,
-        boxShadow:"inset 0 0 0 1px rgba(255,255,255,.04), 0 48px 120px rgba(0,0,0,.9), 0 8px 32px rgba(99,102,241,.1)",
-        fontFamily:F,overflow:"hidden",
-      }}>
+      {/* Modal card — always dark */}
+      <div className="ob-card">
 
         {/* Ambient orbs */}
         <div aria-hidden style={{ position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none",zIndex:0,borderRadius:22 }}>

@@ -11,6 +11,15 @@ import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, Plac
 import { storage } from "./storage.js";
 import { z } from "zod";
 
+// ── Gemini Flash 2.5 (primary AI via MAIN_AI_OUTLEADR) ──────────────────────
+const GEMINI_MODEL  = "gemini-2.5-flash-preview-05-20";
+const GEMINI_BASE   = "https://generativelanguage.googleapis.com/v1beta/openai/";
+
+function getGeminiClient() {
+  return new OpenAI({ apiKey: process.env.MAIN_AI_OUTLEADR || "", baseURL: GEMINI_BASE });
+}
+
+// ── OpenAI fallback ──────────────────────────────────────────────────────────
 function getOpenAI() {
   const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
   const isOpenRouter = baseURL.includes("openrouter.ai");
@@ -24,10 +33,18 @@ function getOpenAI() {
   });
 }
 
-function getModel() {
-  // Allow override via OPENAI_MODEL env var
-  // For OpenRouter stepfun: set OPENAI_MODEL=step-1-8k (or your preferred stepfun model)
-  return process.env.OPENAI_MODEL || "gpt-4o";
+function getModel() { return process.env.OPENAI_MODEL || "gpt-4o"; }
+
+// ── Universal AI caller: Gemini first → OpenAI fallback ─────────────────────
+async function aiCall(params: Omit<Parameters<OpenAI["chat"]["completions"]["create"]>[0], "model">) {
+  if (process.env.MAIN_AI_OUTLEADR) {
+    try {
+      return await getGeminiClient().chat.completions.create({ ...params, model: GEMINI_MODEL } as any);
+    } catch (err: any) {
+      console.warn("[AI] Gemini failed, falling back to OpenAI:", err.message);
+    }
+  }
+  return getOpenAI().chat.completions.create({ ...params, model: getModel() } as any);
 }
 
 declare module "express-session" {
@@ -272,104 +289,91 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ].join("\n");
       }).join("\n\n");
 
-      /* ── 5. Generate contact + cold email via AI ────────────────── */
-      const toneGuide: Record<string, string> = {
-        professional:  "Formal and polished. No contractions. Business-focused language. Credibility through specificity.",
-        friendly:      "Warm and conversational. Use contractions. Feel like a peer reaching out, not a salesperson.",
-        direct:        "Short sentences. No filler. One clear ask. Respect the reader's time above all else.",
-        humorous:      "Light wit and a single clever observation. Never try-hard. One joke max, then straight to value.",
-        persuasive:    "Highlight a pain they might not know they have. Create mild urgency. End with a compelling reason to reply.",
-        casual:        "Write like a smart friend texting. Informal but credible. Short paragraphs.",
-        consultative:  "Lead with insight before offer. Position as an advisor, not a vendor. Ask a thoughtful question.",
-        bold:          "Open with a strong, slightly provocative statement. Confident claims backed by specifics.",
+      /* ── 5. Generate contact + cold email via Gemini (OpenAI fallback) ─ */
+      const toneGuide: Record<string, { style: string; voice: string; cta: string; closing: string }> = {
+        professional:  { style: "Polished, confident, results-oriented. No contractions unless it sounds natural. Precise word choice.", voice: "Senior account executive who has done their homework on this specific business.", cta: "Worth a 15-minute call this week?", closing: "Kind regards," },
+        friendly:      { style: "Warm, conversational, genuine. Contractions throughout. Reads like an email from someone you already like.", voice: "Peer reaching out peer-to-peer, not salesperson to prospect.", cta: "Happy to share more — just reply and I'll send details.", closing: "Cheers," },
+        direct:        { style: "Short sentences only. No filler words. One idea per sentence. Zero pleasantries.", voice: "Person who values time above everything and writes accordingly.", cta: "Open to a quick chat?", closing: "Best," },
+        humorous:      { style: "One sharp, clever observation — then real value. Never try-hard. Wit earns trust; jokes don't close deals.", voice: "Smart person with a dry sense of humour who still has something real to offer.", cta: "Can I send you a 2-minute example?", closing: "Cheers," },
+        persuasive:    { style: "Opens with a mild tension or overlooked opportunity. Builds urgency without pressure. Strong proof point.", voice: "Consultant who spotted something the business owner hasn't noticed yet.", cta: "Reply and I'll show you exactly how it works.", closing: "Best," },
+        casual:        { style: "Breezy and short. Writes like a smart friend texting, not a vendor pitching. Informal but credible.", voice: "Someone the reader would actually want to grab coffee with.", cta: "Worth a quick chat?", closing: "Cheers," },
+        consultative:  { style: "Lead with a specific insight before any offer. Position as advisor, not vendor. Ask one thoughtful question.", voice: "Industry expert who noticed something specific about this business and wants to share it.", cta: "Open to a 10-minute conversation about it?", closing: "Kind regards," },
+        bold:          { style: "Opens with a strong, slightly provocative statement backed by a specific claim. Confident, never arrogant.", voice: "Someone who has achieved measurable results and isn't afraid to say so.", cta: "Happy to share how — reply and I'll send details.", closing: "Best," },
       };
+      const toneConfig = toneGuide[tone as string] || toneGuide.professional;
 
-      const completion = await getOpenAI().chat.completions.create({
-        model: getModel(),
+      const completion = await aiCall({
         messages: [
           {
             role: "system",
-            content: `You are a specialist cold email writer. You write B2B outreach emails that get opened, read, and replied to — because they read like a real person wrote them, not software.
+            content: `You are an elite cold email writer. Your emails get responses because they sound like a real human wrote them for one specific business — not a template.
 
-ABSOLUTE RULE: Before writing each email, read the business data. Use the name, city, rating, review count, or address in a natural way. If you can't point to something specific about THIS business, your email is not good enough.
+## YOUR MISSION
+Write ${placeDetails.length} cold outreach emails. Each email must be unmistakably written for THAT business using its actual name, location, rating, or review count.
 
-━━━ WRITE LIKE A HUMAN, NOT AN AI ━━━
-• Contractions always: don't, it's, you're, I've, can't — never the stiff formal version
-• Short sentences. Most should be under 15 words. Break up longer thoughts.
-• 7th-grade reading level. A plumber should understand it instantly.
-• Read it aloud. If it sounds like a press release, rewrite it.
-• One casual or slightly informal phrasing per email is fine — it signals real
+## WRITER PERSONA
+${toneConfig.voice}
 
-━━━ BANNED OPENERS — never use these ━━━
-"I hope this finds you", "I wanted to reach out", "My name is",
-"I came across your business", "Are you looking to", "Are you struggling with",
-"I noticed your website", "We help companies like yours", "I'd love to connect",
-"I'm reaching out because", "I hope you're doing well", "Trust this finds you well"
+## TONE & STYLE
+${toneConfig.style}
 
-━━━ BANNED WORDS — AI signals that kill credibility ━━━
-synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly,
-transform, streamline, elevate, empower, scalable, robust, innovative solution,
-pain points, deep dive, circle back, move the needle, take your business to the next level,
-best-in-class, world-class, tailored solution, comprehensive, actionable, impactful,
-"in today's landscape", "at the end of the day", "touch base", "value proposition"
+## STRICT BANNED OPENERS (never use these)
+- "I hope this finds you" / "I hope you're doing well"
+- "I wanted to reach out" / "I'm reaching out because"
+- "My name is" / "I came across your business"
+- "Are you looking to" / "Are you struggling with"
+- "We help companies like yours" / "I'd love to connect"
 
-━━━ SUBJECT LINE — 4 to 7 words ━━━
-No punctuation at end. Not a question. Not salesy. Lowercase preferred.
-Bad: "Quick question", "Partnership opportunity", "Grow your business", "Introduction from X"
-Good: "For [city] [type] owners", "A thought on [BusinessName]", "Worth 15 minutes this week", "Something I noticed about [Industry]"
+## BANNED AI WORDS (instant credibility killer)
+synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, robust, innovative solution, pain points, deep dive, circle back, move the needle, best-in-class, world-class, tailored solution, comprehensive, actionable, impactful, "in today's landscape", "at the end of the day", "touch base", "value proposition"
 
-━━━ EMAIL BODY STRUCTURE — 3 paragraphs, 95–125 words total ━━━
-P1 — HOOK (1–2 sentences): Specific to THIS business. Use one of these angles:
-  • Their rating or review count and what it signals ("With 4.8 stars and 200+ reviews, you're already doing the hard part...")
-  • A real fact about their city or industry that shows you know the space
-  • Something concrete about their business type that most people don't notice
-  • A result you got for a similar business nearby (make it specific and plausible)
+## SUBJECT LINE RULES
+- 4–7 words maximum
+- No punctuation at end
+- Not a question, not salesy
+- Lowercase preferred
+- Must reference the city, business name, or industry specifically
+- GOOD examples: "for Austin plumbing owners", "a thought on [BusinessName]", "something I noticed about [Industry]"
+- BAD examples: "Quick question", "Partnership opportunity", "Grow your business"
 
-P2 — VALUE (2–3 sentences): What you offer in plain English. One proof point with a real number — "cut response time by 40%", "booked 12 new clients in 6 weeks". Keep it grounded, never exaggerated.
+## EMAIL BODY — EXACT STRUCTURE (95–125 words in body, not counting salutation/closing)
+**P1 — HOOK (1–2 sentences):** Use ONE of these angles specific to THIS business:
+  a) Rating/review hook: "With [X] stars and [N] reviews, [BusinessName] is clearly doing something right..."
+  b) City/industry insight: A real observation about their local market or business type
+  c) Comparable result: "A [similar business type] in [nearby city] we worked with [specific result in 6 weeks]..."
+  d) Overlooked opportunity: Something concrete most owners in their niche miss
 
-P3 — CTA (1 sentence, end here): Use exactly one of:
-  "Worth a quick call this week?"
-  "Can I send you a short example?"
-  "Happy to share how — reply and I'll send details."
-  "Open to a 10-minute chat if the timing's right?"
+**P2 — VALUE (2–3 sentences):** Plain English description of the offer. Include ONE specific proof number ("cut no-show rates by 35%", "added 18 new monthly clients"). Never exaggerate.
 
-NEVER close with: "Let me know if you're interested", "Feel free to reach out", "Looking forward to hearing", "Hope to connect soon"
+**P3 — CTA (exactly 1 sentence):** Use this exact CTA: "${toneConfig.cta}"
 
-━━━ CLOSING LINE (after blank line, before signature) ━━━
-Match the tone: professional/consultative → "Kind regards," | friendly/casual/humorous → "Cheers," | direct/bold/persuasive → "Best,"
+**CLOSING:** On a new line after a blank line: "${toneConfig.closing}"
+**SIGNATURE:** On the next line: {{YourName}}
 
-━━━ TONE RULES ━━━
-Tone controls word choice, rhythm, formality, and CTA style. Every word must reflect it.
+## VARIATION RULE
+Across all emails in this batch: vary the hook angle, vary subject line structure, vary sentence rhythm. No two emails should open the same way.
 
-━━━ EMAIL ADDRESS LOGIC ━━━
-IMPORTANT: Do NOT generate email addresses — leave the "email" field as an empty string "".
-Real emails will be found separately. Focus only on the email body quality.
+## OUTPUT FORMAT
+Return ONLY valid JSON. No markdown fences, no explanation, no preamble.
+Schema: {"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
 
-Return ONLY a raw JSON object. No markdown. No code fences. Nothing else.`,
+- email: always empty string "" (real emails found separately)
+- contactName: realistic name appropriate for ${location} (Owner/Founder/CEO/GM/Principal/Practice Manager)
+- title: their likely role
+- emailBody: full formatted email including salutation, 3 paragraphs, blank line, closing, {{YourName}}`,
           },
           {
             role: "user",
-            content: `Write ${placeDetails.length} cold outreach emails for ${businessType} businesses in ${location}.
-${intent ? `What the sender is offering: "${intent}"` : `Assume the sender offers a relevant service for ${businessType} businesses — keep the value prop specific but plausible.`}
+            content: `Generate ${placeDetails.length} cold emails for ${businessType} businesses in ${location}.
 
-TONE FOR ALL EMAILS: ${toneGuide[tone as string] || toneGuide.professional}
+WHAT THE SENDER OFFERS: ${intent ? `"${intent}"` : `A relevant service for ${businessType} businesses (infer something specific and plausible from context)`}
 
-STEP 1 — For each business, scan its data: name, address, rating, review count, website.
-STEP 2 — Pick the opener angle that fits best (rating hook, city insight, proof, value, reframe).
-STEP 3 — Write the email. Every email must feel like it was written specifically for that one business.
-STEP 4 — Check: Does it sound human? Is the business name or a specific detail used naturally? Is the CTA one clean sentence?
+TONE PERSONA: ${toneConfig.style}
 
-BUSINESSES (JSON array):
+BUSINESSES TO EMAIL:
 ${businessList}
 
-Return exactly ${placeDetails.length} objects in this JSON format:
-{"contacts":[{"contactName":"","title":"","email":"","emailSubject":"","emailBody":""}]}
-
-Rules:
-- contactName: realistic full name for the area (Owner/Founder/CEO/GM/Practice Manager/Principal)
-- emailBody must include the full formatted email: salutation, 3 paragraphs, closing line, {{YourName}} on its own line
-- Vary the opener style across emails — no two should start the same way
-- Body word count 95–125 (salutation and closing/signature not counted)`,
+Return exactly ${placeDetails.length} contact objects in the JSON schema. Vary opener angles across emails.`,
           },
         ],
         max_tokens: 8192,
@@ -576,11 +580,15 @@ Rules:
     const { subject, snippet, from } = req.body;
     if (!snippet) return res.status(400).json({ error: "snippet required" });
     try {
-      const completion = await getOpenAI().chat.completions.create({
-        model: getModel(),
-        max_tokens: 300,
+      const completion = await aiCall({
+        max_tokens: 400,
         messages: [
-          { role: "system", content: "You are an email assistant. Given an email snippet, write a concise 1-2 sentence summary and 2-3 key bullet points. Return raw JSON only: {\"summary\":\"...\",\"keyPoints\":[\"...\",\"...\"]}." },
+          { role: "system", content: `You are an inbox assistant for a B2B outreach platform. Analyze the email and return a JSON object with:
+- "summary": 1-2 sentences capturing the core message and any next step implied
+- "sentiment": one of "positive", "neutral", "negative", "interested", "not_interested"
+- "keyPoints": array of 2-3 concise bullet strings (the most actionable details)
+
+Return ONLY valid JSON. No markdown. Schema: {"summary":"...","sentiment":"...","keyPoints":["...","..."]}` },
           { role: "user", content: `Subject: ${subject || "(none)"}\nFrom: ${from || "unknown"}\n\n${snippet}` },
         ],
       });
@@ -597,11 +605,15 @@ Rules:
     const { subject, snippet, from } = req.body;
     if (!snippet) return res.status(400).json({ error: "snippet required" });
     try {
-      const completion = await getOpenAI().chat.completions.create({
-        model: getModel(),
-        max_tokens: 200,
+      const completion = await aiCall({
+        max_tokens: 250,
         messages: [
-          { role: "system", content: "You are a smart reply assistant like Gmail. Given an email, generate exactly 3 short natural reply options (under 12 words each). Return raw JSON only: {\"replies\":[\"...\",\"...\",\"...\"]}." },
+          { role: "system", content: `You are a smart reply assistant for a B2B sales inbox. Generate exactly 3 reply options that a sales rep might send. Rules:
+- Each reply under 15 words
+- Vary the intent: one accepting/positive, one asking a question, one soft decline or delay
+- Match the tone of the incoming email (formal stays formal, casual stays casual)
+- Sound like a human wrote them, not software
+Return ONLY valid JSON: {"replies":["...","...","..."]}` },
           { role: "user", content: `Subject: ${subject || "(none)"}\nFrom: ${from || "unknown"}\n\n${snippet}` },
         ],
       });
