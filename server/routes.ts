@@ -309,7 +309,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       };
       const toneConfig = toneGuide[tone as string] || toneGuide.professional;
 
-      const completion = await aiCall({
+      /* ── 5+6. AI email generation AND email scraping run in parallel ─ */
+      const [completion, scrapedEmails] = await Promise.all([
+        aiCall({
         messages: [
           {
             role: "system",
@@ -383,13 +385,21 @@ ${businessList}
 Return exactly ${placeDetails.length} contact objects in the JSON schema. Vary opener angles across emails.`,
           },
         ],
-        max_tokens: 8192,
-      });
+          max_tokens: 4096,
+        }),
+        // Scrape emails in parallel with AI — 3s max per site, homepage only
+        Promise.all(
+          placeDetails.map(async (p) => {
+            if (!p.website) return null;
+            try { return await scrapeEmailFromWebsite(p.website); }
+            catch { return null; }
+          })
+        ),
+      ]);
 
       const rawContent = completion.choices[0]?.message?.content;
       if (!rawContent) return res.status(500).json({ error: "No response from AI" });
 
-      // Strip markdown code fences that some models wrap JSON in
       const aiContent = rawContent
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/\s*```\s*$/, "")
@@ -399,21 +409,11 @@ Return exactly ${placeDetails.length} contact objects in the JSON schema. Vary o
       try {
         aiData = JSON.parse(aiContent);
       } catch {
-        // Try to extract JSON object from response if model added extra text
         const match = aiContent.match(/\{[\s\S]*\}/);
         if (!match) return res.status(500).json({ error: "AI returned invalid JSON" });
         aiData = JSON.parse(match[0]);
       }
       const contacts: any[] = aiData.contacts || [];
-
-      /* ── 6. Scrape real emails from business websites (parallel) ─────── */
-      const scrapedEmails = await Promise.all(
-        placeDetails.map(async (p) => {
-          if (!p.website) return null;
-          try { return await scrapeEmailFromWebsite(p.website); }
-          catch { return null; }
-        })
-      );
 
       /* ── 7. Merge real Places data with AI contact/email data ─────── */
       const leads = placeDetails.map((place, idx) => {

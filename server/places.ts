@@ -155,12 +155,13 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
 
   const skipPattern = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|wix\.|squarespace|wordpress|googleapis|cloudflare|jsdelivr|jquery|bootstrap|facebook|twitter|instagram|linkedin/i;
 
-  const pagesToTry = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`];
+  // Only check homepage — fastest path, most sites put mailto there
+  const pagesToTry = [base, `${base}/contact`];
 
   for (const url of pagesToTry) {
     try {
       const res = await fetch(url, {
-        signal: AbortSignal.timeout(7000),
+        signal: AbortSignal.timeout(3000),
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; Outleadrr/1.0; email-finder)",
           "Accept": "text/html,application/xhtml+xml",
