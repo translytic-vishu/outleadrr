@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/AppLayout";
-import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
 import { useTheme } from "@/lib/theme";
 
 export const TEMPLATE_STORAGE_KEY = "outleadrr_active_template";
@@ -345,7 +344,6 @@ export default function Templates() {
   return (
     <AppLayout>
       <style>{CSS}</style>
-      <PageIntro config={PAGE_INTROS.templates} />
 
       <div style={{ padding: "32px 40px", fontFamily: F, minHeight: "100vh", background: tBg }}>
 

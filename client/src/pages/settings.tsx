@@ -1,7 +1,6 @@
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
-import { PageIntro, PAGE_INTROS } from "@/components/PageIntro";
 import { apiRequest } from "@/lib/queryClient";
 import type { AuthStatus, MeResponse } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -338,7 +337,6 @@ export default function Settings() {
   return (
     <AppLayout>
       <style>{CSS}</style>
-      <PageIntro config={PAGE_INTROS.settings} />
 
       <div
         style={{

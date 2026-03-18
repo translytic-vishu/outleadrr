@@ -74,6 +74,8 @@ const CSS = `
   [data-theme="light"] .qbtn{background:#f4f4f5!important;border-color:#e4e4e7!important;color:#3f3f46!important;}
   [data-theme="light"] .qbtn:hover{background:#e4e4e7!important;border-color:#d4d4d8!important;color:#09090b!important;}
   [data-theme="light"] .stat-num{color:#09090b!important;}
+  [data-theme="light"] .kpi-label{color:#71717a!important;}
+  [data-theme="light"] .kpi-sub{color:#a1a1aa!important;}
 `;
 
 function greeting(email: string) {
@@ -109,17 +111,21 @@ function MiniBar({ values, color }: { values: number[]; color: string }) {
 }
 
 /* ── Area chart ── */
-function AreaChart({ campaigns }: { campaigns: Campaign[] }) {
+function AreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boolean }) {
   const slice = campaigns.slice(-8);
   const data = slice.map(c => c.sent);
   const labels = slice.map(c => c.name.length > 9 ? c.name.slice(0, 9) + "…" : c.name);
+
+  const gridColor  = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.08)";
+  const labelColor = isDark ? "#71717a" : "#a1a1aa";
+  const emptyColor = isDark ? "#52525b" : "#a1a1aa";
 
   if (data.length === 0) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 180, gap: 12 }}>
       <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 13l4-5 3 3 4-6 4 3" stroke="rgba(139,92,246,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </div>
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,.22)", fontWeight: 500 }}>Launch your first campaign to see activity</div>
+      <div style={{ fontSize: 12, color: emptyColor, fontWeight: 500 }}>Launch your first campaign to see activity</div>
     </div>
   );
 
@@ -135,7 +141,7 @@ function AreaChart({ campaigns }: { campaigns: Campaign[] }) {
       <svg viewBox={`0 0 ${W + 40} ${H + 30}`} style={{ width: "100%", height: "auto", display: "block" }}>
         <defs>
           <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={ACC} stopOpacity=".22" />
+            <stop offset="0%" stopColor={ACC} stopOpacity={isDark ? ".22" : ".14"} />
             <stop offset="85%" stopColor={ACC} stopOpacity="0" />
           </linearGradient>
           <filter id="glow">
@@ -146,12 +152,12 @@ function AreaChart({ campaigns }: { campaigns: Campaign[] }) {
         {/* Grid lines */}
         {[0, .33, .66, 1].map((t, i) => (
           <line key={i} x1={40} y1={PAD + t * (H - PAD * 2)} x2={W + 40} y2={PAD + t * (H - PAD * 2)}
-            stroke="rgba(255,255,255,.04)" strokeWidth="1" />
+            stroke={gridColor} strokeWidth="1" />
         ))}
         {/* Y labels */}
         {[0, .5, 1].map((t, i) => (
           <text key={i} x={34} y={PAD + (1 - t) * (H - PAD * 2) + 4} textAnchor="end"
-            style={{ fontSize: 9, fill: "rgba(255,255,255,.2)", fontFamily: F }}>
+            style={{ fontSize: 9, fill: labelColor, fontFamily: F }}>
             {Math.round(max * t)}
           </text>
         ))}
@@ -170,7 +176,7 @@ function AreaChart({ campaigns }: { campaigns: Campaign[] }) {
           ))}
           {xs.map((x, i) => (
             <text key={i} x={x} y={H + 20} textAnchor="middle"
-              style={{ fontSize: 8, fill: "rgba(255,255,255,.22)", fontFamily: F, fontWeight: 600 }}>
+              style={{ fontSize: 8, fill: labelColor, fontFamily: F, fontWeight: 600 }}>
               {labels[i]}
             </text>
           ))}
@@ -197,8 +203,8 @@ function KPICard({ label, value, sub, icon, bg, accent, sparkValues, delay = 0 }
         <div className="stat-num" style={{ fontSize: 34, fontWeight: 900, color: "#fff", letterSpacing: "-.06em", lineHeight: 1, marginBottom: 6, animationDelay: `${delay + .1}s` }}>
           {value}
         </div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.35)", textTransform: "uppercase", letterSpacing: ".08em" }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginTop: 3 }}>{sub}</div>}
+        <div className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.35)", textTransform: "uppercase", letterSpacing: ".08em" }}>{label}</div>
+        {sub && <div className="kpi-sub" style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginTop: 3 }}>{sub}</div>}
       </div>
     </div>
   );
@@ -353,7 +359,7 @@ export default function AppDashboard() {
                   </div>
                 )}
               </div>
-              <AreaChart campaigns={campaigns} />
+              <AreaChart campaigns={campaigns} isDark={isDark} />
             </div>
 
             {/* Top Campaigns */}

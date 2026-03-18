@@ -40,7 +40,7 @@ const CSS = `
   [data-theme="light"] .sidebar-section-label{color:rgba(0,0,0,0.3);}
 `;
 
-function SidebarLogo() {
+function SidebarLogo({ isDark }: { isDark: boolean }) {
   const ratio = 28 / 36;
   const imgH  = Math.round(130 * ratio);
   const neg   = -Math.round(47 * ratio);
@@ -48,7 +48,7 @@ function SidebarLogo() {
     <div style={{ height: 28, overflow: "hidden", display: "flex", alignItems: "center" }}>
       <img
         src={logoSrc} alt="Outleadrr"
-        style={{ height: imgH, width: "auto", objectFit: "contain", marginTop: neg, marginBottom: neg, display: "block", filter: "brightness(0) invert(1)" }}
+        style={{ height: imgH, width: "auto", objectFit: "contain", marginTop: neg, marginBottom: neg, display: "block", filter: isDark ? "brightness(0) invert(1)" : "brightness(0)" }}
       />
     </div>
   );
@@ -163,7 +163,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Logo */}
         <div style={{ padding: "18px 16px 14px", borderBottom: `1px solid ${sidebarBdr}`, display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <SidebarLogo />
+          <SidebarLogo isDark={isDark} />
         </div>
 
         {/* Nav */}

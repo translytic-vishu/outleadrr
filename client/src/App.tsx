@@ -5,6 +5,7 @@ import { queryClient, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AppDashboard from "@/pages/app-dashboard";
@@ -61,6 +62,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <OnboardingModal />
       </TooltipProvider>
     </QueryClientProvider>
   );
