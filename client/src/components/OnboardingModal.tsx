@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme";
 import type { AuthStatus } from "@shared/schema";
 
 const F = "'Inter','Helvetica Neue',Arial,sans-serif";
-const DONE_KEY = "outleadrr_onboarding_done";
+const SESSION_SHOWN_KEY = "outleadrr_ob_shown";
 
 const CSS = `
   @keyframes ob-in    { from{opacity:0;transform:translateY(18px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
@@ -351,19 +351,18 @@ export function OnboardingModal() {
   });
 
   useEffect(() => {
-    // Show to everyone who hasn't clicked "Done — let's go"
-    if (localStorage.getItem(DONE_KEY) !== "1") setVisible(true);
+    // Show on every fresh page load (sessionStorage resets on tab close/refresh)
+    if (sessionStorage.getItem(SESSION_SHOWN_KEY) !== "1") setVisible(true);
   }, []);
 
   const dismiss = () => {
-    // X button: close but don't mark as done (will show again next visit)
+    sessionStorage.setItem(SESSION_SHOWN_KEY, "1");
     setVisible(false);
     setLocation("/dashboard");
   };
 
   const complete = () => {
-    // "Done" button: permanently mark as done
-    localStorage.setItem(DONE_KEY, "1");
+    sessionStorage.setItem(SESSION_SHOWN_KEY, "1");
     setVisible(false);
     setLocation("/dashboard");
   };
@@ -487,4 +486,4 @@ export function OnboardingModal() {
   );
 }
 
-export function resetOnboarding() { localStorage.removeItem(DONE_KEY); }
+export function resetOnboarding() { sessionStorage.removeItem(SESSION_SHOWN_KEY); }
