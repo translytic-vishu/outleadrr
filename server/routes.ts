@@ -12,7 +12,7 @@ import { storage } from "./storage.js";
 import { z } from "zod";
 
 // ── Gemini 2.0 Flash via OpenRouter (primary AI — MAIN_AI_OUTLEADR) ──────────
-const GEMINI_MODEL = "google/gemini-2.0-flash-001";
+const GEMINI_MODEL = "google/gemini-2.5-flash-preview";
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
 function getGeminiClient() {
