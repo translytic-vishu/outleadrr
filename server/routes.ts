@@ -489,6 +489,11 @@ Return exactly ${placeDetails.length} contact objects in the JSON schema. Vary o
     const results: { email: string; success: boolean; error?: string }[] = [];
 
     for (const lead of leads) {
+      // Skip leads with no valid email address
+      if (!lead.email || !lead.email.includes("@")) {
+        results.push({ email: lead.email || "", success: false, error: "No email address found for this lead" });
+        continue;
+      }
       try {
         await sendEmailViaGmail(accessToken, refreshToken, from, lead.email, lead.emailSubject, lead.emailBody);
         results.push({ email: lead.email, success: true });

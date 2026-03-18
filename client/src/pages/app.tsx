@@ -644,7 +644,12 @@ export default function AppPage() {
       return json;
     }),
     onSuccess: (data) => {
-      toast({ title: `${data.sent} email${data.sent !== 1 ? "s" : ""} sent`, description: data.failed > 0 ? `${data.failed} failed` : "All delivered successfully" });
+      if (data.sent === 0 && data.failed > 0) {
+        const noEmail = (data.results as any[])?.filter((r: any) => r.error?.includes("No email")).length ?? data.failed;
+        toast({ title: "No emails sent", description: noEmail === data.failed ? "No email addresses found for these leads. Businesses without a website won't have scrapable emails." : `${data.failed} leads failed — check Gmail connection.`, variant: "destructive" });
+      } else {
+        toast({ title: `${data.sent} email${data.sent !== 1 ? "s" : ""} sent`, description: data.failed > 0 ? `${data.failed} skipped (no email address found)` : "All delivered successfully" });
+      }
     },
     onError: (err) => {
       toast({ title: "Send failed", description: err.message, variant: "destructive" });
