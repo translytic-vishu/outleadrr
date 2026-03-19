@@ -29,7 +29,6 @@ const GLOBAL_CSS = `
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
-  @keyframes genPulse{0%,100%{opacity:.6;transform:scaleX(1)}50%{opacity:1;transform:scaleX(1.01)}}
   @keyframes spin-slow{to{transform:rotate(360deg)}}
   .cb-input{
     width:100%;padding:10px 14px;
@@ -50,8 +49,6 @@ const GLOBAL_CSS = `
   .cb-select:focus{border-color:${IND};box-shadow:0 0 0 3px rgba(139,92,246,.12);}
   @keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(22px,-18px) scale(1.06)}66%{transform:translate(-12px,12px) scale(.96)}}
   @keyframes shimmer{0%{background-position:-400% 0}100%{background-position:400% 0}}
-  @keyframes glow{0%,100%{box-shadow:0 0 24px rgba(139,92,246,.2)}50%{box-shadow:0 0 48px rgba(139,92,246,.5)}}
-  @keyframes scanLine{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
   .lead-card{animation:fadeUp .38s cubic-bezier(.16,1,.3,1) both;}
   .lead-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.4)!important;border-color:rgba(139,92,246,0.25)!important;transition:transform .22s,box-shadow .22s,border-color .22s!important;}
   [data-theme="light"] .cb-input{background:rgba(0,0,0,0.04);border-color:rgba(0,0,0,0.1);color:#0f0f13;color-scheme:light;}
@@ -399,25 +396,21 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
 
 /* ─── Generation Progress Overlay ────────────────────────────────── */
 const GEN_STEPS = [
-  { icon: "🔍", label: (b: string, l: string) => `Scanning Google Maps for ${b} in ${l}` },
-  { icon: "📊", label: (_b: string, _l: string, n?: number) => `Analyzing ${n ?? "–"} businesses` },
-  { icon: "⚡", label: () => "Scoring leads by quality & reachability" },
-  { icon: "✉️", label: (_b: string, _l: string, _n?: number, t?: string) => `Writing ${t ?? ""} cold emails with AI` },
-  { icon: "✅", label: (_b: string, _l: string, n?: number) => `${n ?? "–"} personalized emails ready` },
+  (b: string, l: string) => `Scanning Google Maps for ${b} in ${l}`,
+  () => "Fetching business details",
+  () => "Scraping contact emails",
+  (b: string, _l: string, _n: number, t: string) => `Writing ${t} emails with AI`,
+  (_b: string, _l: string, n: number) => `${n} leads ready`,
 ];
 
 const LOADING_CSS = `
-  @keyframes orbFloat1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(60px,-40px) scale(1.1)} 66%{transform:translate(-30px,30px) scale(0.95)} }
-  @keyframes orbFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(-50px,60px) scale(1.08)} 66%{transform:translate(40px,-20px) scale(0.97)} }
-  @keyframes orbFloat3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,50px)} }
-  @keyframes scanH { 0%{top:0%} 100%{top:100%} }
-  @keyframes scanV { 0%{left:0%} 100%{left:100%} }
-  @keyframes dotBounce { 0%,80%,100%{transform:scale(0.4);opacity:0.3} 40%{transform:scale(1);opacity:1} }
-  @keyframes countUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes glowPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
-  @keyframes fadeSlideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes barShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-  @keyframes particleDrift { 0%{transform:translate(0,0) scale(1);opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
+  @keyframes gen-fade-in  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes gen-spin     { to{transform:rotate(360deg)} }
+  @keyframes gen-orb1     { 0%,100%{transform:translate(0,0)} 50%{transform:translate(50px,-35px)} }
+  @keyframes gen-orb2     { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-40px,45px)} }
+  @keyframes gen-done-pop { 0%{opacity:0;transform:scale(0.8)} 60%{transform:scale(1.06)} 100%{opacity:1;transform:scale(1)} }
+  @keyframes gen-msg-in   { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes gen-msg-out  { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(-5px)} }
 `;
 
 function GenerationProgress({ bizType, location_, tone, leadCount, done, resultCount }: {
@@ -425,196 +418,207 @@ function GenerationProgress({ bizType, location_, tone, leadCount, done, resultC
 }) {
   const [activeStep, setActiveStep] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [tickText, setTickText] = useState("Initializing...");
+  const [msgKey, setMsgKey] = useState(0);
+  const [msgText, setMsgText] = useState(`Searching for ${bizType} in ${location_}...`);
 
-  const TICK_MSGS = [
-    "Connecting to Google Maps...",
+  const MSGS = [
     `Searching for ${bizType} in ${location_}...`,
     "Fetching business profiles...",
-    "Checking email addresses...",
-    "Verifying contact details...",
+    "Scraping websites for emails...",
     "Scoring lead quality...",
-    "Analyzing ratings & reviews...",
-    "Ranking by opportunity...",
-    "Crafting personalized subject lines...",
-    "Writing custom email bodies...",
-    "Applying tone & persona...",
-    "Finalizing outreach emails...",
+    "Writing personalized emails...",
     "Almost done...",
   ];
 
   useEffect(() => {
-    const stepTimes = [0, 1200, 3000, 5000];
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    stepTimes.forEach((t, i) => { timers.push(setTimeout(() => setActiveStep(i), t)); });
+    // Step progression — realistic timing
+    const stepTimers = [
+      setTimeout(() => setActiveStep(1), 2500),
+      setTimeout(() => setActiveStep(2), 5500),
+      setTimeout(() => setActiveStep(3), 9000),
+    ];
 
-    let p = 0;
-    const interval = setInterval(() => {
-      p += (82 - p) * 0.035;
-      setProgress(Math.min(p, 82));
-    }, 180);
+    // Smooth progress bar — exponential decay toward 88%
+    let p = 2;
+    const progressTimer = setInterval(() => {
+      p += (88 - p) * 0.022;
+      setProgress(Math.min(p, 88));
+    }, 300);
 
-    let msgIdx = 0;
-    const msgInterval = setInterval(() => {
-      setTickText(TICK_MSGS[msgIdx % TICK_MSGS.length]);
-      msgIdx++;
-    }, 2200);
+    // Status messages — swap every 3.5s with smooth transition
+    let idx = 0;
+    const msgTimer = setInterval(() => {
+      idx = (idx + 1) % MSGS.length;
+      setMsgText(MSGS[idx]);
+      setMsgKey(k => k + 1);
+    }, 3500);
 
-    return () => { timers.forEach(clearTimeout); clearInterval(interval); clearInterval(msgInterval); };
+    return () => {
+      stepTimers.forEach(clearTimeout);
+      clearInterval(progressTimer);
+      clearInterval(msgTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (done) { setActiveStep(4); setProgress(100); }
+    if (done) {
+      setActiveStep(4);
+      setProgress(100);
+    }
   }, [done]);
 
   const stepLabel = (i: number) => {
-    if (i === 0) return GEN_STEPS[0].label(bizType, location_);
-    if (i === 1) return GEN_STEPS[1].label(bizType, location_, leadCount);
-    if (i === 2) return GEN_STEPS[2].label(bizType, location_);
-    if (i === 3) return GEN_STEPS[3].label(bizType, location_, leadCount, tone);
-    return GEN_STEPS[4].label(bizType, location_, resultCount);
+    if (i === 0) return GEN_STEPS[0](bizType, location_, leadCount, tone);
+    if (i === 3) return GEN_STEPS[3](bizType, location_, leadCount, tone);
+    if (i === 4) return GEN_STEPS[4](bizType, location_, resultCount, tone);
+    return GEN_STEPS[i](bizType, location_, leadCount, tone);
   };
-
-  // Particles
-  const particles = Array.from({ length: 16 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: 2 + Math.random() * 3,
-    tx: (Math.random() - 0.5) * 200,
-    ty: (Math.random() - 0.5) * 200,
-    delay: Math.random() * 4,
-    dur: 3 + Math.random() * 4,
-  }));
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 9999,
-      background: "rgba(6,4,12,0.92)",
-      backdropFilter: "blur(24px)",
+      background: "rgba(5,4,11,0.88)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      animation: "fadeSlideIn .3s ease",
+      animation: "gen-fade-in .25s ease",
     }}>
       <style>{LOADING_CSS}</style>
 
-      {/* Animated background orbs */}
-      <div style={{ position:"absolute", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(109,40,217,0.18) 0%,transparent 65%)", top:"-15%", left:"10%", animation:"orbFloat1 14s ease-in-out infinite", pointerEvents:"none" }} />
-      <div style={{ position:"absolute", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(139,92,246,0.12) 0%,transparent 65%)", bottom:"-10%", right:"5%", animation:"orbFloat2 18s ease-in-out infinite", pointerEvents:"none" }} />
-      <div style={{ position:"absolute", width:350, height:350, borderRadius:"50%", background:"radial-gradient(circle,rgba(59,130,246,0.08) 0%,transparent 65%)", top:"40%", right:"20%", animation:"orbFloat3 22s ease-in-out infinite", pointerEvents:"none" }} />
+      {/* Two slow background orbs — no flickering */}
+      <div style={{ position:"absolute", width:700, height:700, borderRadius:"50%", background:"radial-gradient(circle,rgba(109,40,217,0.14) 0%,transparent 60%)", top:"-20%", left:"-5%", animation:"gen-orb1 20s ease-in-out infinite", pointerEvents:"none", willChange:"transform" }} />
+      <div style={{ position:"absolute", width:600, height:600, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,0.09) 0%,transparent 60%)", bottom:"-15%", right:"-5%", animation:"gen-orb2 26s ease-in-out infinite", pointerEvents:"none", willChange:"transform" }} />
 
-      {/* Scan lines */}
-      {!done && <>
-        <div style={{ position:"absolute", left:0, right:0, height:"1px", background:"linear-gradient(90deg,transparent,rgba(139,92,246,0.3),transparent)", animation:"scanH 4s linear infinite", pointerEvents:"none" }} />
-        <div style={{ position:"absolute", top:0, bottom:0, width:"1px", background:"linear-gradient(180deg,transparent,rgba(139,92,246,0.2),transparent)", animation:"scanV 6s linear infinite", pointerEvents:"none" }} />
-      </>}
-
-      {/* Particles */}
-      {!done && particles.map(p => (
-        <div key={p.id} style={{
-          position:"absolute", width:p.size, height:p.size, borderRadius:"50%",
-          background: p.id % 3 === 0 ? "#8b5cf6" : p.id % 3 === 1 ? "#a78bfa" : "#6366f1",
-          left:`${p.x}%`, top:`${p.y}%`,
-          // @ts-ignore
-          "--tx":`${p.tx}px`, "--ty":`${p.ty}px`,
-          animation:`particleDrift ${p.dur}s ${p.delay}s ease-in-out infinite`,
-          pointerEvents:"none",
-        }} />
-      ))}
-
-      {/* Main card */}
+      {/* Card */}
       <div style={{
-        position:"relative", zIndex:1, width:"100%", maxWidth:520,
-        background:"rgba(255,255,255,0.04)",
-        border:"1px solid rgba(255,255,255,0.1)",
-        borderRadius:24, padding:"40px 44px",
-        boxShadow:"0 0 0 1px rgba(139,92,246,0.1), 0 40px 120px rgba(0,0,0,0.7), 0 0 60px rgba(109,40,217,0.12)",
-        backdropFilter:"blur(20px)",
-        animation:"fadeSlideIn .4s cubic-bezier(.16,1,.3,1)",
+        position: "relative", zIndex: 1,
+        width: "100%", maxWidth: 480, margin: "0 24px",
+        background: "rgba(255,255,255,0.035)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 22,
+        padding: "40px 40px 36px",
+        boxShadow: "0 32px 100px rgba(0,0,0,0.65), 0 0 0 1px rgba(139,92,246,0.08)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        animation: "gen-fade-in .4s cubic-bezier(.16,1,.3,1)",
+        willChange: "transform",
       }}>
-        {/* Logo pulse */}
-        <div style={{ display:"flex", justifyContent:"center", marginBottom:28 }}>
-          <div style={{ position:"relative", width:64, height:64 }}>
-            <div style={{ position:"absolute", inset:-8, borderRadius:"50%", border:"1.5px solid rgba(139,92,246,0.25)", animation:"glowPulse 2s ease infinite" }} />
-            <div style={{ position:"absolute", inset:-16, borderRadius:"50%", border:"1px solid rgba(139,92,246,0.1)", animation:"glowPulse 2s ease .5s infinite" }} />
-            <div style={{ width:64, height:64, borderRadius:18, background:"linear-gradient(135deg,rgba(109,40,217,0.3),rgba(139,92,246,0.2))", border:"1px solid rgba(139,92,246,0.3)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0 30px rgba(109,40,217,0.3)" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M13 2L4.5 13.5H11L9 22L19.5 10.5H13L15 2H13Z" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="rgba(167,139,250,0.15)"/>
+
+        {/* Spinner or done mark */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+          {done ? (
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(74,222,128,0.12)", border: "1.5px solid rgba(74,222,128,0.4)", display: "flex", alignItems: "center", justifyContent: "center", animation: "gen-done-pop .5s cubic-bezier(.16,1,.3,1)" }}>
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                <path d="M4 11.5l5 5 9-9" stroke="#4ade80" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-          </div>
+          ) : (
+            <div style={{ position: "relative", width: 56, height: 56 }}>
+              {/* Static track */}
+              <svg width="56" height="56" viewBox="0 0 56 56" style={{ position: "absolute", top: 0, left: 0 }}>
+                <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2.5"/>
+              </svg>
+              {/* Spinning arc */}
+              <svg width="56" height="56" viewBox="0 0 56 56" style={{ position: "absolute", top: 0, left: 0, animation: "gen-spin 1.4s linear infinite", willChange: "transform" }}>
+                <circle cx="28" cy="28" r="24" fill="none" stroke="url(#spinGrad)" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="40 111"/>
+                <defs>
+                  <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0"/>
+                    <stop offset="100%" stopColor="#a78bfa"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              {/* Center icon */}
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M13 2L4.5 13.5H11L9 22L19.5 10.5H13L15 2H13Z" stroke="#8b5cf6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="rgba(139,92,246,0.15)"/>
+                </svg>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Title */}
-        <div style={{ textAlign:"center", marginBottom:32 }}>
+        {/* Heading + status */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
           {done ? (
-            <div style={{ animation:"countUp .5s cubic-bezier(.16,1,.3,1)" }}>
-              <div style={{ fontSize:36, fontWeight:900, color:"#4ade80", letterSpacing:"-.04em", marginBottom:4 }}>{resultCount}</div>
-              <div style={{ fontSize:16, fontWeight:700, color:"rgba(255,255,255,0.9)", letterSpacing:"-.02em" }}>leads ready to send</div>
+            <div style={{ animation: "gen-done-pop .5s cubic-bezier(.16,1,.3,1)" }}>
+              <div style={{ fontSize: 38, fontWeight: 900, color: "#4ade80", letterSpacing: "-.04em", lineHeight: 1, marginBottom: 6 }}>{resultCount}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.88)", letterSpacing: "-.02em" }}>leads ready to send</div>
             </div>
           ) : (
             <>
-              <div style={{ fontSize:18, fontWeight:800, color:"rgba(255,255,255,0.95)", letterSpacing:"-.03em", marginBottom:6 }}>Finding your leads</div>
-              <div style={{ fontSize:13, color:"rgba(139,92,246,0.8)", fontWeight:500, fontFamily:"'JetBrains Mono',monospace", minHeight:18, transition:"opacity .3s" }}>{tickText}</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "rgba(255,255,255,0.92)", letterSpacing: "-.03em", marginBottom: 8 }}>Finding your leads</div>
+              {/* Status message — keyed so it re-mounts smoothly */}
+              <div key={msgKey} style={{ fontSize: 12, color: "rgba(139,92,246,0.75)", fontWeight: 500, letterSpacing: ".01em", animation: "gen-msg-in .3s ease", minHeight: 16 }}>
+                {msgText}
+              </div>
             </>
           )}
         </div>
 
         {/* Progress bar */}
-        <div style={{ height:4, background:"rgba(255,255,255,0.06)", borderRadius:99, marginBottom:28, overflow:"hidden", position:"relative" }}>
+        <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 99, marginBottom: 26, overflow: "hidden" }}>
           <div style={{
-            height:"100%", borderRadius:99,
-            background: done
-              ? "linear-gradient(90deg,#4ade80,#22c55e)"
-              : "linear-gradient(90deg,#6d28d9,#8b5cf6,#a78bfa,#8b5cf6,#6d28d9)",
-            backgroundSize:"200% 100%",
-            width:`${progress}%`,
-            transition:"width .6s cubic-bezier(.16,1,.3,1)",
-            boxShadow: done ? "0 0 12px rgba(74,222,128,.6)" : "0 0 16px rgba(139,92,246,.7)",
-            animation: done ? "none" : "barShimmer 2s linear infinite",
+            height: "100%", borderRadius: 99,
+            background: done ? "linear-gradient(90deg,#4ade80,#22c55e)" : "linear-gradient(90deg,#6d28d9,#8b5cf6,#a78bfa)",
+            width: `${progress}%`,
+            transition: "width 0.7s cubic-bezier(.16,1,.3,1)",
+            boxShadow: done ? "0 0 10px rgba(74,222,128,.5)" : "0 0 12px rgba(139,92,246,.6)",
+            willChange: "width",
           }} />
         </div>
 
-        {/* Steps */}
-        <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-          {GEN_STEPS.map((_step, i) => {
-            const isActive = i === activeStep && !done;
-            const isDoneStep = i < activeStep || done;
-            const isFuture = i > activeStep && !done;
+        {/* Step list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {GEN_STEPS.map((_, i) => {
+            const isActive  = i === activeStep && !done;
+            const isComplete = (done ? true : i < activeStep);
+            const isFuture  = !done && i > activeStep;
             return (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 12px", borderRadius:10, background: isActive ? "rgba(139,92,246,0.08)" : "transparent", border: isActive ? "1px solid rgba(139,92,246,0.18)" : "1px solid transparent", opacity: isFuture ? 0.28 : 1, transition:"all .35s" }}>
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "7px 10px", borderRadius: 9,
+                background: isActive ? "rgba(139,92,246,0.07)" : "transparent",
+                border: isActive ? "1px solid rgba(139,92,246,0.15)" : "1px solid transparent",
+                opacity: isFuture ? 0.25 : 1,
+                transition: "opacity .4s, background .3s, border-color .3s",
+              }}>
+                {/* Step indicator */}
                 <div style={{
-                  width:24, height:24, borderRadius:7, flexShrink:0,
-                  background: isDoneStep ? (done && i===4 ? "rgba(74,222,128,0.15)" : "rgba(139,92,246,0.15)") : isActive ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.04)",
-                  border:`1.5px solid ${isDoneStep ? (done && i===4 ? "rgba(74,222,128,0.4)" : "rgba(139,92,246,0.4)") : isActive ? "rgba(139,92,246,0.3)" : "rgba(255,255,255,0.08)"}`,
-                  display:"flex", alignItems:"center", justifyContent:"center", transition:"all .35s",
+                  width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: isComplete ? (done && i === 4 ? "rgba(74,222,128,0.12)" : "rgba(139,92,246,0.12)") : "rgba(255,255,255,0.04)",
+                  border: `1.5px solid ${isComplete ? (done && i === 4 ? "rgba(74,222,128,0.35)" : "rgba(139,92,246,0.35)") : isActive ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.07)"}`,
+                  transition: "background .3s, border-color .3s",
                 }}>
-                  {isDoneStep ? (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4" stroke={done && i===4 ? "#4ade80" : "#a78bfa"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {isComplete ? (
+                    <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                      <path d="M1.5 4.5l2 2 4-4" stroke={done && i === 4 ? "#4ade80" : "#a78bfa"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   ) : isActive ? (
-                    <div style={{ display:"flex", gap:2 }}>
-                      {[0,1,2].map(j => <div key={j} style={{ width:3,height:3,borderRadius:"50%",background:"#8b5cf6",animation:`dotBounce 1.2s ${j*0.2}s ease infinite` }} />)}
-                    </div>
+                    /* Single pulsing dot instead of 3 bouncing ones */
+                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#8b5cf6", animation: "gen-spin 0s linear", boxShadow: "0 0 6px rgba(139,92,246,0.8)" }} />
                   ) : (
-                    <div style={{ width:4, height:4, borderRadius:"50%", background:"rgba(255,255,255,0.2)" }} />
+                    <div style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }} />
                   )}
                 </div>
-                <span style={{ fontSize:12.5, fontWeight: isActive ? 600 : isDoneStep ? 500 : 400, color: isActive ? "rgba(255,255,255,0.95)" : isDoneStep ? "rgba(167,139,250,0.9)" : "rgba(255,255,255,0.3)", transition:"color .35s", letterSpacing:"-.01em" }}>
+                <span style={{
+                  fontSize: 12, letterSpacing: "-.01em",
+                  fontWeight: isActive ? 600 : isComplete ? 500 : 400,
+                  color: isActive ? "rgba(255,255,255,0.9)" : isComplete ? "rgba(167,139,250,0.85)" : "rgba(255,255,255,0.25)",
+                  transition: "color .3s",
+                }}>
                   {stepLabel(i)}
                 </span>
-                {isActive && !done && (
-                  <span style={{ marginLeft:"auto", fontSize:10, color:"rgba(139,92,246,0.5)", fontWeight:700, letterSpacing:".06em", textTransform:"uppercase", flexShrink:0 }}>live</span>
-                )}
-                {isDoneStep && i < 4 && (
-                  <span style={{ marginLeft:"auto", fontSize:9, color:"rgba(139,92,246,0.4)", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", flexShrink:0 }}>done</span>
-                )}
               </div>
             );
           })}
         </div>
 
-        {/* % counter */}
+        {/* Progress % */}
         {!done && (
-          <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:"rgba(255,255,255,0.2)", fontFamily:"'JetBrains Mono',monospace", fontWeight:600, letterSpacing:".1em" }}>
+          <div style={{ textAlign: "center", marginTop: 18, fontSize: 10, color: "rgba(255,255,255,0.18)", fontWeight: 600, letterSpacing: ".12em" }}>
             {Math.round(progress)}% COMPLETE
           </div>
         )}
