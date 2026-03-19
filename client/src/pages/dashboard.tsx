@@ -138,6 +138,8 @@ const CSS = `
     .steps-row { grid-template-columns:1fr !important; }
     .nav-links { display:none !important; }
     .hero-cards { display:none !important; }
+    .radar-grid { grid-template-columns:1fr !important; }
+    .radar-visual { display:none !important; }
   }
   @media(max-width:680px){
     .three-col { grid-template-columns:1fr !important; }
@@ -426,7 +428,7 @@ function OutreachRadar() {
       <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", top: -100, left: -80, animation: "radar-orb1 12s ease infinite", pointerEvents: "none" }} />
       <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)", bottom: -80, right: -60, animation: "radar-orb2 14s ease infinite", pointerEvents: "none" }} />
 
-      <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: "clamp(48px,6vw,90px)", fontFamily: F }}>
+      <div className="radar-grid" style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: "clamp(48px,6vw,90px)", fontFamily: F }}>
 
         {/* Left: copy + business list + CTA */}
         <div>
@@ -476,7 +478,7 @@ function OutreachRadar() {
         </div>
 
         {/* Right: animated radar */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <div className="radar-visual" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
           <RadarEffect size={Math.min(360, 340)} />
         </div>
       </div>

@@ -63,6 +63,11 @@ const GLOBAL_CSS = `
   [data-theme="light"] .section-divider{background:#e4e4e7;}
   [data-theme="light"] .lead-card{background:#fff!important;border-color:rgba(0,0,0,0.08)!important;box-shadow:0 2px 10px rgba(0,0,0,.06)!important;}
   [data-theme="light"] .lead-card:hover{border-color:rgba(124,58,237,0.3)!important;box-shadow:0 6px 24px rgba(0,0,0,.1)!important;}
+  [data-theme="light"] .lc-name{color:#09090b!important;}
+  [data-theme="light"] .lc-contact{color:#52525b!important;}
+  [data-theme="light"] .lc-subject{color:#3f3f46!important;}
+  [data-theme="light"] .lc-score-label{color:#3f3f46!important;}
+  [data-theme="light"] .lc-score-sub{color:#71717a!important;}
   .send-btn{
     padding:11px 24px;border-radius:10px;border:none;
     background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:13px;font-weight:700;
@@ -339,7 +344,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* Top row: name + badges */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 7 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>{lead.companyName}</div>
+          <div className="lc-name" style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>{lead.companyName}</div>
           <ScoreBadge label={lead.scoreLabel || ""} score={score} />
           {lead.expandedFrom && (
             <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(59,130,246,0.1)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.2)", letterSpacing: ".03em" }}>
@@ -349,14 +354,14 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
         </div>
 
         {/* Contact row */}
-        <div style={{ fontSize: 12, color: K3, marginBottom: 7, display: "flex", flexWrap: "wrap", gap: "3px 16px" }}>
+        <div className="lc-contact" style={{ fontSize: 12, color: K3, marginBottom: 7, display: "flex", flexWrap: "wrap", gap: "3px 16px" }}>
           {lead.contactName && <span>{lead.contactName}{lead.title ? ` · ${lead.title}` : ""}</span>}
           {lead.email && <span style={{ color: "#a78bfa" }}>{lead.email}</span>}
           {lead.phone && <span>{lead.phone}</span>}
         </div>
 
         {/* Subject */}
-        <div style={{ fontSize: 12, color: K3, marginBottom: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 500 }}>
+        <div className="lc-subject" style={{ fontSize: 12, color: K3, marginBottom: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 500 }}>
           <span style={{ fontWeight: 600, color: K2 }}>Subject: </span>{lead.emailSubject}
         </div>
 
@@ -382,14 +387,14 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
 
           {/* Meta: label + rating + address */}
           <div style={{ fontSize: 11, color: K3, minWidth: 0 }}>
-            <div style={{ fontWeight: 600, color: K2, marginBottom: 2 }}>
+            <div className="lc-score-label" style={{ fontWeight: 600, color: K2, marginBottom: 2 }}>
               {lead.scoreLabel || (score >= 70 ? "Strong Lead" : score >= 40 ? "Good Lead" : "Weak Lead")}
             </div>
             {lead.rating && (
-              <div>{lead.rating.toFixed(1)} stars · {lead.reviewCount?.toLocaleString()} reviews</div>
+              <div className="lc-score-sub">{lead.rating.toFixed(1)} stars · {lead.reviewCount?.toLocaleString()} reviews</div>
             )}
             {lead.address && (
-              <div style={{ color: K4, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>{lead.address}</div>
+              <div className="lc-score-sub" style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>{lead.address}</div>
             )}
           </div>
         </div>
