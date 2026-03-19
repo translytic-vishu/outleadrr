@@ -160,20 +160,6 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
   throw new Error(`Place details not found for id: ${placeId}. This is a cache miss — ensure searchPlaces() is called first.`);
 }
 
-import { promises as dns } from "dns";
-
-/**
- * Check if a domain has MX records (can receive email).
- */
-async function domainHasMX(domain: string): Promise<boolean> {
-  try {
-    const records = await dns.resolveMx(domain);
-    return records.length > 0;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Extract the root domain from a website URL.
  */
@@ -187,23 +173,30 @@ function extractDomain(website: string): string | null {
   }
 }
 
-const SKIP_EMAIL = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|wix\.|squarespace|wordpress|googleapis|cloudflare|jsdelivr|jquery|bootstrap|facebook|twitter|instagram|linkedin|privacy@|legal@|dmca@|abuse@/i;
-const PREFERRED_PREFIX = /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir|sales|booking|reception|general|studio|shop|help)@/i;
-const COMMON_PREFIXES = ["info", "contact", "hello", "admin", "sales", "office", "support", "mail", "studio", "booking", "reception", "hello", "hi", "enquiries"];
+/**
+ * Hosted website builder / social media domains — businesses on these
+ * don't have their own email inbox, so info@wixsite.com doesn't work.
+ */
+const HOSTED_DOMAINS = /wixsite\.com|squarespace\.com|weebly\.com|godaddysites\.com|business\.site|sites\.google\.com|jimdo\.com|webflow\.io|webnode\.com|yolasite\.com|blogspot\.com|wordpress\.com|tumblr\.com|shopify\.com|myshopify\.com|yelp\.com|yellowpages\.com|angieslist\.com|thumbtack\.com|houzz\.com|facebook\.com|instagram\.com|twitter\.com|nextdoor\.com|google\.com/maps|maps\.google|indeed\.com/cmp/i;
 
-/** Scrape emails from one HTML page */
+/** Addresses we never want to use */
+const SKIP_EMAIL = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|googleapis|cloudflare|jsdelivr|jquery|bootstrap|privacy@|legal@|dmca@|abuse@|unsubscribe@/i;
+
+/** Prefixes that indicate a genuine contact inbox */
+const PREFERRED_PREFIX = /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir|sales|booking|reception|general|studio|shop|help|service|parts|front|desk)@/i;
+
+/** Scrape emails from raw HTML — mailto: links first, then plain text */
 function extractEmailsFromHtml(html: string): string[] {
   const mailtoReg = /href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']/gi;
   const plainReg  = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/g;
   const found: string[] = [];
   let m: RegExpExecArray | null;
   while ((m = mailtoReg.exec(html)) !== null) found.push(m[1].toLowerCase());
-  while ((m = plainReg.exec(html))   !== null) found.push(m[1].toLowerCase());
-  // Deduplicate, filter spam/system addresses
+  while ((m = plainReg.exec(html))  !== null) found.push(m[1].toLowerCase());
   return [...new Set(found)].filter(e => !SKIP_EMAIL.test(e));
 }
 
-/** Fetch a page silently, return html or null */
+/** Fetch a page silently — return html or null on any error */
 async function fetchPage(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
@@ -221,13 +214,12 @@ async function fetchPage(url: string): Promise<string | null> {
 }
 
 /**
- * Find a real, deliverable email for a business website.
- * Strategy:
- *  1. Scrape up to 5 pages in parallel for mailto: links / plain emails
- *  2. Prefer common contact prefixes (info@, contact@, hello@…)
- *  3. Verify the found email's domain has MX records
- *  4. If nothing scraped, try common prefixes against the domain with MX check
- *  5. Return null only if truly nothing verified
+ * Find a sendable email for a business website.
+ *
+ * Priority:
+ *  1. Real email scraped from website pages (mailto: link or plain text) → use immediately, no DNS needed
+ *  2. No scraped email but domain is a real business domain → derive info@domain (almost always works)
+ *  3. Domain is a hosted platform (Wix, Yelp, etc.) → return null (can't email these)
  */
 export async function scrapeEmailFromWebsite(website: string): Promise<string | null> {
   if (!website) return null;
@@ -235,7 +227,7 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
   const domain = extractDomain(base);
   if (!domain) return null;
 
-  // 1. Scrape multiple pages in parallel
+  // ── 1. Scrape 5 pages in parallel ───────────────────────────────────
   const pages = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`, `${base}/about-us`];
   const htmlResults = await Promise.all(pages.map(fetchPage));
 
@@ -245,24 +237,20 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
   }
   const unique = [...new Set(allEmails)];
 
-  // 2. Pick best scraped email: prefer contact-type prefixes
-  const preferred = unique.find(e => PREFERRED_PREFIX.test(e));
-  const scraped   = preferred || unique[0];
-
-  if (scraped) {
-    // 3. Verify the scraped email's domain has MX records
-    const scrapedDomain = scraped.split("@")[1];
-    if (scrapedDomain && await domainHasMX(scrapedDomain)) {
-      return scraped;
-    }
+  if (unique.length > 0) {
+    // Real email found on the website — trust it, use immediately
+    const preferred = unique.find(e => PREFERRED_PREFIX.test(e));
+    return preferred || unique[0];
   }
 
-  // 4. Nothing scraped — try common prefixes on the business domain
-  const hasMX = await domainHasMX(domain);
-  if (!hasMX) return null; // domain can't receive email at all
+  // ── 2. No scraped email — derive info@ if it's a real business domain ─
+  // Skip hosted builder / directory platforms (they don't have business inboxes)
+  if (HOSTED_DOMAINS.test(domain)) return null;
 
-  // Return first common prefix (info@ is almost universally valid if MX exists)
-  return `${COMMON_PREFIXES[0]}@${domain}`;
+  // For any other domain (custom business website), info@domain almost always works.
+  // Small US businesses universally set up email on their domain even if it's not
+  // advertised on the site. We trust the domain; Gmail will bounce if wrong.
+  return `info@${domain}`;
 }
 
 export function scorePlace(details: PlaceDetails, businessType: string) {

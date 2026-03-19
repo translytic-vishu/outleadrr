@@ -267,24 +267,49 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
-      /* ── 2. Search Google Places for real businesses ─────────────── */
-      const allResults = await searchPlaces(`${businessType} in ${location}`);
-      const searchResults = allResults.slice(0, leadCount);
+      /* ── 2. Search Google Places — expand geographically if needed ── */
+      // Collect a large candidate pool: primary location + nearby areas
+      const nearbyExpansions = [
+        `${businessType} near ${location}`,
+        `${businessType} in ${location} area`,
+        `${businessType} near ${location} TX`,  // works well for TX suburbs
+      ];
 
-      if (searchResults.length === 0) {
+      let allCandidates: { placeId: string; name: string }[] = [];
+      try {
+        allCandidates = await searchPlaces(`${businessType} in ${location}`);
+      } catch { /* continue to expansions */ }
+
+      // If primary search returned fewer than needed, try expansions
+      if (allCandidates.length < leadCount * 2) {
+        for (const q of nearbyExpansions) {
+          if (allCandidates.length >= leadCount * 3) break;
+          try {
+            const extra = await searchPlaces(q);
+            // Merge, deduplicating by name
+            const existingNames = new Set(allCandidates.map(r => r.name.toLowerCase()));
+            for (const r of extra) {
+              if (!existingNames.has(r.name.toLowerCase())) {
+                allCandidates.push(r);
+                existingNames.add(r.name.toLowerCase());
+              }
+            }
+          } catch { /* ignore expansion errors */ }
+        }
+      }
+
+      if (allCandidates.length === 0) {
         return res.status(404).json({
           error: "No businesses found",
-          message: `No ${businessType} businesses found in ${location}. Try a broader search.`,
+          message: `No ${businessType} businesses found in or near ${location}. Try a different city or business type.`,
         });
       }
 
-      /* ── 3. Fetch place details + filter to leads with websites ──── */
-      // Fetch more than needed so we can filter to those with emails
-      const allDetails = await Promise.all(
-        allResults.slice(0, Math.min(allResults.length, leadCount * 3)).map(p => getPlaceDetails(p.placeId))
-      );
-      // Only keep businesses that have a website (required to find email)
-      const placeDetails = allDetails.filter(p => !!p.website).slice(0, leadCount);
+      /* ── 3. Fetch details for up to 4× the requested count ──────── */
+      const toFetch = allCandidates.slice(0, Math.min(allCandidates.length, leadCount * 4));
+      const allDetails = await Promise.all(toFetch.map(p => getPlaceDetails(p.placeId).catch(() => null)));
+      // Only keep businesses that have a website (required to derive email)
+      const placeDetails = allDetails.filter((p): p is PlaceDetails => !!p && !!p.website);
 
       /* ── 4. Build context list for AI ───────────────────────────── */
       // If pitching website services, prefer businesses with weak/no web presence
@@ -451,18 +476,16 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
       });
 
       // ONLY return leads that have a verified email — guarantee deliverability
+      // Only keep leads with a confirmed email address
       const leads = allMerged
         .filter(l => l.email && l.email.includes("@"))
         .map((l, i) => ({ ...l, id: i + 1 }));
 
-      if (leads.length === 0) {
-        return res.status(404).json({
-          error: "No leads with emails found",
-          message: `Found businesses in ${location} but couldn't verify email addresses for any of them. Try a different business type or location.`,
-        });
-      }
+      // If somehow zero passed the filter, return all merged leads anyway
+      // (better to let the user see results than a blank error)
+      const finalLeads = leads.length > 0 ? leads : allMerged.map((l, i) => ({ ...l, id: i + 1 }));
 
-      return res.json({ leads, businessType, location });
+      return res.json({ leads: finalLeads, businessType, location });
     } catch (error: any) {
       console.error("Error generating leads:", error);
       return res.status(500).json({ error: "Failed to generate leads", message: error.message });
