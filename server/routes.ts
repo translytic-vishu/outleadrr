@@ -267,34 +267,56 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
-      /* ── 2. Search Google Places — expand geographically if needed ── */
-      // Collect a large candidate pool: primary location + nearby areas
-      const nearbyExpansions = [
-        `${businessType} near ${location}`,
-        `${businessType} in ${location} area`,
-        `${businessType} near ${location} TX`,  // works well for TX suburbs
-      ];
+      /* ── 2. Search Google Places ─────────────────────────────────── */
+      // Helper: merge extra candidates deduplicating by name
+      function mergeUnique(
+        existing: { placeId: string; name: string }[],
+        extra: { placeId: string; name: string }[]
+      ) {
+        const seen = new Set(existing.map(r => r.name.toLowerCase()));
+        for (const r of extra) {
+          if (!seen.has(r.name.toLowerCase())) {
+            existing.push(r);
+            seen.add(r.name.toLowerCase());
+          }
+        }
+      }
+
+      // Helper: scrape email for one place
+      async function getEmail(p: PlaceDetails): Promise<string | null> {
+        if (p.listedEmail?.includes("@")) return p.listedEmail.toLowerCase();
+        if (!p.website) return null;
+        try { return await scrapeEmailFromWebsite(p.website); } catch { return null; }
+      }
+
+      // State → nearest major city (used when local area yields no emails)
+      const STATE_MAJOR: Record<string, string> = {
+        TX:"Houston TX", CA:"Los Angeles CA", FL:"Miami FL", NY:"New York NY",
+        IL:"Chicago IL", PA:"Philadelphia PA", OH:"Columbus OH", GA:"Atlanta GA",
+        NC:"Charlotte NC", MI:"Detroit MI", NJ:"Newark NJ", VA:"Richmond VA",
+        WA:"Seattle WA", AZ:"Phoenix AZ", MA:"Boston MA", TN:"Nashville TN",
+        IN:"Indianapolis IN", MO:"Kansas City MO", MD:"Baltimore MD", WI:"Milwaukee WI",
+        CO:"Denver CO", MN:"Minneapolis MN", SC:"Columbia SC", AL:"Birmingham AL",
+        LA:"New Orleans LA", KY:"Louisville KY", OR:"Portland OR", OK:"Oklahoma City OK",
+        NV:"Las Vegas NV", UT:"Salt Lake City UT", NM:"Albuquerque NM", KS:"Wichita KS",
+        AR:"Little Rock AR", MS:"Jackson MS", IA:"Des Moines IA", NE:"Omaha NE",
+        WV:"Charleston WV", ID:"Boise ID", MT:"Billings MT", ND:"Fargo ND",
+        SD:"Sioux Falls SD", WY:"Cheyenne WY", AK:"Anchorage AK", HI:"Honolulu HI",
+        ME:"Portland ME", VT:"Burlington VT", NH:"Manchester NH", RI:"Providence RI",
+        CT:"Hartford CT", DE:"Wilmington DE", DC:"Washington DC",
+      };
+      const stateMatch = location.match(/\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)\b/i);
+      const stateAbbr = stateMatch?.[1]?.toUpperCase();
+      const majorCityFallback = stateAbbr ? STATE_MAJOR[stateAbbr] : null;
 
       let allCandidates: { placeId: string; name: string }[] = [];
-      try {
-        allCandidates = await searchPlaces(`${businessType} in ${location}`);
-      } catch { /* continue to expansions */ }
+      try { allCandidates = await searchPlaces(`${businessType} in ${location}`); } catch { /* continue */ }
 
-      // If primary search returned fewer than needed, try expansions
+      // Expand with nearby phrasing if candidate pool is thin
       if (allCandidates.length < leadCount * 2) {
-        for (const q of nearbyExpansions) {
+        for (const q of [`${businessType} near ${location}`, `${businessType} in ${location} area`]) {
           if (allCandidates.length >= leadCount * 3) break;
-          try {
-            const extra = await searchPlaces(q);
-            // Merge, deduplicating by name
-            const existingNames = new Set(allCandidates.map(r => r.name.toLowerCase()));
-            for (const r of extra) {
-              if (!existingNames.has(r.name.toLowerCase())) {
-                allCandidates.push(r);
-                existingNames.add(r.name.toLowerCase());
-              }
-            }
-          } catch { /* ignore expansion errors */ }
+          try { mergeUnique(allCandidates, await searchPlaces(q)); } catch { /* ignore */ }
         }
       }
 
@@ -305,45 +327,66 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
-      /* ── 3. Fetch details (no website filter yet — emails come first) ── */
-      // Fetch up to 6× the target to ensure we have enough after email filtering
-      const toFetch = allCandidates.slice(0, Math.min(allCandidates.length, leadCount * 6));
-      const allDetails = await Promise.all(toFetch.map(p => getPlaceDetails(p.placeId).catch(() => null)));
-      const placeDetails = allDetails.filter((p): p is PlaceDetails => !!p);
-
-      /* ── 4. Detect pitch category for smart prospect sorting ─────── */
+      /* ── 3. Detect pitch category ────────────────────────────────── */
       const intentLower = (intent || "").toLowerCase();
       const pitchingWebsite = /website|web design|web dev|landing page|redesign|online presence/i.test(intentLower);
 
-      // Hosted builder detection — these businesses have basic sites (great prospects for website pitch)
       const HOSTED_SITE_PAT = /wixsite\.com|squarespace\.com|weebly\.com|godaddysites\.com|business\.site|myshopify\.com/i;
       function websiteQuality(p: PlaceDetails): 0 | 1 | 2 {
-        if (!p.website) return 0;                        // No website — best prospect for website pitch
-        if (HOSTED_SITE_PAT.test(p.website)) return 1;  // Hosted builder — good prospect
-        return 2;                                        // Custom domain
+        if (!p.website) return 0;
+        if (HOSTED_SITE_PAT.test(p.website)) return 1;
+        return 2;
       }
 
-      /* ── 5. Scrape emails FIRST — AI only runs on confirmed-email leads ─ */
-      const scrapedEmails = await Promise.all(
-        placeDetails.map(async (p) => {
-          // Source 1: email directly from Google/SerpAPI listing
-          if (p.listedEmail && p.listedEmail.includes("@")) return p.listedEmail.toLowerCase();
-          // Source 2: scrape from business website
-          if (!p.website) return null;
-          try { return await scrapeEmailFromWebsite(p.website); }
-          catch { return null; }
-        })
-      );
+      /* ── 4. Fetch details + scrape emails (primary area) ──────────── */
+      const toFetch = allCandidates.slice(0, Math.min(allCandidates.length, leadCount * 5));
+      const allDetails = await Promise.all(toFetch.map(p => getPlaceDetails(p.placeId).catch(() => null)));
+      const placeDetails = allDetails.filter((p): p is PlaceDetails => !!p);
 
-      /* ── 6. Filter to confirmed-email leads only ─────────────────── */
-      const withEmails = placeDetails
-        .map((p, i) => ({ place: p, email: scrapedEmails[i] }))
-        .filter(({ email }) => !!email && email.includes("@"));
+      const primaryEmails = await Promise.all(placeDetails.map(getEmail));
 
+      let withEmails: { place: PlaceDetails; email: string }[] = placeDetails
+        .map((p, i) => ({ place: p, email: primaryEmails[i] }))
+        .filter((x): x is { place: PlaceDetails; email: string } => !!x.email && x.email.includes("@"));
+
+      /* ── 5. Not enough emails? Expand to state's major city ───────── */
+      if (withEmails.length < leadCount && majorCityFallback) {
+        const locLower = location.toLowerCase();
+        const majorCityName = majorCityFallback.split(" ")[0].toLowerCase();
+        const alreadyInMajorCity = locLower.includes(majorCityName);
+
+        if (!alreadyInMajorCity) {
+          try {
+            const fallbackCandidates = await searchPlaces(`${businessType} in ${majorCityFallback}`);
+            // Deduplicate against what we already have
+            const seenNames = new Set([
+              ...allCandidates.map(r => r.name.toLowerCase()),
+              ...withEmails.map(w => w.place.name.toLowerCase()),
+            ]);
+            const newOnes = fallbackCandidates
+              .filter(r => !seenNames.has(r.name.toLowerCase()))
+              .slice(0, (leadCount - withEmails.length) * 5);
+
+            if (newOnes.length > 0) {
+              const extraDetails = await Promise.all(newOnes.map(p => getPlaceDetails(p.placeId).catch(() => null)));
+              const extraPlaces = extraDetails.filter((p): p is PlaceDetails => !!p);
+              const extraEmails = await Promise.all(extraPlaces.map(getEmail));
+
+              for (let i = 0; i < extraPlaces.length; i++) {
+                const email = extraEmails[i];
+                if (email?.includes("@")) withEmails.push({ place: extraPlaces[i], email });
+              }
+            }
+          } catch { /* ignore fallback errors */ }
+        }
+      }
+
+      /* ── 6. Still nothing? Return 404 with actionable message ─────── */
       if (withEmails.length === 0) {
+        const suggest = majorCityFallback ? ` Try "${majorCityFallback}" instead.` : " Try a nearby major city.";
         return res.status(404).json({
           error: "No contactable businesses found",
-          message: `Couldn't find email addresses for any ${businessType} businesses in or near ${location}. Try a nearby major city or a different business type.`,
+          message: `Couldn't find email addresses for ${businessType} businesses in or near ${location}.${suggest}`,
         });
       }
 
