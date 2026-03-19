@@ -305,33 +305,79 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
-      /* ── 3. Fetch details for up to 4× the requested count ──────── */
-      const toFetch = allCandidates.slice(0, Math.min(allCandidates.length, leadCount * 4));
+      /* ── 3. Fetch details (no website filter yet — emails come first) ── */
+      // Fetch up to 6× the target to ensure we have enough after email filtering
+      const toFetch = allCandidates.slice(0, Math.min(allCandidates.length, leadCount * 6));
       const allDetails = await Promise.all(toFetch.map(p => getPlaceDetails(p.placeId).catch(() => null)));
-      // Only keep businesses that have a website (required to derive email)
-      const placeDetails = allDetails.filter((p): p is PlaceDetails => !!p && !!p.website);
+      const placeDetails = allDetails.filter((p): p is PlaceDetails => !!p);
 
-      /* ── 4. Build context list for AI ───────────────────────────── */
-      // If pitching website services, prefer businesses with weak/no web presence
+      /* ── 4. Detect pitch category for smart prospect sorting ─────── */
       const intentLower = (intent || "").toLowerCase();
-      const pitchingWebsite = /\bwebsite|web design|web dev|landing page|redesign\b/i.test(intentLower);
+      const pitchingWebsite = /website|web design|web dev|landing page|redesign|online presence/i.test(intentLower);
 
-      // Score-sort: if pitching websites, push businesses with a basic/old site to top
-      const sortedDetails = pitchingWebsite
-        ? [...placeDetails].sort((a, b) => {
-            // Prefer no-review or low-review businesses (less established = more likely needs upgrade)
-            const aScore = a.reviewCount < 20 ? 0 : 1;
-            const bScore = b.reviewCount < 20 ? 0 : 1;
-            return aScore - bScore;
+      // Hosted builder detection — these businesses have basic sites (great prospects for website pitch)
+      const HOSTED_SITE_PAT = /wixsite\.com|squarespace\.com|weebly\.com|godaddysites\.com|business\.site|myshopify\.com/i;
+      function websiteQuality(p: PlaceDetails): 0 | 1 | 2 {
+        if (!p.website) return 0;                        // No website — best prospect for website pitch
+        if (HOSTED_SITE_PAT.test(p.website)) return 1;  // Hosted builder — good prospect
+        return 2;                                        // Custom domain
+      }
+
+      /* ── 5. Scrape emails FIRST — AI only runs on confirmed-email leads ─ */
+      const scrapedEmails = await Promise.all(
+        placeDetails.map(async (p) => {
+          // Source 1: email directly from Google/SerpAPI listing
+          if (p.listedEmail && p.listedEmail.includes("@")) return p.listedEmail.toLowerCase();
+          // Source 2: scrape from business website
+          if (!p.website) return null;
+          try { return await scrapeEmailFromWebsite(p.website); }
+          catch { return null; }
+        })
+      );
+
+      /* ── 6. Filter to confirmed-email leads only ─────────────────── */
+      const withEmails = placeDetails
+        .map((p, i) => ({ place: p, email: scrapedEmails[i] }))
+        .filter(({ email }) => !!email && email.includes("@"));
+
+      if (withEmails.length === 0) {
+        return res.status(404).json({
+          error: "No contactable businesses found",
+          message: `Couldn't find email addresses for any ${businessType} businesses in or near ${location}. Try a nearby major city or a different business type.`,
+        });
+      }
+
+      /* ── 7. Sort by pitch relevance ─────────────────────────────── */
+      // For website pitch: businesses with no/basic sites first (they need websites most)
+      // For all pitches: lower review count = less established = more open to new services
+      const sortedWithEmails = pitchingWebsite
+        ? [...withEmails].sort((a, b) => {
+            const qDiff = websiteQuality(a.place) - websiteQuality(b.place);
+            if (qDiff !== 0) return qDiff;
+            return a.place.reviewCount - b.place.reviewCount;
           })
-        : placeDetails;
+        : [...withEmails].sort((a, b) => {
+            // For general pitches: moderate-review businesses are best prospects
+            const aScore = (a.place.reviewCount >= 10 && a.place.reviewCount <= 200) ? 0 : 1;
+            const bScore = (b.place.reviewCount >= 10 && b.place.reviewCount <= 200) ? 0 : 1;
+            return aScore - bScore;
+          });
 
+      /* ── 8. Take exactly leadCount (or fewer if that's all we have) ── */
+      const finalCandidates = sortedWithEmails.slice(0, leadCount);
+      const sortedDetails = finalCandidates.map(c => c.place);
+      const confirmedEmails = finalCandidates.map(c => c.email!);
+
+      /* ── 9. Build context list for AI ───────────────────────────── */
       const businessList = sortedDetails.map((p, i) => {
         const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
         const domain = domainMatch?.[1] || "";
+        const wq = websiteQuality(p);
         const webNote = pitchingWebsite
-          ? (p.reviewCount < 10 ? " [minimal online presence — ideal for website pitch]" : "")
-          : "";
+          ? wq === 0 ? " [no website — prime candidate for website creation]"
+          : wq === 1 ? " [basic template site — strong candidate for professional website]"
+          : ""
+          : (p.reviewCount < 10 ? " [minimal online presence]" : "");
         return [
           `${i + 1}. Business: "${p.name}"${webNote}`,
           `   Location: ${p.address || location}`,
@@ -341,7 +387,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ].join("\n");
       }).join("\n\n");
 
-      /* ── 5. Generate contact + cold email via Gemini (OpenAI fallback) ─ */
+      /* ── 10. Generate cold emails via Gemini (OpenAI fallback) ──── */
       const toneGuide: Record<string, { style: string; voice: string; cta: string; closing: string }> = {
         professional:  { style: "Polished, confident, results-oriented. No contractions unless it sounds natural. Precise word choice.", voice: "Senior account executive who has done their homework on this specific business.", cta: "Worth a 15-minute call this week?", closing: "Kind regards," },
         friendly:      { style: "Warm, conversational, genuine. Contractions throughout. Reads like an email from someone you already like.", voice: "Peer reaching out peer-to-peer, not salesperson to prospect.", cta: "Happy to share more — just reply and I'll send details.", closing: "Cheers," },
@@ -354,9 +400,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       };
       const toneConfig = toneGuide[tone as string] || toneGuide.professional;
 
-      /* ── 5+6. AI email generation AND email scraping run in parallel ─ */
-      const [completion, scrapedEmails] = await Promise.all([
-        aiCall({
+      /* ── 11. AI email generation (emails already confirmed above) ── */
+      const completion = await aiCall({
         messages: [
           {
             role: "system",
@@ -411,7 +456,7 @@ Rules:
 
 OFFER BEING PITCHED: ${intent ? `"${intent}"` : `A relevant service for ${businessType} owners — infer something specific from context`}
 
-IMPORTANT: If the offer mentions a demo, call, or trial — make sure the CTA references that specific action. Make the emails feel like they were written by someone who genuinely understands this business type.
+IMPORTANT: If the offer mentions a demo, call, or trial — make sure the CTA references that specific action. Make the emails feel like they were written by someone who genuinely understands this business type. For businesses marked [no website] or [basic template site], reference their lack of a proper web presence naturally in the email.
 
 BUSINESSES (write one email per business, vary structure for each):
 ${businessList}
@@ -419,17 +464,8 @@ ${businessList}
 Return exactly ${sortedDetails.length} JSON contact objects. Each email body must use a DIFFERENT variant structure. No two emails can open the same way.`,
           },
         ],
-          max_tokens: 4096,
-        }),
-        // Scrape emails for all candidates in parallel with AI generation
-        Promise.all(
-          sortedDetails.map(async (p) => {
-            if (!p.website) return null;
-            try { return await scrapeEmailFromWebsite(p.website); }
-            catch { return null; }
-          })
-        ),
-      ]);
+        max_tokens: 4096,
+      });
 
       const rawContent = completion.choices[0]?.message?.content;
       if (!rawContent) return res.status(500).json({ error: "No response from AI" });
@@ -449,12 +485,11 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
       }
       const contacts: any[] = aiData.contacts || [];
 
-      /* ── 7. Merge + ONLY keep leads with a confirmed email ────────── */
-      const allMerged = sortedDetails.map((place, idx) => {
-        const contact      = contacts[idx] || {};
-        const scoring      = scorePlace(place, businessType);
-        const emailToUse   = scrapedEmails[idx] || "";
-        const emailVerified = !!emailToUse && emailToUse.includes("@");
+      /* ── 12. Merge — every lead already has a confirmed email ───────── */
+      // No filtering needed here; confirmedEmails[idx] is guaranteed valid
+      const finalLeads = sortedDetails.map((place, idx) => {
+        const contact = contacts[idx] || {};
+        const scoring = scorePlace(place, businessType);
         return {
           id: idx + 1,
           companyName:  place.name,
@@ -465,8 +500,8 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
           reviewCount:  place.reviewCount > 0 ? place.reviewCount : undefined,
           contactName:  contact.contactName  || "",
           title:        contact.title        || "",
-          email:        emailToUse,
-          emailVerified,
+          email:        confirmedEmails[idx],
+          emailVerified: true,
           emailSubject: contact.emailSubject || "",
           emailBody:    contact.emailBody    || "",
           industry:     businessType,
@@ -474,16 +509,6 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
           ...scoring,
         };
       });
-
-      // ONLY return leads that have a verified email — guarantee deliverability
-      // Only keep leads with a confirmed email address
-      const leads = allMerged
-        .filter(l => l.email && l.email.includes("@"))
-        .map((l, i) => ({ ...l, id: i + 1 }));
-
-      // If somehow zero passed the filter, return all merged leads anyway
-      // (better to let the user see results than a blank error)
-      const finalLeads = leads.length > 0 ? leads : allMerged.map((l, i) => ({ ...l, id: i + 1 }));
 
       return res.json({ leads: finalLeads, businessType, location });
     } catch (error: any) {

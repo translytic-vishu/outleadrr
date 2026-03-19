@@ -66,6 +66,7 @@ export interface PlaceDetails {
   rating: number;
   reviewCount: number;
   types: string[];
+  listedEmail?: string; // Email from SerpAPI listing, if present
 }
 
 /**
@@ -130,6 +131,7 @@ export async function searchLocalBusinesses(
     rating: typeof r.rating === "number" ? r.rating : parseFloat(r.rating) || 0,
     reviewCount: r.reviews || r.review_count || 0,
     types: r.type ? [r.type] : [],
+    listedEmail: r.email || "",
   }));
 }
 
