@@ -187,65 +187,82 @@ function extractDomain(website: string): string | null {
   }
 }
 
+const SKIP_EMAIL = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|wix\.|squarespace|wordpress|googleapis|cloudflare|jsdelivr|jquery|bootstrap|facebook|twitter|instagram|linkedin|privacy@|legal@|dmca@|abuse@/i;
+const PREFERRED_PREFIX = /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir|sales|booking|reception|general|studio|shop|help)@/i;
+const COMMON_PREFIXES = ["info", "contact", "hello", "admin", "sales", "office", "support", "mail", "studio", "booking", "reception", "hello", "hi", "enquiries"];
+
+/** Scrape emails from one HTML page */
+function extractEmailsFromHtml(html: string): string[] {
+  const mailtoReg = /href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']/gi;
+  const plainReg  = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/g;
+  const found: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = mailtoReg.exec(html)) !== null) found.push(m[1].toLowerCase());
+  while ((m = plainReg.exec(html))   !== null) found.push(m[1].toLowerCase());
+  // Deduplicate, filter spam/system addresses
+  return [...new Set(found)].filter(e => !SKIP_EMAIL.test(e));
+}
+
+/** Fetch a page silently, return html or null */
+async function fetchPage(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Scrape a real contact email from a business website.
- * Checks homepage + /contact + /about. Prefers mailto: links.
- * Falls back to info@domain if domain has MX records.
+ * Find a real, deliverable email for a business website.
+ * Strategy:
+ *  1. Scrape up to 5 pages in parallel for mailto: links / plain emails
+ *  2. Prefer common contact prefixes (info@, contact@, hello@…)
+ *  3. Verify the found email's domain has MX records
+ *  4. If nothing scraped, try common prefixes against the domain with MX check
+ *  5. Return null only if truly nothing verified
  */
 export async function scrapeEmailFromWebsite(website: string): Promise<string | null> {
   if (!website) return null;
-  const base = (website.startsWith("http") ? website : `https://${website}`).replace(/\/+$/, "");
+  const base   = (website.startsWith("http") ? website : `https://${website}`).replace(/\/+$/, "");
   const domain = extractDomain(base);
+  if (!domain) return null;
 
-  const skipPattern = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|wix\.|squarespace|wordpress|googleapis|cloudflare|jsdelivr|jquery|bootstrap|facebook|twitter|instagram|linkedin/i;
+  // 1. Scrape multiple pages in parallel
+  const pages = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`, `${base}/about-us`];
+  const htmlResults = await Promise.all(pages.map(fetchPage));
 
-  const pagesToTry = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`];
+  const allEmails: string[] = [];
+  for (const html of htmlResults) {
+    if (html) allEmails.push(...extractEmailsFromHtml(html));
+  }
+  const unique = [...new Set(allEmails)];
 
-  for (const url of pagesToTry) {
-    try {
-      const res = await fetch(url, {
-        signal: AbortSignal.timeout(4000),
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; Outleadrr/1.0; email-finder)",
-          "Accept": "text/html,application/xhtml+xml",
-        },
-      });
-      if (!res.ok) continue;
-      const html = await res.text();
+  // 2. Pick best scraped email: prefer contact-type prefixes
+  const preferred = unique.find(e => PREFERRED_PREFIX.test(e));
+  const scraped   = preferred || unique[0];
 
-      // Priority 1: mailto: href links (most reliable)
-      const mailtoReg = /href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']/gi;
-      const mailtoEmails: string[] = [];
-      let m: RegExpExecArray | null;
-      while ((m = mailtoReg.exec(html)) !== null) mailtoEmails.push(m[1].toLowerCase());
-
-      // Priority 2: plain text emails
-      const plainReg = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/g;
-      const plainEmails: string[] = [];
-      while ((m = plainReg.exec(html)) !== null) plainEmails.push(m[1].toLowerCase());
-
-      const allEmails = [...new Set([...mailtoEmails, ...plainEmails])].filter(
-        e => !skipPattern.test(e)
-      );
-
-      if (allEmails.length > 0) {
-        const preferred = allEmails.find(e => /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir)@/i.test(e));
-        return preferred || allEmails[0];
-      }
-    } catch {
-      // continue to next URL
+  if (scraped) {
+    // 3. Verify the scraped email's domain has MX records
+    const scrapedDomain = scraped.split("@")[1];
+    if (scrapedDomain && await domainHasMX(scrapedDomain)) {
+      return scraped;
     }
   }
 
-  // Fallback: use info@domain if domain has valid MX records
-  if (domain) {
-    try {
-      const hasMX = await domainHasMX(domain);
-      if (hasMX) return `info@${domain}`;
-    } catch { /* ignore */ }
-  }
+  // 4. Nothing scraped — try common prefixes on the business domain
+  const hasMX = await domainHasMX(domain);
+  if (!hasMX) return null; // domain can't receive email at all
 
-  return null;
+  // Return first common prefix (info@ is almost universally valid if MX exists)
+  return `${COMMON_PREFIXES[0]}@${domain}`;
 }
 
 export function scorePlace(details: PlaceDetails, businessType: string) {

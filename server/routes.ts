@@ -396,9 +396,9 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
         ],
           max_tokens: 4096,
         }),
-        // Scrape emails in parallel with AI — 3s max per site, homepage only
+        // Scrape emails for all candidates in parallel with AI generation
         Promise.all(
-          placeDetails.map(async (p) => {
+          sortedDetails.map(async (p) => {
             if (!p.website) return null;
             try { return await scrapeEmailFromWebsite(p.website); }
             catch { return null; }
@@ -424,37 +424,43 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
       }
       const contacts: any[] = aiData.contacts || [];
 
-      /* ── 7. Merge real Places data with AI contact/email data ─────── */
-      const leads = sortedDetails.map((place, idx) => {
-        const contact = contacts[idx] || {};
-        const scoring = scorePlace(place, businessType);
-        const scrapedEmail = scrapedEmails[idx];
-        // Scrape always returns a real scraped email OR info@domain (MX-verified). Never empty.
-        const emailToUse = scrapedEmail || "";
-        const emailVerified = !!scrapedEmail && scrapedEmail.includes("@");
-
+      /* ── 7. Merge + ONLY keep leads with a confirmed email ────────── */
+      const allMerged = sortedDetails.map((place, idx) => {
+        const contact      = contacts[idx] || {};
+        const scoring      = scorePlace(place, businessType);
+        const emailToUse   = scrapedEmails[idx] || "";
+        const emailVerified = !!emailToUse && emailToUse.includes("@");
         return {
           id: idx + 1,
-          /* ── real data from Google Places ── */
-          companyName: place.name,
-          address:     place.address,
-          phone:       place.phone,
-          website:     place.website,
-          rating:      place.rating > 0 ? place.rating : undefined,
-          reviewCount: place.reviewCount > 0 ? place.reviewCount : undefined,
-          /* ── AI-generated contact + outreach ── */
+          companyName:  place.name,
+          address:      place.address,
+          phone:        place.phone,
+          website:      place.website,
+          rating:       place.rating > 0 ? place.rating : undefined,
+          reviewCount:  place.reviewCount > 0 ? place.reviewCount : undefined,
           contactName:  contact.contactName  || "",
           title:        contact.title        || "",
           email:        emailToUse,
           emailVerified,
           emailSubject: contact.emailSubject || "",
           emailBody:    contact.emailBody    || "",
-          /* ── metadata ── */
-          industry: businessType,
-          status:   "new" as const,
+          industry:     businessType,
+          status:       "new" as const,
           ...scoring,
         };
       });
+
+      // ONLY return leads that have a verified email — guarantee deliverability
+      const leads = allMerged
+        .filter(l => l.email && l.email.includes("@"))
+        .map((l, i) => ({ ...l, id: i + 1 }));
+
+      if (leads.length === 0) {
+        return res.status(404).json({
+          error: "No leads with emails found",
+          message: `Found businesses in ${location} but couldn't verify email addresses for any of them. Try a different business type or location.`,
+        });
+      }
 
       return res.json({ leads, businessType, location });
     } catch (error: any) {
