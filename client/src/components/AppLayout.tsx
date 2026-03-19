@@ -81,7 +81,7 @@ interface AppLayoutProps { children: React.ReactNode }
 export function AppLayout({ children }: AppLayoutProps) {
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, toggle } = useTheme();
 
   // Zinc-scale tokens — Vercel/TurboLearn inspired
   const sidebarBg  = isDark ? "#111111"  : "#ffffff";
@@ -190,6 +190,22 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
 
           <div className="sidebar-section-label" style={{ marginTop: 18 }}>Account</div>
+          <button
+            onClick={toggle}
+            className="nav-btn"
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <span className="nav-icon">
+              {isDark ? (
+                /* Sun icon */
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2.5" stroke="currentColor" strokeWidth="1.4"/><path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.05 3.05l1.06 1.06M10.89 10.89l1.06 1.06M3.05 11.95l1.06-1.06M10.89 4.11l1.06-1.06" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              ) : (
+                /* Moon icon */
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M12.5 9A5.5 5.5 0 016 2.5a.5.5 0 00-.6-.49A6.5 6.5 0 1013 9.6a.5.5 0 00-.5-.6z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </span>
+            {isDark ? "Light mode" : "Dark mode"}
+          </button>
           <button
             onClick={() => setLocation("/settings")}
             className={`nav-btn${location === "/settings" ? " active" : ""}`}

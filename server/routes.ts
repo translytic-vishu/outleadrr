@@ -345,7 +345,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const primaryEmails = await Promise.all(placeDetails.map(getEmail));
 
-      let withEmails: { place: PlaceDetails; email: string }[] = placeDetails
+      let withEmails: { place: PlaceDetails; email: string; expandedFrom?: string }[] = placeDetails
         .map((p, i) => ({ place: p, email: primaryEmails[i] }))
         .filter((x): x is { place: PlaceDetails; email: string } => !!x.email && x.email.includes("@"));
 
@@ -374,7 +374,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
               for (let i = 0; i < extraPlaces.length; i++) {
                 const email = extraEmails[i];
-                if (email?.includes("@")) withEmails.push({ place: extraPlaces[i], email });
+                if (email?.includes("@")) withEmails.push({ place: extraPlaces[i], email, expandedFrom: majorCityFallback! });
               }
             }
           } catch { /* ignore fallback errors */ }
@@ -573,11 +573,17 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
           emailBody:    contact.emailBody    || "",
           industry:     businessType,
           status:       "new" as const,
+          expandedFrom: finalCandidates[idx].expandedFrom,
           ...scoring,
         };
       });
 
-      return res.json({ leads: finalLeads, businessType, location });
+      const expandedCount = finalLeads.filter(l => l.expandedFrom).length;
+      const warning = expandedCount > 0
+        ? `Only ${finalLeads.length - expandedCount} ${businessType} lead${finalLeads.length - expandedCount !== 1 ? "s" : ""} found in ${location}. ${expandedCount} additional lead${expandedCount !== 1 ? "s" : ""} came from ${majorCityFallback || "a nearby area"} to reach your requested count.`
+        : undefined;
+
+      return res.json({ leads: finalLeads, businessType, location, warning });
     } catch (error: any) {
       console.error("Error generating leads:", error);
       return res.status(500).json({ error: "Failed to generate leads", message: error.message });

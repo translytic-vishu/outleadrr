@@ -333,6 +333,11 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>{lead.companyName}</div>
           <ScoreBadge label={lead.scoreLabel || ""} score={lead.score || 0} />
+          {lead.expandedFrom && (
+            <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(59,130,246,0.1)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.2)", letterSpacing: ".03em" }}>
+              {lead.expandedFrom}
+            </span>
+          )}
         </div>
         <div style={{ fontSize: 12, color: K3, marginBottom: 8, display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
           {lead.contactName && <span>{lead.contactName} · {lead.title}</span>}
@@ -660,6 +665,7 @@ export default function AppPage() {
   const [editLead, setEditLead]   = useState<{ lead: Lead; idx: number } | null>(null);
   const [billingError, setBillingError] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const [expandedWarning, setExpandedWarning] = useState<string | undefined>();
 
   /* auth */
   const { data: me } = useQuery<MeResponse>({
@@ -712,6 +718,7 @@ export default function AppPage() {
       setLeads(data.leads);
       setSelected(new Set(data.leads.map((_: Lead, i: number) => i)));
       setBillingError(false);
+      setExpandedWarning(data.warning);
       // Dismiss overlay after a short "done" display
       setTimeout(() => setShowProgress(false), 1800);
     },
@@ -1054,6 +1061,17 @@ export default function AppPage() {
                 </button>
               </div>
             </div>
+
+            {/* Expansion warning banner */}
+            {expandedWarning && (
+              <div style={{ marginBottom: 12, padding: "11px 16px", borderRadius: 10, background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M7.5 1.5L1 13.5h13L7.5 1.5z" stroke="#fbbf24" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M7.5 6v3M7.5 11v.5" stroke="#fbbf24" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
+                  <span style={{ fontWeight: 700, color: "#fbbf24" }}>Location expanded — </span>{expandedWarning} Leads from outside your area are marked below.
+                </div>
+                <button onClick={() => setExpandedWarning(undefined)} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+              </div>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {leads.map((lead, i) => (

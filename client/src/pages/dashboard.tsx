@@ -1,5 +1,6 @@
 import logoSrc from "@assets/outleadr_1773257073565.png";
 import { useState, useEffect, useRef } from "react";
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 
 /* ─── Tokens ─────────────────────────────────────────────────────── */
 const F   = "'Inter', 'Helvetica Neue', Arial, sans-serif";
@@ -395,6 +396,32 @@ function Marquee() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Demo Scroll Section ────────────────────────────────────────── */
+function DemoScroll() {
+  return (
+    <section style={{ background: WHT, overflow: "hidden" }}>
+      <ContainerScroll
+        titleComponent={
+          <div style={{ fontFamily: F }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: G3, marginBottom: 16 }}>
+              Live demo
+            </p>
+            <h2 style={{ fontSize: "clamp(28px,4vw,54px)", fontWeight: 900, letterSpacing: "-0.048em", lineHeight: 1.05, color: G1, marginBottom: 18, maxWidth: 640, margin: "0 auto 18px" }}>
+              10 scored leads.<br />
+              <span className="grad-text">Emails written. Ready to send.</span>
+            </h2>
+            <p style={{ fontSize: 16, color: G2, lineHeight: 1.7, maxWidth: 440, margin: "0 auto", marginBottom: 0 }}>
+              Scroll to see exactly what you get — every lead scored, every email personalised, all sent from your own Gmail.
+            </p>
+          </div>
+        }
+      >
+        <MockupContent />
+      </ContainerScroll>
+    </section>
   );
 }
 
@@ -950,12 +977,23 @@ function Footer() {
 
 /* ─── Page ───────────────────────────────────────────────────────── */
 export default function Dashboard() {
+  // Landing page is always light — force it regardless of app theme setting
+  useEffect(() => {
+    const prev = document.documentElement.getAttribute("data-theme");
+    document.documentElement.setAttribute("data-theme", "light");
+    return () => {
+      if (prev) document.documentElement.setAttribute("data-theme", prev);
+      else document.documentElement.removeAttribute("data-theme");
+    };
+  }, []);
+
   return (
     <>
       <style>{CSS}</style>
       <Navbar />
       <Hero />
       <Marquee />
+      <DemoScroll />
       <Features />
       <Comparison />
       <Steps />

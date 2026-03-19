@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const j=JSON.parse(d);const cmd=(j.tool_input||{}).command||'';if(cmd.includes('git commit')){const{execSync}=require('child_process');execSync('git push',{cwd:'c:/Users/12242/Downloads/OutLeadrr/outleadrr',stdio:'pipe'});}}catch(e){}});\"",
+            "statusMessage": "Pushing to GitHub...",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

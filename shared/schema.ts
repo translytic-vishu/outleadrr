@@ -61,12 +61,14 @@ export const leadSchema = z.object({
   emailSubject: z.string(),
   emailBody: z.string(),
   status: z.enum(["new", "contacted", "replied", "closed"]).default("new"),
+  expandedFrom: z.string().optional(), // set when lead came from a broader search area
 });
 
 export const leadsResponseSchema = z.object({
   leads: z.array(leadSchema),
   businessType: z.string(),
   location: z.string(),
+  warning: z.string().optional(), // set when expansion was needed to reach leadCount
 });
 
 export const authStatusSchema = z.object({
