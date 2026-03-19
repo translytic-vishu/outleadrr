@@ -255,6 +255,40 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
   return `info@${domain}`;
 }
 
+/**
+ * Last-resort email finder: Google web search for "{business} {city} email".
+ * Searches snippets from organic results for any real email address.
+ * Uses 1 SerpAPI credit per call — only invoked when all other methods fail.
+ */
+export async function findEmailViaWebSearch(
+  businessName: string,
+  location: string,
+  apiKey: string,
+): Promise<string | null> {
+  try {
+    const q = `"${businessName}" ${location} email`;
+    const res = await fetch(
+      `${SERP_BASE}?${new URLSearchParams({ engine: "google", q, api_key: apiKey, num: "5", hl: "en", gl: "us" })}`,
+      { signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const data = await res.json() as any;
+    if (data.error) return null;
+
+    const emailRe = /([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/g;
+    for (const r of (data.organic_results || [])) {
+      const text = `${r.snippet || ""} ${r.title || ""}`;
+      let m: RegExpExecArray | null;
+      while ((m = emailRe.exec(text)) !== null) {
+        const email = m[1].toLowerCase();
+        const domain = email.split("@")[1] || "";
+        if (!SKIP_EMAIL.test(email) && !HOSTED_DOMAINS.test(domain)) return email;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 export function scorePlace(details: PlaceDetails, businessType: string) {
   const { rating, reviewCount, phone, website, types } = details;
   const hasPhone   = !!phone;

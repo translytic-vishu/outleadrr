@@ -7,7 +7,7 @@ import OpenAI from "openai";
 import bcrypt from "bcryptjs";
 import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema.js";
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail, fetchInboxMessages } from "./gmail.js";
-import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, PlaceDetails } from "./places.js";
+import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, findEmailViaWebSearch, PlaceDetails } from "./places.js";
 import { storage } from "./storage.js";
 import { z } from "zod";
 
@@ -381,12 +381,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
-      /* ── 6. Still nothing? Return 404 with actionable message ─────── */
+      /* ── 6. Still short? Web-search for individual business emails ─── */
+      // This handles suburbs where SerpAPI shows Yelp/Facebook as website.
+      // We do a Google search for "{business name} {city} email" and extract
+      // real emails from result snippets. Runs in parallel, max leadCount searches.
+      if (withEmails.length < leadCount) {
+        const serpKey = process.env.SERPAPI_KEY!;
+        const alreadyHave = new Set(withEmails.map(w => w.place.placeId));
+        const needed = leadCount - withEmails.length;
+
+        // Candidates: primary area businesses that don't have an email yet
+        const noEmailPool = placeDetails
+          .filter(p => !alreadyHave.has(p.placeId))
+          .slice(0, needed * 3); // 3× so we have backups for misses
+
+        const webEmails = await Promise.all(
+          noEmailPool.map(p => findEmailViaWebSearch(p.name, location, serpKey))
+        );
+
+        for (let i = 0; i < noEmailPool.length; i++) {
+          if (withEmails.length >= leadCount) break;
+          const email = webEmails[i];
+          if (email?.includes("@")) withEmails.push({ place: noEmailPool[i], email });
+        }
+      }
+
+      /* ── 7. Still nothing? 404 with helpful message ───────────────── */
       if (withEmails.length === 0) {
-        const suggest = majorCityFallback ? ` Try "${majorCityFallback}" instead.` : " Try a nearby major city.";
         return res.status(404).json({
           error: "No contactable businesses found",
-          message: `Couldn't find email addresses for ${businessType} businesses in or near ${location}.${suggest}`,
+          message: `Couldn't find email addresses for any ${businessType} businesses in or near ${location}. Try a nearby larger city.`,
         });
       }
 
