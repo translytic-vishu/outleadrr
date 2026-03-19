@@ -179,7 +179,7 @@ function extractDomain(website: string): string | null {
  * Hosted website builder / social media domains — businesses on these
  * don't have their own email inbox, so info@wixsite.com doesn't work.
  */
-const HOSTED_DOMAINS = /wixsite\.com|squarespace\.com|weebly\.com|godaddysites\.com|business\.site|sites\.google\.com|jimdo\.com|webflow\.io|webnode\.com|yolasite\.com|blogspot\.com|wordpress\.com|tumblr\.com|shopify\.com|myshopify\.com|yelp\.com|yellowpages\.com|angieslist\.com|thumbtack\.com|houzz\.com|facebook\.com|instagram\.com|twitter\.com|nextdoor\.com|google\.com/maps|maps\.google|indeed\.com/cmp/i;
+const HOSTED_DOMAINS = /wixsite\.com|squarespace\.com|weebly\.com|godaddysites\.com|business\.site|sites\.google\.com|jimdo\.com|webflow\.io|webnode\.com|yolasite\.com|blogspot\.com|wordpress\.com|tumblr\.com|shopify\.com|myshopify\.com|yelp\.com|yellowpages\.com|angieslist\.com|thumbtack\.com|houzz\.com|facebook\.com|instagram\.com|twitter\.com|nextdoor\.com|google\.com\/maps|maps\.google|indeed\.com\/cmp/i;
 
 /** Addresses we never want to use */
 const SKIP_EMAIL = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|googleapis|cloudflare|jsdelivr|jquery|bootstrap|privacy@|legal@|dmca@|abuse@|unsubscribe@/i;
