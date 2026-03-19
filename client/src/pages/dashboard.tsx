@@ -1,6 +1,7 @@
 import logoSrc from "@assets/outleadr_1773257073565.png";
 import { useState, useEffect, useRef } from "react";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { RadarEffect } from "@/components/ui/radar-effect";
 
 /* ─── Tokens ─────────────────────────────────────────────────────── */
 const F   = "'Inter', 'Helvetica Neue', Arial, sans-serif";
@@ -55,6 +56,15 @@ const CSS = `
     -webkit-background-clip: text; background-clip: text; color: transparent;
     animation: gradshift 5s ease infinite;
   }
+
+  .radar-grad-text {
+    background: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  @keyframes radar-orb1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,-30px) scale(1.1)} }
+  @keyframes radar-orb2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,40px) scale(0.95)} }
+  @keyframes radar-send-pulse { 0%,100%{box-shadow:0 8px 32px rgba(99,102,241,0.4)} 50%{box-shadow:0 8px 48px rgba(99,102,241,0.7)} }
 
   .btn-primary {
     display:inline-flex;align-items:center;gap:10px;
@@ -396,6 +406,81 @@ function Marquee() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ─── Outreach Radar Section ─────────────────────────────────────── */
+const RADAR_BUSINESSES = [
+  "Mike's Auto Repair",
+  "Sunrise Dental Co.",
+  "City Plumbing",
+  "Elite Cuts Studio",
+  "Green Clean Co.",
+  "Bright Windows",
+];
+
+function OutreachRadar() {
+  return (
+    <section style={{ background: "#06060c", padding: "96px 24px", position: "relative", overflow: "hidden" }}>
+      {/* Background orbs */}
+      <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)", top: -100, left: -80, animation: "radar-orb1 12s ease infinite", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)", bottom: -80, right: -60, animation: "radar-orb2 14s ease infinite", pointerEvents: "none" }} />
+
+      <div style={{ maxWidth: 1080, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", alignItems: "center", gap: "clamp(48px,6vw,90px)", fontFamily: F }}>
+
+        {/* Left: copy + business list + CTA */}
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#818cf8", marginBottom: 14 }}>
+            Outreach Intelligence
+          </p>
+          <h2 style={{ fontSize: "clamp(26px,3.4vw,50px)", fontWeight: 900, letterSpacing: "-0.048em", lineHeight: 1.07, color: "#fff", marginBottom: 20 }}>
+            10 local businesses.<br/>
+            <span className="radar-grad-text">Emailed before lunch.</span>
+          </h2>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.44)", lineHeight: 1.78, maxWidth: 420, marginBottom: 36 }}>
+            OutLeadrr scans your area in real time, finds local businesses that don't have your service yet, and sends personalised cold emails — all in under 30 seconds.
+          </p>
+
+          {/* Business list card */}
+          <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 18 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", marginBottom: 14 }}>
+              Businesses detected nearby
+            </div>
+            {RADAR_BUSINESSES.map((name, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: i < RADAR_BUSINESSES.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#818cf8", boxShadow: "0 0 8px rgba(129,140,248,0.7)", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", flex: 1 }}>{name}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#4ade80", letterSpacing: ".04em" }}>Found</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA button */}
+          <a
+            href="/app"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "13px 0", borderRadius: 12, width: "100%",
+              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              color: "#fff", fontSize: 14, fontWeight: 700, textDecoration: "none",
+              animation: "radar-send-pulse 3s ease infinite",
+              boxShadow: "0 8px 32px rgba(99,102,241,0.4)",
+              letterSpacing: "-.01em",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 7h12M8 2l5 5-5 5" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Send emails to all 6 businesses
+          </a>
+        </div>
+
+        {/* Right: animated radar */}
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <RadarEffect size={Math.min(360, 340)} />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -993,6 +1078,7 @@ export default function Dashboard() {
       <Navbar />
       <Hero />
       <Marquee />
+      <OutreachRadar />
       <DemoScroll />
       <Features />
       <Comparison />

@@ -6,6 +6,7 @@ import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } 
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/AppLayout";
 import { useTheme } from "@/lib/theme";
+import { LocationMap } from "@/components/ui/expand-map";
 
 /* ─── Design Tokens ─── dark premium theme ───────────────────────── */
 const F    = "'Inter','Helvetica Neue',Arial,sans-serif";
@@ -298,17 +299,23 @@ function EditEmailModal({ lead, onSave, onClose }: { lead: Lead; onSave: (update
 }
 
 /* ─── Lead Card ───────────────────────────────────────────────────── */
-function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
-  lead: Lead; selected: boolean; onToggle: () => void; onPreview: () => void; onEdit: () => void; idx: number;
+function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation, idx }: {
+  lead: Lead; selected: boolean; onToggle: () => void; onPreview: () => void; onEdit: () => void; onViewLocation: () => void; idx: number;
 }) {
+  const score = lead.score ?? 0;
+  // Score arc: r=19, circumference = 2π×19 ≈ 119.4
+  const CIRC = 119.4;
+  const scoreColor = score >= 70 ? "#22c55e" : score >= 40 ? "#f59e0b" : "#ef4444";
+  const scoreFg    = score >= 70 ? "#4ade80" : score >= 40 ? "#fbbf24" : "#f87171";
+
   return (
     <div
       className="lead-card"
       style={{
         background: selected ? "rgba(139,92,246,0.05)" : "rgba(255,255,255,0.03)",
-        borderRadius: 14,
+        borderRadius: 16,
         border: selected ? `1.5px solid rgba(139,92,246,0.35)` : `1px solid ${BDR}`,
-        padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 14,
+        padding: "18px 20px", display: "flex", alignItems: "flex-start", gap: 14,
         transition: "border-color .15s, box-shadow .15s, background .15s",
         animationDelay: `${idx * 0.04}s`,
         boxShadow: selected ? `0 0 0 3px rgba(139,92,246,.08), 0 4px 20px rgba(0,0,0,.3)` : "0 2px 12px rgba(0,0,0,.2)",
@@ -321,7 +328,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
           width: 18, height: 18, borderRadius: 5,
           border: selected ? `2px solid ${IND}` : `2px solid rgba(255,255,255,0.18)`,
           background: selected ? IND : "rgba(255,255,255,0.04)",
-          cursor: "pointer", flexShrink: 0, marginTop: 2,
+          cursor: "pointer", flexShrink: 0, marginTop: 3,
           display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s",
         }}
       >
@@ -330,47 +337,62 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+        {/* Top row: name + badges */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 7 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.92)" }}>{lead.companyName}</div>
-          <ScoreBadge label={lead.scoreLabel || ""} score={lead.score || 0} />
+          <ScoreBadge label={lead.scoreLabel || ""} score={score} />
           {lead.expandedFrom && (
             <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: "rgba(59,130,246,0.1)", color: "#60a5fa", border: "1px solid rgba(59,130,246,0.2)", letterSpacing: ".03em" }}>
               {lead.expandedFrom}
             </span>
           )}
         </div>
-        <div style={{ fontSize: 12, color: K3, marginBottom: 8, display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
-          {lead.contactName && <span>{lead.contactName} · {lead.title}</span>}
+
+        {/* Contact row */}
+        <div style={{ fontSize: 12, color: K3, marginBottom: 7, display: "flex", flexWrap: "wrap", gap: "3px 16px" }}>
+          {lead.contactName && <span>{lead.contactName}{lead.title ? ` · ${lead.title}` : ""}</span>}
           {lead.email && <span style={{ color: "#a78bfa" }}>{lead.email}</span>}
           {lead.phone && <span>{lead.phone}</span>}
         </div>
-        <div style={{ fontSize: 12, color: K3, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 520 }}>
+
+        {/* Subject */}
+        <div style={{ fontSize: 12, color: K3, marginBottom: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 500 }}>
           <span style={{ fontWeight: 600, color: K2 }}>Subject: </span>{lead.emailSubject}
         </div>
-        {lead.rating ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-            {/* Circular rating indicator */}
-            <div style={{ position: "relative", width: 36, height: 36, flexShrink: 0 }}>
-              <svg width="36" height="36" viewBox="0 0 36 36" style={{ transform: "rotate(-90deg)" }}>
-                <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-                <circle
-                  cx="18" cy="18" r="15" fill="none"
-                  stroke={lead.rating >= 4.5 ? "#16a34a" : lead.rating >= 3.5 ? "#ca8a04" : "#dc2626"}
-                  strokeWidth="3"
-                  strokeDasharray={`${(lead.rating / 5) * 94.2} 94.2`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: lead.rating >= 4.5 ? "#16a34a" : lead.rating >= 3.5 ? "#ca8a04" : "#dc2626" }}>
-                {lead.rating.toFixed(1)}
-              </div>
-            </div>
-            <div style={{ fontSize: 11, color: K4 }}>
-              <div style={{ fontWeight: 600, color: K3 }}>{lead.rating >= 4.5 ? "Excellent" : lead.rating >= 3.5 ? "Good" : "Fair"}</div>
-              <div>{lead.reviewCount?.toLocaleString()} reviews</div>
+
+        {/* Score circle + meta */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* 0–100 score ring */}
+          <div style={{ position: "relative", width: 50, height: 50, flexShrink: 0 }}>
+            <svg width="50" height="50" viewBox="0 0 50 50" style={{ transform: "rotate(-90deg)" }}>
+              <circle cx="25" cy="25" r="19" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3.5" />
+              <circle
+                cx="25" cy="25" r="19" fill="none"
+                stroke={scoreColor}
+                strokeWidth="3.5"
+                strokeDasharray={`${(score / 100) * CIRC} ${CIRC}`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: scoreFg, lineHeight: 1 }}>{score}</div>
+              <div style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.28)", textTransform: "uppercase", letterSpacing: ".06em" }}>pts</div>
             </div>
           </div>
-        ) : null}
+
+          {/* Meta: label + rating + address */}
+          <div style={{ fontSize: 11, color: K3, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, color: K2, marginBottom: 2 }}>
+              {lead.scoreLabel || (score >= 70 ? "Strong Lead" : score >= 40 ? "Good Lead" : "Weak Lead")}
+            </div>
+            {lead.rating && (
+              <div>{lead.rating.toFixed(1)} stars · {lead.reviewCount?.toLocaleString()} reviews</div>
+            )}
+            {lead.address && (
+              <div style={{ color: K4, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>{lead.address}</div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Action buttons */}
@@ -389,6 +411,26 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, idx }: {
         >
           Preview
         </button>
+        {(lead.address || lead.website) && (
+          <button
+            onClick={onViewLocation}
+            style={{
+              padding: "6px 14px", borderRadius: 8,
+              border: "1px solid rgba(99,102,241,0.22)",
+              background: "rgba(99,102,241,0.08)",
+              fontSize: 12, fontWeight: 600, color: "#a78bfa", cursor: "pointer",
+              transition: "all .15s",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+            }}
+            onMouseEnter={e => { const b = e.currentTarget; b.style.background = "rgba(99,102,241,0.16)"; b.style.borderColor = "rgba(99,102,241,0.38)"; }}
+            onMouseLeave={e => { const b = e.currentTarget; b.style.background = "rgba(99,102,241,0.08)"; b.style.borderColor = "rgba(99,102,241,0.22)"; }}
+          >
+            <svg width="9" height="11" viewBox="0 0 9 11" fill="none">
+              <path d="M4.5 0.5C2.57 0.5 1 2.07 1 4c0 2.44 3.5 6.5 3.5 6.5S8 6.44 8 4c0-1.93-1.57-3.5-3.5-3.5zm0 4.75a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z" fill="currentColor"/>
+            </svg>
+            Map
+          </button>
+        )}
         <button onClick={onEdit} style={{ padding:"6px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.45)",cursor:"pointer",transition:"all .15s" }}
           onMouseEnter={e=>{(e.target as HTMLElement).style.borderColor="#8b5cf6";(e.target as HTMLElement).style.color="#c4b5fd";}}
           onMouseLeave={e=>{(e.target as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";(e.target as HTMLElement).style.color="rgba(255,255,255,0.45)";}}>
@@ -663,6 +705,7 @@ export default function AppPage() {
   const [selected, setSelected]   = useState<Set<number>>(new Set());
   const [previewLead, setPreviewLead] = useState<Lead | null>(null);
   const [editLead, setEditLead]   = useState<{ lead: Lead; idx: number } | null>(null);
+  const [locationLead, setLocationLead] = useState<Lead | null>(null);
   const [billingError, setBillingError] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [expandedWarning, setExpandedWarning] = useState<string | undefined>();
@@ -811,6 +854,7 @@ export default function AppPage() {
 
       {previewLead && <EmailPanel lead={previewLead} onClose={() => setPreviewLead(null)} />}
       {editLead && <EditEmailModal lead={editLead.lead} onSave={(updated) => { const next = [...leads]; next[editLead.idx] = updated; setLeads(next); }} onClose={() => setEditLead(null)} />}
+      {locationLead && <LocationMap businessName={locationLead.companyName} address={locationLead.address} onClose={() => setLocationLead(null)} />}
 
       {/* ── Page header ── */}
       <div style={{ padding: "28px 36px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1087,6 +1131,7 @@ export default function AppPage() {
                   }}
                   onPreview={() => setPreviewLead(lead)}
                   onEdit={() => setEditLead({ lead, idx: i })}
+                  onViewLocation={() => setLocationLead(lead)}
                 />
               ))}
             </div>
