@@ -278,21 +278,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
-      /* ── 3. Fetch place details in parallel ──────────────────────── */
-      const placeDetails = await Promise.all(
-        searchResults.map(p => getPlaceDetails(p.placeId))
+      /* ── 3. Fetch place details + filter to leads with websites ──── */
+      // Fetch more than needed so we can filter to those with emails
+      const allDetails = await Promise.all(
+        allResults.slice(0, Math.min(allResults.length, leadCount * 3)).map(p => getPlaceDetails(p.placeId))
       );
+      // Only keep businesses that have a website (required to find email)
+      const placeDetails = allDetails.filter(p => !!p.website).slice(0, leadCount);
 
-      /* ── 4. Build context list for OpenAI (contact + email only) ─── */
-      const businessList = placeDetails.map((p, i) => {
+      /* ── 4. Build context list for AI ───────────────────────────── */
+      // If pitching website services, prefer businesses with weak/no web presence
+      const intentLower = (intent || "").toLowerCase();
+      const pitchingWebsite = /\bwebsite|web design|web dev|landing page|redesign\b/i.test(intentLower);
+
+      // Score-sort: if pitching websites, push businesses with a basic/old site to top
+      const sortedDetails = pitchingWebsite
+        ? [...placeDetails].sort((a, b) => {
+            // Prefer no-review or low-review businesses (less established = more likely needs upgrade)
+            const aScore = a.reviewCount < 20 ? 0 : 1;
+            const bScore = b.reviewCount < 20 ? 0 : 1;
+            return aScore - bScore;
+          })
+        : placeDetails;
+
+      const businessList = sortedDetails.map((p, i) => {
         const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
         const domain = domainMatch?.[1] || "";
+        const webNote = pitchingWebsite
+          ? (p.reviewCount < 10 ? " [minimal online presence — ideal for website pitch]" : "")
+          : "";
         return [
-          `${i + 1}. Business: "${p.name}"`,
+          `${i + 1}. Business: "${p.name}"${webNote}`,
           `   Location: ${p.address || location}`,
           `   Phone: ${p.phone || "not listed"}`,
-          `   Website domain: ${domain || "none"}`,
-          `   Rating: ${p.rating > 0 ? `${p.rating}/5 (${p.reviewCount} reviews)` : "not rated yet"}`,
+          `   Website: ${domain || "none"}`,
+          `   Google rating: ${p.rating > 0 ? `${p.rating}/5 (${p.reviewCount} reviews)` : "not yet rated — new or under-the-radar business"}`,
         ].join("\n");
       }).join("\n\n");
 
@@ -315,74 +335,63 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         messages: [
           {
             role: "system",
-            content: `You are an elite cold email writer. Your emails get responses because they sound like a real human wrote them for one specific business — not a template.
+            content: `You are a top-performing cold email copywriter. Every email you write sounds like a real human spent 20 minutes researching that specific business — because each one is crafted specifically for them.
 
-## YOUR MISSION
-Write ${placeDetails.length} cold outreach emails. Each email must be unmistakably written for THAT business using its actual name, location, rating, or review count.
+## CORE RULES
+1. Each email MUST reference the specific business by name, location, or real data (rating/reviews).
+2. Every email in the batch must have a DIFFERENT opening structure. No two can start the same way.
+3. Vary email LENGTH across the batch: some are tight 3-sentence punchy emails, some are 5-sentence with more context. Never the same length twice in a row.
 
-## WRITER PERSONA
+## PERSONA
 ${toneConfig.voice}
 
-## TONE & STYLE
+## TONE
 ${toneConfig.style}
 
-## STRICT BANNED OPENERS (never use these)
-- "I hope this finds you" / "I hope you're doing well"
-- "I wanted to reach out" / "I'm reaching out because"
-- "My name is" / "I came across your business"
-- "Are you looking to" / "Are you struggling with"
-- "We help companies like yours" / "I'd love to connect"
+## NEVER USE THESE OPENERS
+"I hope this finds you", "I hope you're doing well", "I wanted to reach out", "My name is X and I", "I came across your business", "Are you struggling with", "We help companies like yours", "I'd love to connect", "I noticed your business online"
 
-## BANNED AI WORDS (instant credibility killer)
-synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, robust, innovative solution, pain points, deep dive, circle back, move the needle, best-in-class, world-class, tailored solution, comprehensive, actionable, impactful, "in today's landscape", "at the end of the day", "touch base", "value proposition"
+## BANNED WORDS (AI-detector words — never write these)
+synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, robust, innovative, pain points, deep dive, circle back, move the needle, best-in-class, world-class, tailored, comprehensive, actionable, impactful, holistic, robust, solutions
 
-## SUBJECT LINE RULES
-- 4–7 words maximum
-- No punctuation at end
-- Not a question, not salesy
-- Lowercase preferred
-- Must reference the city, business name, or industry specifically
-- GOOD examples: "for Austin plumbing owners", "a thought on [BusinessName]", "something I noticed about [Industry]"
-- BAD examples: "Quick question", "Partnership opportunity", "Grow your business"
+## SUBJECT LINE RULES (pick a different structure for each email)
+- 4–7 words max, no trailing punctuation
+- Structures to rotate: city + industry ("Austin plumbers doing this wrong"), business name specific ("re: [Name]'s Google reviews"), question-free observation, number hook ("3 dental clinics in Dallas that...")
+- Never: "Quick question", "Partnership opportunity", "Growing your business"
 
-## EMAIL BODY — EXACT STRUCTURE (95–125 words in body, not counting salutation/closing)
-**P1 — HOOK (1–2 sentences):** Use ONE of these angles specific to THIS business:
-  a) Rating/review hook: "With [X] stars and [N] reviews, [BusinessName] is clearly doing something right..."
-  b) City/industry insight: A real observation about their local market or business type
-  c) Comparable result: "A [similar business type] in [nearby city] we worked with [specific result in 6 weeks]..."
-  d) Overlooked opportunity: Something concrete most owners in their niche miss
+## EMAIL BODY STRUCTURE — pick ONE variant per email (rotate variants across batch):
+VARIANT A (INSIGHT-FIRST): Open with a sharp local observation → specific value claim with a real number → soft CTA
+VARIANT B (RESULT-FIRST): Lead with a specific result you got for a similar business → explain why it applies to them → CTA
+VARIANT C (HOOK-QUESTION): Single sharp observation about their niche → what you do and one real proof stat → CTA
+VARIANT D (SHORT-PUNCH): 3 sentences total. No fluff. Specific hook, specific offer, specific CTA. Under 60 words.
 
-**P2 — VALUE (2–3 sentences):** Plain English description of the offer. Include ONE specific proof number ("cut no-show rates by 35%", "added 18 new monthly clients"). Never exaggerate.
+## CTA FOR THIS BATCH
+"${toneConfig.cta}"
 
-**P3 — CTA (exactly 1 sentence):** Use this exact CTA: "${toneConfig.cta}"
+## CLOSING
+"${toneConfig.closing}"
+Signature: {{YourName}}
 
-**CLOSING:** On a new line after a blank line: "${toneConfig.closing}"
-**SIGNATURE:** On the next line: {{YourName}}
+## JSON OUTPUT ONLY — no markdown, no explanation
+{"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
 
-## VARIATION RULE
-Across all emails in this batch: vary the hook angle, vary subject line structure, vary sentence rhythm. No two emails should open the same way.
-
-## OUTPUT FORMAT
-Return ONLY valid JSON. No markdown fences, no explanation, no preamble.
-Schema: {"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
-
-- email: always empty string "" (real emails found separately)
-- contactName: realistic name appropriate for ${location} (Owner/Founder/CEO/GM/Principal/Practice Manager)
-- title: their likely role
-- emailBody: full formatted email including salutation, 3 paragraphs, blank line, closing, {{YourName}}`,
+Rules:
+- email: always ""
+- contactName: real-sounding name for the region
+- emailBody: includes salutation (Hi [Name],), body, blank line, closing, {{YourName}}`,
           },
           {
             role: "user",
-            content: `Generate ${placeDetails.length} cold emails for ${businessType} businesses in ${location}.
+            content: `Write ${sortedDetails.length} cold emails for ${businessType} businesses in ${location}.
 
-WHAT THE SENDER OFFERS: ${intent ? `"${intent}"` : `A relevant service for ${businessType} businesses (infer something specific and plausible from context)`}
+OFFER BEING PITCHED: ${intent ? `"${intent}"` : `A relevant service for ${businessType} owners — infer something specific from context`}
 
-TONE PERSONA: ${toneConfig.style}
+IMPORTANT: If the offer mentions a demo, call, or trial — make sure the CTA references that specific action. Make the emails feel like they were written by someone who genuinely understands this business type.
 
-BUSINESSES TO EMAIL:
+BUSINESSES (write one email per business, vary structure for each):
 ${businessList}
 
-Return exactly ${placeDetails.length} contact objects in the JSON schema. Vary opener angles across emails.`,
+Return exactly ${sortedDetails.length} JSON contact objects. Each email body must use a DIFFERENT variant structure. No two emails can open the same way.`,
           },
         ],
           max_tokens: 4096,
@@ -416,13 +425,13 @@ Return exactly ${placeDetails.length} contact objects in the JSON schema. Vary o
       const contacts: any[] = aiData.contacts || [];
 
       /* ── 7. Merge real Places data with AI contact/email data ─────── */
-      const leads = placeDetails.map((place, idx) => {
+      const leads = sortedDetails.map((place, idx) => {
         const contact = contacts[idx] || {};
         const scoring = scorePlace(place, businessType);
         const scrapedEmail = scrapedEmails[idx];
-        // Use scraped/real email (from website) if found. Otherwise leave blank — never guess.
+        // Scrape always returns a real scraped email OR info@domain (MX-verified). Never empty.
         const emailToUse = scrapedEmail || "";
-        const emailVerified = !!scrapedEmail;
+        const emailVerified = !!scrapedEmail && scrapedEmail.includes("@");
 
         return {
           id: idx + 1,

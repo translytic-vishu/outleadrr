@@ -116,7 +116,7 @@ function AreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boole
   const data = slice.map(c => c.sent);
   const labels = slice.map(c => c.name.length > 9 ? c.name.slice(0, 9) + "…" : c.name);
 
-  const gridColor  = isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.14)";
+  const gridColor  = isDark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.1)";
   const labelColor = isDark ? "#71717a" : "#a1a1aa";
   const emptyColor = isDark ? "#52525b" : "#a1a1aa";
 
@@ -308,40 +308,26 @@ export default function AppDashboard() {
           </div>
 
           {/* ── KPI Cards ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
-            <KPICard
-              label="Campaigns" value={isLoading ? "—" : campaigns.length}
-              sub="total run"
-              icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 13l4-5 3.5 3 5-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              bg="linear-gradient(135deg,rgba(139,92,246,0.14) 0%,rgba(10,10,12,0) 100%)"
-              accent="#8b5cf6" delay={0.05}
-            />
-            <KPICard
-              label="Emails Sent" value={isLoading ? "—" : totalSent}
-              sub="across all campaigns"
-              sparkValues={sentSpark}
-              icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M15 2L2 7l6 3 3 6L15 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              bg="linear-gradient(135deg,rgba(16,185,129,0.12) 0%,rgba(10,10,12,0) 100%)"
-              accent="#10b981" delay={0.1}
-            />
-            <KPICard
-              label="Leads Found" value={isLoading ? "—" : totalLeads}
-              sub="from Google Maps"
-              sparkValues={leadsSpark}
-              icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.5" cy="7.5" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M12 12l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
-              bg="linear-gradient(135deg,rgba(245,158,11,0.12) 0%,rgba(10,10,12,0) 100%)"
-              accent="#f59e0b" delay={0.15}
-            />
-            <KPICard
-              label="Delivery Rate" value={isLoading ? "—" : `${deliveryRate}%`}
-              sub={totalSent + totalFailed > 0 ? `${totalFailed} failed` : "no sends yet"}
-              icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 9.5l4.5 4.5 8.5-9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-              bg={deliveryRate >= 80
-                ? "linear-gradient(135deg,rgba(74,222,128,0.12) 0%,rgba(10,10,12,0) 100%)"
-                : "linear-gradient(135deg,rgba(251,191,36,0.12) 0%,rgba(10,10,12,0) 100%)"}
-              accent={deliveryRate >= 80 ? "#4ade80" : "#fbbf24"} delay={0.2}
-            />
-          </div>
+          {(() => {
+            const end = isDark ? "rgba(10,10,12,0)" : "rgba(249,249,251,0)";
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
+                <KPICard label="Campaigns" value={isLoading ? "—" : campaigns.length} sub="total run"
+                  icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 13l4-5 3.5 3 5-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  bg={`linear-gradient(135deg,rgba(139,92,246,${isDark?".14":".09"}) 0%,${end} 100%)`} accent="#8b5cf6" delay={0.05} />
+                <KPICard label="Emails Sent" value={isLoading ? "—" : totalSent} sub="across all campaigns" sparkValues={sentSpark}
+                  icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M15 2L2 7l6 3 3 6L15 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  bg={`linear-gradient(135deg,rgba(16,185,129,${isDark?".12":".08"}) 0%,${end} 100%)`} accent="#10b981" delay={0.1} />
+                <KPICard label="Leads Found" value={isLoading ? "—" : totalLeads} sub="from Google Maps" sparkValues={leadsSpark}
+                  icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.5" cy="7.5" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M12 12l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+                  bg={`linear-gradient(135deg,rgba(245,158,11,${isDark?".12":".08"}) 0%,${end} 100%)`} accent="#f59e0b" delay={0.15} />
+                <KPICard label="Delivery Rate" value={isLoading ? "—" : `${deliveryRate}%`} sub={totalSent + totalFailed > 0 ? `${totalFailed} failed` : "no sends yet"}
+                  icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 9.5l4.5 4.5 8.5-9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  bg={deliveryRate >= 80 ? `linear-gradient(135deg,rgba(74,222,128,${isDark?".12":".08"}) 0%,${end} 100%)` : `linear-gradient(135deg,rgba(251,191,36,${isDark?".12":".08"}) 0%,${end} 100%)`}
+                  accent={deliveryRate >= 80 ? "#4ade80" : "#fbbf24"} delay={0.2} />
+              </div>
+            );
+          })()}
 
           {/* ── Row 2: Area Chart + Top Campaigns ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 14, marginBottom: 14 }}>
@@ -426,7 +412,7 @@ export default function AppDashboard() {
 
           {/* ── Row 4: Full Campaigns Table ── */}
           <div className="d-card" style={{ marginBottom: 14, animation: "fadeUp .5s ease both .43s" }}>
-            <div style={{ padding: "20px 26px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ padding: "20px 26px", borderBottom: `1px solid ${tableHeaderBdr}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle }}>All Campaigns</div>
                 <div style={{ fontSize: 11, color: cardSub, marginTop: 3 }}>{campaigns.length} total · complete history</div>

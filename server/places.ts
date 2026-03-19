@@ -160,24 +160,51 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
   throw new Error(`Place details not found for id: ${placeId}. This is a cache miss — ensure searchPlaces() is called first.`);
 }
 
+import { promises as dns } from "dns";
+
+/**
+ * Check if a domain has MX records (can receive email).
+ */
+async function domainHasMX(domain: string): Promise<boolean> {
+  try {
+    const records = await dns.resolveMx(domain);
+    return records.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extract the root domain from a website URL.
+ */
+function extractDomain(website: string): string | null {
+  try {
+    const base = website.startsWith("http") ? website : `https://${website}`;
+    const url = new URL(base);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Scrape a real contact email from a business website.
- * Checks homepage + /contact + /contact-us. Prefers mailto: links.
- * Falls back to info@ / contact@ pattern if nothing scraped.
+ * Checks homepage + /contact + /about. Prefers mailto: links.
+ * Falls back to info@domain if domain has MX records.
  */
 export async function scrapeEmailFromWebsite(website: string): Promise<string | null> {
   if (!website) return null;
   const base = (website.startsWith("http") ? website : `https://${website}`).replace(/\/+$/, "");
+  const domain = extractDomain(base);
 
   const skipPattern = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.org|schema\.org|wix\.|squarespace|wordpress|googleapis|cloudflare|jsdelivr|jquery|bootstrap|facebook|twitter|instagram|linkedin/i;
 
-  // Only check homepage — fastest path, most sites put mailto there
-  const pagesToTry = [base, `${base}/contact`];
+  const pagesToTry = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`];
 
   for (const url of pagesToTry) {
     try {
       const res = await fetch(url, {
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(4000),
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; Outleadrr/1.0; email-finder)",
           "Accept": "text/html,application/xhtml+xml",
@@ -202,7 +229,6 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
       );
 
       if (allEmails.length > 0) {
-        // Prefer generic contact addresses over specific ones (they're more reliable)
         const preferred = allEmails.find(e => /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir)@/i.test(e));
         return preferred || allEmails[0];
       }
@@ -211,11 +237,13 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
     }
   }
 
-  // If no email scraped but we have a domain, return info@ (high delivery rate vs guessed firstname@)
-  try {
-    const domainMatch = base.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
-    if (domainMatch?.[1]) return `info@${domainMatch[1]}`;
-  } catch { /* ignore */ }
+  // Fallback: use info@domain if domain has valid MX records
+  if (domain) {
+    try {
+      const hasMX = await domainHasMX(domain);
+      if (hasMX) return `info@${domain}`;
+    } catch { /* ignore */ }
+  }
 
   return null;
 }
