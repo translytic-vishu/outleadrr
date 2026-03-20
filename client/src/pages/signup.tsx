@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import logoSrc from "@assets/outleadr_1773257073565.png";
 
-const F = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 
 const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

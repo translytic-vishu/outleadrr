@@ -195,6 +195,36 @@
  * Even without handling focused or not, this is six possible combinations that
  * need to be distinguished from eachother visually.
  */
+/* ── Plus Jakarta Sans — primary brand font ─────────────────── */
+:root {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Global focus states (keyboard navigation only) ─────────── */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Slightly brighter in dark contexts */
+[data-theme="dark"] *:focus-visible,
+.auth-root *:focus-visible {
+  outline-color: #a78bfa;
+}
+
+/* ── Respect prefers-reduced-motion ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── OutLeadrr custom utilities ────────────────────────────────── */
 @keyframes skeletonPulse {
   0%, 100% { opacity: 1; }

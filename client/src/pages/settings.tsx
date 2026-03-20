@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/lib/theme";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const F           = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F           = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const CARD        = "rgba(255,255,255,0.035)";
 const CARD_BORDER = "rgba(255,255,255,0.08)";
 const TEXT        = "#ededed";

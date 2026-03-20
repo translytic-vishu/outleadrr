@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useTheme } from "@/lib/theme";
 import type { AuthStatus } from "@shared/schema";
 
-const F = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const SESSION_SHOWN_KEY = "outleadrr_ob_shown";
 
 const CSS = `

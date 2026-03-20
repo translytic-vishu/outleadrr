@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { useTheme } from "@/lib/theme";
 import type { AuthStatus } from "@/../../shared/schema";
 
-const F = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const ACC = "#8b5cf6";
 
 const CSS = `

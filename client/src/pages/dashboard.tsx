@@ -1,10 +1,9 @@
 import logoSrc from "@assets/outleadr_1773257073565.png";
 import { useState, useEffect, useRef } from "react";
-import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { RadarEffect } from "@/components/ui/radar-effect";
 
 /* ─── Tokens ─────────────────────────────────────────────────────── */
-const F   = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+const F   = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const BLK = "#0a0a0a";
 const WHT = "#ffffff";
 const G1  = "#0f172a";
@@ -324,8 +323,19 @@ function MockupContent() {
 
 /* ─── Hero ───────────────────────────────────────────────────────── */
 function Hero() {
+  const [scrollY, setScrollY] = useState(0);
+  useEffect(() => {
+    const fn = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  const parallaxY  = scrollY * 0.28;
+  const rotX       = Math.max(1, 9 - scrollY * 0.016);
+  const scaleVal   = Math.min(1.01, 0.96 + scrollY * 0.00018);
+
   return (
-    <section style={{ position: "relative", overflow: "hidden", paddingTop: 110, paddingBottom: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <section style={{ position: "relative", paddingTop: 100, paddingBottom: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div className="hero-glow" />
       <WaveCanvas />
       <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 880, margin: "0 auto", padding: "0 48px", flex: "none" }}>
@@ -359,23 +369,19 @@ function Hero() {
           ))}
         </div>
       </div>
-      {/* Perspective mockup */}
-      <div className="h-up" style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 80, flex: 1, minHeight: 420 }}>
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "58%", background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.9) 55%, #ffffff 100%)", zIndex: 10, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "4%", background: "linear-gradient(to right,#fff,transparent)", zIndex: 9, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: "4%", background: "linear-gradient(to left,#fff,transparent)", zIndex: 9, pointerEvents: "none" }} />
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", transform: "perspective(1800px) rotateX(8deg) scale(0.97)", transformOrigin: "50% 0%" }}>
-          <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 32px 80px rgba(0,0,0,0.22), 0 80px 140px rgba(0,0,0,0.12)" }}>
-            <MockupContent />
-          </div>
-        </div>
-        {/* Floating badges */}
-        <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 600px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
+
+      {/* ── Parallax mockup ── */}
+      <div className="h-up" style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 64, flex: 1, minHeight: 540 }}>
+        {/* Subtle bottom fade — shorter so more of image shows */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "28%", background: "linear-gradient(to bottom, transparent, #ffffff 100%)", zIndex: 10, pointerEvents: "none" }} />
+
+        {/* Floating badges — outside parallax so they have independent depth */}
+        <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 640px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
           <div style={{ fontSize: 10, color: G3, marginBottom: 4 }}>Lead score</div>
           <div style={{ fontSize: 32, fontWeight: 900, color: "#22c55e", letterSpacing: "-0.06em", lineHeight: 1 }}>92</div>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#22c55e", marginTop: 3 }}>Strong lead</div>
         </div>
-        <div className="hero-cards fb" style={{ position: "absolute", top: "1%", right: "calc(50% - 600px)", background: WHT, borderRadius: 18, padding: "16px 20px", boxShadow: "0 8px 44px rgba(0,0,0,0.12)", border: `1px solid ${BDR}`, width: 228, zIndex: 20, pointerEvents: "none" }}>
+        <div className="hero-cards fb" style={{ position: "absolute", top: "1%", right: "calc(50% - 640px)", background: WHT, borderRadius: 18, padding: "16px 20px", boxShadow: "0 8px 44px rgba(0,0,0,0.12)", border: `1px solid ${BDR}`, width: 228, zIndex: 20, pointerEvents: "none" }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: G3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>AI-Written Email</div>
           <div style={{ fontSize: 11, fontWeight: 700, color: G1, marginBottom: 5 }}>Hi James, great work at RiverCity...</div>
           <div style={{ fontSize: 11, color: G2, lineHeight: 1.55, marginBottom: 12 }}>I noticed RiverCity has been Houston's go-to plumber for years. Open to a quick call?</div>
@@ -386,6 +392,19 @@ function Hero() {
         <div className="hero-cards fc" style={{ position: "absolute", top: "-3%", left: "50%", transform: "translateX(-50%)", background: BLK, borderRadius: 99, padding: "10px 22px", boxShadow: "0 6px 32px rgba(0,0,0,0.28)", display: "flex", alignItems: "center", gap: 9, zIndex: 20, pointerEvents: "none", whiteSpace: "nowrap" }}>
           <span className="pdot" style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: WHT }}>10 plumbers found in Houston, TX</span>
+        </div>
+
+        {/* Parallax + perspective layer */}
+        <div style={{ transform: `translateY(${parallaxY}px)`, willChange: "transform" }}>
+          <div style={{
+            maxWidth: 1440, margin: "0 auto", padding: "0 16px",
+            transform: `perspective(2200px) rotateX(${rotX}deg) scale(${scaleVal})`,
+            transformOrigin: "50% 0%",
+          }}>
+            <div style={{ borderRadius: 22, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 40px 100px rgba(0,0,0,0.26), 0 100px 160px rgba(0,0,0,0.14)" }}>
+              <MockupContent />
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -482,32 +501,6 @@ function OutreachRadar() {
           <RadarEffect size={Math.min(360, 340)} />
         </div>
       </div>
-    </section>
-  );
-}
-
-/* ─── Demo Scroll Section ────────────────────────────────────────── */
-function DemoScroll() {
-  return (
-    <section style={{ background: WHT, overflow: "hidden" }}>
-      <ContainerScroll
-        titleComponent={
-          <div style={{ fontFamily: F }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: G3, marginBottom: 16 }}>
-              Live demo
-            </p>
-            <h2 style={{ fontSize: "clamp(28px,4vw,54px)", fontWeight: 900, letterSpacing: "-0.048em", lineHeight: 1.05, color: G1, marginBottom: 18, maxWidth: 640, margin: "0 auto 18px" }}>
-              10 scored leads.<br />
-              <span className="grad-text">Emails written. Ready to send.</span>
-            </h2>
-            <p style={{ fontSize: 16, color: G2, lineHeight: 1.7, maxWidth: 440, margin: "0 auto", marginBottom: 0 }}>
-              Scroll to see exactly what you get — every lead scored, every email personalised, all sent from your own Gmail.
-            </p>
-          </div>
-        }
-      >
-        <MockupContent />
-      </ContainerScroll>
     </section>
   );
 }
@@ -1081,7 +1074,6 @@ export default function Dashboard() {
       <Hero />
       <Marquee />
       <OutreachRadar />
-      <DemoScroll />
       <Features />
       <Comparison />
       <Steps />

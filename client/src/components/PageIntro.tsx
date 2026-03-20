@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from "react";
 
-const F = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const SEEN_KEY = "outleadrr_seen_pages_v1";
 
 function getSeenPages(): Record<string, boolean> {

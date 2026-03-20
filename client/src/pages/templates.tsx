@@ -5,7 +5,7 @@ import { useTheme } from "@/lib/theme";
 
 export const TEMPLATE_STORAGE_KEY = "outleadrr_active_template";
 
-const F    = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F    = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const BG   = "#0a0a0a";
 const CARD = "rgba(255,255,255,0.035)";
 const CARD_BORDER = "rgba(255,255,255,0.08)";

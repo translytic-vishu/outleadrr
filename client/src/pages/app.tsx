@@ -9,7 +9,7 @@ import { useTheme } from "@/lib/theme";
 import { LocationMap } from "@/components/ui/expand-map";
 
 /* ─── Design Tokens ─── dark premium theme ───────────────────────── */
-const F    = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F    = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const W    = "#ededed";                  // primary text — zinc-100
 const K    = "#111111";                  // card background
 const K2   = "#a1a1aa";                  // secondary text — zinc-400

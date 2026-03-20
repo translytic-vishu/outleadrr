@@ -4,7 +4,7 @@
  */
 import logoSrc from "@assets/outleadr_1773257073565.png";
 
-const FONT  = "'Inter','Helvetica Neue',Arial,sans-serif";
+const FONT  = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const INK   = "#0f0f0f";
 const INK2  = "#555";
 const INK3  = "#999";

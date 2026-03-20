@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { useTheme } from "@/lib/theme";
 import type { MeResponse } from "@shared/schema";
 
-const F = "'Inter','Helvetica Neue',Arial,sans-serif";
+const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const ACC = "#8b5cf6";
 
 interface Campaign {
@@ -417,22 +417,20 @@ export default function AppDashboard() {
                 <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle }}>All Campaigns</div>
                 <div style={{ fontSize: 11, color: cardSub, marginTop: 3 }}>{campaigns.length} total · complete history</div>
               </div>
-              <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "9px 16px", fontSize: 12 }}>
+              <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "9px 16px", fontSize: 12, flexShrink: 0 }}>
                 <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
                 New Campaign
               </button>
             </div>
 
             {campaigns.length === 0 ? (
-              <div style={{ padding: "56px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5.5-7 4.5 4 5.5-8" stroke="rgba(139,92,246,.7)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: emptyText, marginBottom: 5 }}>No campaigns yet</div>
-                  <div style={{ fontSize: 12, color: emptyText2, marginBottom: 14 }}>Generate your first batch of leads and emails in minutes.</div>
-                  <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "9px 20px", fontSize: 12 }}>Start a campaign</button>
-                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: emptyText }}>No campaigns yet</div>
+                <div style={{ fontSize: 12, color: emptyText2, maxWidth: 280, lineHeight: 1.6 }}>Generate your first batch of leads and emails in minutes.</div>
+                <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "10px 22px", fontSize: 13, marginTop: 4 }}>Start a campaign</button>
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>

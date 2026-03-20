@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { createHmac } from "crypto";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import connectPgSimple from "connect-pg-simple";
@@ -54,6 +55,49 @@ async function aiCall(params: Omit<Parameters<OpenAI["chat"]["completions"]["cre
   return getOpenAI().chat.completions.create({ ...params, model: getModel() } as any);
 }
 
+/* ── JWT Auth — serverless-safe cookie fallback (Vercel cold-start fix) ─── */
+const JWT_COOKIE = "outleadrr_tk";
+function jwtSign(userId: number): string {
+  const secret = process.env.SESSION_SECRET || "ai-sales-agent-secret-key";
+  const h = Buffer.from('{"alg":"HS256"}').toString("base64url");
+  const p = Buffer.from(JSON.stringify({ uid: userId, iat: Math.floor(Date.now() / 1000) })).toString("base64url");
+  const sig = createHmac("sha256", secret).update(`${h}.${p}`).digest("base64url");
+  return `${h}.${p}.${sig}`;
+}
+function jwtVerify(token: string | null): number | null {
+  if (!token) return null;
+  try {
+    const secret = process.env.SESSION_SECRET || "ai-sales-agent-secret-key";
+    const [h, p, sig] = token.split(".");
+    if (!h || !p || !sig) return null;
+    const expected = createHmac("sha256", secret).update(`${h}.${p}`).digest("base64url");
+    if (sig !== expected) return null;
+    const data = JSON.parse(Buffer.from(p, "base64url").toString());
+    if (Math.floor(Date.now() / 1000) - (data.iat || 0) > 7 * 24 * 3600) return null;
+    return typeof data.uid === "number" ? data.uid : null;
+  } catch { return null; }
+}
+function jwtFromReq(req: Request): string | null {
+  const h = req.headers.cookie || "";
+  const m = h.match(new RegExp(`(?:^|;\\s*)${JWT_COOKIE}=([^;]+)`));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function appendCookie(res: Response, cookie: string) {
+  const existing = res.getHeader("Set-Cookie");
+  if (Array.isArray(existing)) res.setHeader("Set-Cookie", [...existing, cookie]);
+  else if (typeof existing === "string") res.setHeader("Set-Cookie", [existing, cookie]);
+  else res.setHeader("Set-Cookie", cookie);
+}
+function setJwtCookie(res: Response, userId: number) {
+  const prod = process.env.NODE_ENV === "production";
+  const token = encodeURIComponent(jwtSign(userId));
+  appendCookie(res, `${JWT_COOKIE}=${token}; Max-Age=${7 * 24 * 3600}; Path=/; HttpOnly; ${prod ? "Secure; SameSite=None" : "SameSite=Lax"}`);
+}
+function clearJwtCookie(res: Response) {
+  const prod = process.env.NODE_ENV === "production";
+  appendCookie(res, `${JWT_COOKIE}=; Max-Age=0; Path=/; HttpOnly; ${prod ? "Secure; SameSite=None" : "SameSite=Lax"}`);
+}
+
 declare module "express-session" {
   interface SessionData {
     userId?: number;
@@ -83,10 +127,10 @@ function buildSessionStore() {
 
 /* ─── auth middleware ─────────────────────────────────────────────── */
 function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
-  next();
+  if (req.session.userId) return next();
+  const uid = jwtVerify(jwtFromReq(req));
+  if (uid) { req.session.userId = uid; return next(); }
+  return res.status(401).json({ error: "Not authenticated" });
 }
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -120,6 +164,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const passwordHash = await bcrypt.hash(password, 10);
       const user = await storage.createUser(email, passwordHash);
       req.session.userId = user.id;
+      setJwtCookie(res, user.id);
       return res.status(201).json({ id: user.id, email: user.email });
     } catch (e: any) {
       console.error("Signup error:", e);
@@ -143,6 +188,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ error: "Invalid email or password" });
       }
       req.session.userId = user.id;
+      setJwtCookie(res, user.id);
       return res.json({ id: user.id, email: user.email });
     } catch (e: any) {
       console.error("Login error:", e);
@@ -152,11 +198,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     req.session.destroy(() => {});
+    clearJwtCookie(res);
     res.json({ success: true });
   });
 
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
+      if (!req.session.userId) {
+        const uid = jwtVerify(jwtFromReq(req));
+        if (uid) req.session.userId = uid;
+      }
       if (!req.session.userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
@@ -206,6 +257,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           user = await storage.createGoogleUser(userInfo.email, userInfo.id);
         }
         req.session.userId = user.id;
+        setJwtCookie(res, user.id);
         // Explicitly save session before redirect — critical in serverless
         // (Lambda terminates after res is sent, async auto-save never completes)
         await new Promise<void>((resolve, reject) => {
