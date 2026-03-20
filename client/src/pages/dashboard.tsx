@@ -323,35 +323,43 @@ function MockupContent() {
 
 /* ─── Hero ───────────────────────────────────────────────────────── */
 function Hero() {
-  const [scrollY, setScrollY] = useState(0);
+  const parallaxRef = useRef<HTMLDivElement>(null);
+  const perspRef    = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const fn = () => setScrollY(window.scrollY);
+    const fn = () => {
+      const sy = window.scrollY;
+      if (parallaxRef.current) {
+        parallaxRef.current.style.transform = `translateY(${sy * 0.22}px)`;
+      }
+      if (perspRef.current) {
+        const rotX = Math.max(0, 8 - sy * 0.014);
+        const scaleVal = Math.min(1.01, 0.97 + sy * 0.00014);
+        perspRef.current.style.transform = `perspective(2400px) rotateX(${rotX}deg) scale(${scaleVal})`;
+      }
+    };
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  const parallaxY  = scrollY * 0.28;
-  const rotX       = Math.max(1, 9 - scrollY * 0.016);
-  const scaleVal   = Math.min(1.01, 0.96 + scrollY * 0.00018);
-
   return (
-    <section style={{ position: "relative", paddingTop: 100, paddingBottom: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <section style={{ position: "relative", paddingTop: 96, paddingBottom: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div className="hero-glow" />
       <WaveCanvas />
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 880, margin: "0 auto", padding: "0 48px", flex: "none" }}>
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 860, margin: "0 auto", padding: "0 48px", flex: "none" }}>
         {/* Badge */}
-        <div className="h-in" style={{ animationDelay: "0.05s", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 99, background: WHT, border: `1px solid ${BDR}`, fontSize: 12, fontWeight: 500, color: G2, marginBottom: 40, boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
+        <div className="h-in" style={{ animationDelay: "0.05s", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 99, background: WHT, border: `1px solid ${BDR}`, fontSize: 12, fontWeight: 500, color: G2, marginBottom: 36, boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
           <span className="pdot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", flexShrink: 0 }} />
           AI-Powered B2B Lead Generation
         </div>
         {/* Headline */}
-        <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(52px,7.2vw,92px)", fontWeight: 900, color: G1, letterSpacing: "-0.058em", lineHeight: 0.93, marginBottom: 32 }}>
+        <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(48px,6.8vw,88px)", fontWeight: 900, color: G1, letterSpacing: "-0.05em", lineHeight: 1.0, marginBottom: 28 }}>
           Your next 10 clients.<br />
           <span className="grad-text">Found and emailed.</span><br />
           In 30 seconds.
         </h1>
         {/* Subline */}
-        <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 18, color: G2, lineHeight: 1.72, maxWidth: 480, margin: "0 auto 48px" }}>
+        <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 17, color: G2, lineHeight: 1.7, maxWidth: 460, margin: "0 auto 44px" }}>
           Type a business type and city. We find real prospects from Google Maps, write personalised cold emails with AI, and send them from your own Gmail.
         </p>
         {/* CTAs */}
@@ -360,10 +368,10 @@ function Hero() {
           <a href="/login" className="btn-ghost">Log in</a>
         </div>
         {/* Stats */}
-        <div className="h-up" style={{ animationDelay: "0.36s", display: "flex", gap: 52, justifyContent: "center", marginTop: 60, flexWrap: "wrap" }}>
+        <div className="h-up" style={{ animationDelay: "0.36s", display: "flex", gap: 48, justifyContent: "center", marginTop: 56, flexWrap: "wrap" }}>
           {[{ n: "2,000+", l: "businesses using it" }, { n: "30 sec", l: "to 10 qualified leads" }, { n: "100%", l: "live Google Maps data" }].map(s => (
             <div key={s.n} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 26, fontWeight: 800, color: G1, letterSpacing: "-0.05em" }}>{s.n}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: G1, letterSpacing: "-0.04em" }}>{s.n}</div>
               <div style={{ fontSize: 12, color: G3, marginTop: 3 }}>{s.l}</div>
             </div>
           ))}
@@ -371,11 +379,11 @@ function Hero() {
       </div>
 
       {/* ── Parallax mockup ── */}
-      <div className="h-up" style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 64, flex: 1, minHeight: 540 }}>
-        {/* Subtle bottom fade — shorter so more of image shows */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "28%", background: "linear-gradient(to bottom, transparent, #ffffff 100%)", zIndex: 10, pointerEvents: "none" }} />
+      <div className="h-up" style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 72, flex: 1, minHeight: 560 }}>
+        {/* Bottom fade */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "32%", background: "linear-gradient(to bottom, transparent, #ffffff)", zIndex: 10, pointerEvents: "none" }} />
 
-        {/* Floating badges — outside parallax so they have independent depth */}
+        {/* Floating badges — independent depth */}
         <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 640px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
           <div style={{ fontSize: 10, color: G3, marginBottom: 4 }}>Lead score</div>
           <div style={{ fontSize: 32, fontWeight: 900, color: "#22c55e", letterSpacing: "-0.06em", lineHeight: 1 }}>92</div>
@@ -394,14 +402,18 @@ function Hero() {
           <span style={{ fontSize: 13, fontWeight: 600, color: WHT }}>10 plumbers found in Houston, TX</span>
         </div>
 
-        {/* Parallax + perspective layer */}
-        <div style={{ transform: `translateY(${parallaxY}px)`, willChange: "transform" }}>
-          <div style={{
-            maxWidth: 1440, margin: "0 auto", padding: "0 16px",
-            transform: `perspective(2200px) rotateX(${rotX}deg) scale(${scaleVal})`,
-            transformOrigin: "50% 0%",
-          }}>
-            <div style={{ borderRadius: 22, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 40px 100px rgba(0,0,0,0.26), 0 100px 160px rgba(0,0,0,0.14)" }}>
+        {/* Parallax wrapper — updated directly via ref, no React re-renders */}
+        <div ref={parallaxRef} style={{ willChange: "transform" }}>
+          <div
+            ref={perspRef}
+            style={{
+              maxWidth: 1440, margin: "0 auto", padding: "0 16px",
+              transform: "perspective(2400px) rotateX(8deg) scale(0.97)",
+              transformOrigin: "50% 0%",
+              willChange: "transform",
+            }}
+          >
+            <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 0 0 1px rgba(0,0,0,0.06), 0 32px 80px rgba(0,0,0,0.22), 0 80px 140px rgba(0,0,0,0.12)" }}>
               <MockupContent />
             </div>
           </div>

@@ -12,11 +12,11 @@ import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, find
 import { storage } from "./storage.js";
 import { z } from "zod";
 
-// ── Gemini 2.0 Flash via OpenRouter (primary AI — MAIN_AI_OUTLEADR) ──────────
-const GEMINI_MODEL = "google/gemini-2.5-flash-preview";
+// ── Claude Opus 4.6 via OpenRouter (primary AI — MAIN_AI_OUTLEADR) ──────────
+const CLAUDE_MODEL = "anthropic/claude-opus-4-6";
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
-function getGeminiClient() {
+function getOpenRouterClient() {
   return new OpenAI({
     apiKey: process.env.MAIN_AI_OUTLEADR || "",
     baseURL: OPENROUTER_BASE,
@@ -43,13 +43,13 @@ function getOpenAI() {
 
 function getModel() { return process.env.OPENAI_MODEL || "gpt-4o"; }
 
-// ── Universal AI caller: Gemini first → OpenAI fallback ─────────────────────
+// ── Universal AI caller: Claude Opus 4.6 first → OpenAI fallback ────────────
 async function aiCall(params: Omit<Parameters<OpenAI["chat"]["completions"]["create"]>[0], "model">) {
   if (process.env.MAIN_AI_OUTLEADR) {
     try {
-      return await getGeminiClient().chat.completions.create({ ...params, model: GEMINI_MODEL } as any);
+      return await getOpenRouterClient().chat.completions.create({ ...params, model: CLAUDE_MODEL } as any);
     } catch (err: any) {
-      console.warn("[AI] Gemini failed, falling back to OpenAI:", err.message);
+      console.warn("[AI] Claude Opus failed, falling back to OpenAI:", err.message);
     }
   }
   return getOpenAI().chat.completions.create({ ...params, model: getModel() } as any);
@@ -430,6 +430,99 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               }
             }
           } catch { /* ignore fallback errors */ }
+        }
+      }
+
+      /* ── 5b. Still short? Loop through state's major cities until quota met ── */
+      if (withEmails.length < leadCount && stateAbbr) {
+        const MULTI_CITY: Record<string, string[]> = {
+          TX:["Houston TX","Dallas TX","San Antonio TX","Austin TX","Fort Worth TX","El Paso TX","Arlington TX","Lubbock TX"],
+          CA:["Los Angeles CA","San Diego CA","San Jose CA","San Francisco CA","Fresno CA","Sacramento CA","Long Beach CA","Oakland CA"],
+          FL:["Miami FL","Orlando FL","Tampa FL","Jacksonville FL","Fort Lauderdale FL","Tallahassee FL","Saint Petersburg FL"],
+          NY:["New York NY","Buffalo NY","Rochester NY","Albany NY","Syracuse NY","Yonkers NY","New Rochelle NY"],
+          IL:["Chicago IL","Aurora IL","Naperville IL","Rockford IL","Springfield IL","Joliet IL","Peoria IL"],
+          PA:["Philadelphia PA","Pittsburgh PA","Allentown PA","Erie PA","Reading PA","Scranton PA","Bethlehem PA"],
+          OH:["Columbus OH","Cleveland OH","Cincinnati OH","Toledo OH","Akron OH","Dayton OH","Youngstown OH"],
+          GA:["Atlanta GA","Augusta GA","Columbus GA","Macon GA","Savannah GA","Athens GA"],
+          NC:["Charlotte NC","Raleigh NC","Greensboro NC","Durham NC","Winston-Salem NC","Fayetteville NC","Cary NC"],
+          MI:["Detroit MI","Grand Rapids MI","Warren MI","Ann Arbor MI","Lansing MI","Sterling Heights MI","Flint MI"],
+          WA:["Seattle WA","Spokane WA","Tacoma WA","Bellevue WA","Kent WA","Everett WA"],
+          AZ:["Phoenix AZ","Tucson AZ","Mesa AZ","Scottsdale AZ","Tempe AZ","Chandler AZ","Gilbert AZ"],
+          MA:["Boston MA","Worcester MA","Springfield MA","Cambridge MA","Lowell MA","New Bedford MA"],
+          TN:["Nashville TN","Memphis TN","Knoxville TN","Chattanooga TN","Clarksville TN","Murfreesboro TN"],
+          CO:["Denver CO","Colorado Springs CO","Aurora CO","Fort Collins CO","Lakewood CO","Pueblo CO"],
+          MN:["Minneapolis MN","Saint Paul MN","Rochester MN","Duluth MN","Bloomington MN"],
+          OR:["Portland OR","Salem OR","Eugene OR","Bend OR","Gresham OR"],
+          NV:["Las Vegas NV","Henderson NV","Reno NV","North Las Vegas NV","Sparks NV"],
+          VA:["Richmond VA","Virginia Beach VA","Norfolk VA","Arlington VA","Alexandria VA","Chesapeake VA"],
+          MO:["Kansas City MO","Saint Louis MO","Springfield MO","Columbia MO","Independence MO"],
+          WI:["Milwaukee WI","Madison WI","Green Bay WI","Kenosha WI","Racine WI"],
+          IN:["Indianapolis IN","Fort Wayne IN","Evansville IN","South Bend IN","Carmel IN"],
+          MD:["Baltimore MD","Silver Spring MD","Rockville MD","Gaithersburg MD","Bowie MD"],
+          SC:["Columbia SC","Charleston SC","Greenville SC","Rock Hill SC","Spartanburg SC"],
+          AL:["Birmingham AL","Montgomery AL","Huntsville AL","Mobile AL","Tuscaloosa AL"],
+          LA:["New Orleans LA","Baton Rouge LA","Shreveport LA","Metairie LA","Lafayette LA"],
+          KY:["Louisville KY","Lexington KY","Bowling Green KY","Owensboro KY","Covington KY"],
+          OK:["Oklahoma City OK","Tulsa OK","Norman OK","Broken Arrow OK","Lawton OK"],
+          UT:["Salt Lake City UT","West Valley City UT","Provo UT","West Jordan UT","Orem UT"],
+          NM:["Albuquerque NM","Las Cruces NM","Santa Fe NM","Rio Rancho NM"],
+          KS:["Wichita KS","Overland Park KS","Kansas City KS","Topeka KS","Olathe KS"],
+          NE:["Omaha NE","Lincoln NE","Bellevue NE","Grand Island NE"],
+          MS:["Jackson MS","Gulfport MS","Biloxi MS","Hattiesburg MS"],
+          AR:["Little Rock AR","Fort Smith AR","Fayetteville AR","Springdale AR"],
+          IA:["Des Moines IA","Cedar Rapids IA","Davenport IA","Sioux City IA"],
+          NJ:["Newark NJ","Jersey City NJ","Paterson NJ","Elizabeth NJ","Trenton NJ","Camden NJ"],
+          CT:["Hartford CT","Bridgeport CT","New Haven CT","Stamford CT"],
+          WV:["Charleston WV","Huntington WV","Morgantown WV"],
+          ID:["Boise ID","Nampa ID","Meridian ID","Pocatello ID"],
+          MT:["Billings MT","Missoula MT","Great Falls MT","Bozeman MT"],
+          ND:["Fargo ND","Bismarck ND","Grand Forks ND"],
+          SD:["Sioux Falls SD","Rapid City SD","Aberdeen SD"],
+          WY:["Cheyenne WY","Casper WY","Laramie WY"],
+          DE:["Wilmington DE","Dover DE","Newark DE"],
+          ME:["Portland ME","Lewiston ME","Bangor ME"],
+          NH:["Manchester NH","Nashua NH","Concord NH"],
+          RI:["Providence RI","Cranston RI","Warwick RI"],
+          VT:["Burlington VT","Rutland VT"],
+          AK:["Anchorage AK","Fairbanks AK"],
+          HI:["Honolulu HI","Hilo HI"],
+          DC:["Washington DC"],
+        };
+
+        const alreadyTriedCity = majorCityFallback ? majorCityFallback.split(" ")[0].toLowerCase() : null;
+        const locLower = location.toLowerCase();
+        const citiesToTry = (MULTI_CITY[stateAbbr] || []).filter(c => {
+          const cn = c.split(" ")[0].toLowerCase();
+          return !locLower.includes(cn) && cn !== alreadyTriedCity;
+        });
+
+        const seenNamesGlobal = new Set([
+          ...allCandidates.map(r => r.name.toLowerCase()),
+          ...withEmails.map(w => w.place.name.toLowerCase()),
+        ]);
+
+        for (const city of citiesToTry) {
+          if (withEmails.length >= leadCount) break;
+          try {
+            const fbCandidates = await searchPlaces(`${businessType} in ${city}`);
+            const newOnes = fbCandidates
+              .filter(r => !seenNamesGlobal.has(r.name.toLowerCase()))
+              .slice(0, (leadCount - withEmails.length) * 4);
+            if (newOnes.length === 0) continue;
+
+            const extraDetails = await Promise.all(newOnes.map(p => getPlaceDetails(p.placeId).catch(() => null)));
+            const extraPlaces = extraDetails.filter((p): p is PlaceDetails => !!p);
+            const extraEmails = await Promise.all(extraPlaces.map(getEmail));
+
+            for (let i = 0; i < extraPlaces.length; i++) {
+              if (withEmails.length >= leadCount) break;
+              const email = extraEmails[i];
+              if (email?.includes("@")) {
+                withEmails.push({ place: extraPlaces[i], email, expandedFrom: city });
+                seenNamesGlobal.add(extraPlaces[i].name.toLowerCase());
+              }
+            }
+          } catch { /* ignore, try next city */ }
         }
       }
 
