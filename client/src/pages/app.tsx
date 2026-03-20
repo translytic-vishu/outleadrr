@@ -68,14 +68,25 @@ const GLOBAL_CSS = `
   [data-theme="light"] .lc-subject{color:#3f3f46!important;}
   [data-theme="light"] .lc-score-label{color:#3f3f46!important;}
   [data-theme="light"] .lc-score-sub{color:#71717a!important;}
+  [data-theme="light"] .lc-action-btn{border-color:#e4e4e7!important;background:#f4f4f5!important;color:#71717a!important;}
+  [data-theme="light"] .lc-action-btn:hover{border-color:rgba(124,58,237,0.4)!important;color:#7c3aed!important;background:rgba(124,58,237,0.06)!important;}
+  [data-theme="light"] .lc-edit-btn{border-color:#e4e4e7!important;background:#f4f4f5!important;color:#a1a1aa!important;}
+  .lc-checkbox{border:2px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.04);}
+  [data-theme="light"] .lc-checkbox{border-color:#d4d4d8!important;background:rgba(0,0,0,0.025)!important;}
+  [data-theme="light"] .lc-expand-warn{color:#3f3f46!important;}
+  [data-theme="light"] .lc-expand-warn-bg{background:rgba(234,179,8,0.06)!important;border-color:rgba(234,179,8,0.2)!important;}
+  .persona-btn{transition:transform .15s,border-color .15s,background .15s,box-shadow .15s !important;}
+  .persona-btn:hover{transform:translateY(-1px) !important;}
   .send-btn{
     padding:11px 24px;border-radius:10px;border:none;
     background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:13px;font-weight:700;
     cursor:pointer;font-family:${F};transition:all .18s;
     box-shadow:0 4px 16px rgba(109,40,217,.35);letter-spacing:-.01em;
+    position:relative;overflow:hidden;
   }
-  .send-btn:hover:not(:disabled){box-shadow:0 8px 28px rgba(109,40,217,.5);transform:translateY(-1px);}
-  .send-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .send-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);background-size:200%;animation:shimmer 3s ease infinite;}
+  .send-btn:hover:not(:disabled){box-shadow:0 8px 32px rgba(109,40,217,.55);transform:translateY(-1px);}
+  .send-btn:disabled{opacity:.35;cursor:not-allowed;}
   .field-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.38);margin-bottom:6px;display:block;letter-spacing:.07em;text-transform:uppercase;}
   .section-divider{height:1px;background:rgba(255,255,255,0.05);margin:18px 0;}
 `;
@@ -95,13 +106,13 @@ const PERSONAS: { tone: Tone; name: string; title: string; desc: string; color: 
 ];
 
 /* ─── Lead score badge ────────────────────────────────────────────── */
-function ScoreBadge({ label, score }: { label: string; score: number }) {
+function ScoreBadge({ label }: { label: string; score: number }) {
   const bg  = label === "Strong Lead" ? "rgba(34,197,94,0.12)"  : label === "Good Lead" ? "rgba(234,179,8,0.12)"  : "rgba(239,68,68,0.12)";
   const col = label === "Strong Lead" ? "#4ade80"                : label === "Good Lead" ? "#fbbf24"                : "#f87171";
   const bdr = label === "Strong Lead" ? "rgba(74,222,128,0.25)" : label === "Good Lead" ? "rgba(251,191,36,0.25)" : "rgba(248,113,113,0.25)";
   return (
     <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: bg, color: col, border: `1px solid ${bdr}`, letterSpacing: ".04em", textTransform: "uppercase" }}>
-      {label.replace(" Lead","")} · {score}
+      {label.replace(" Lead","")}
     </span>
   );
 }
@@ -329,6 +340,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
       {/* Checkbox */}
       <button
         onClick={onToggle}
+        className={selected ? undefined : "lc-checkbox"}
         style={{
           width: 18, height: 18, borderRadius: 5,
           border: selected ? `2px solid ${IND}` : `2px solid rgba(255,255,255,0.18)`,
@@ -370,7 +382,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
           {/* 0–100 score ring */}
           <div style={{ position: "relative", width: 50, height: 50, flexShrink: 0 }}>
             <svg width="50" height="50" viewBox="0 0 50 50" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="25" cy="25" r="19" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3.5" />
+              <circle cx="25" cy="25" r="19" fill="none" stroke="rgba(128,128,128,0.15)" strokeWidth="3.5" />
               <circle
                 cx="25" cy="25" r="19" fill="none"
                 stroke={scoreColor}
@@ -381,7 +393,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
             </svg>
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: scoreFg, lineHeight: 1 }}>{score}</div>
-              <div style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.28)", textTransform: "uppercase", letterSpacing: ".06em" }}>pts</div>
+              <div className="lc-score-sub" style={{ fontSize: 7, fontWeight: 700, color: "rgba(255,255,255,0.28)", textTransform: "uppercase", letterSpacing: ".06em" }}>pts</div>
             </div>
           </div>
 
@@ -404,6 +416,7 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
       <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
         <button
           onClick={onPreview}
+          className="lc-action-btn"
           style={{
             padding: "6px 14px", borderRadius: 8,
             border: `1px solid rgba(255,255,255,0.1)`,
@@ -436,9 +449,9 @@ function LeadCard({ lead, selected, onToggle, onPreview, onEdit, onViewLocation,
             Map
           </button>
         )}
-        <button onClick={onEdit} style={{ padding:"6px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.45)",cursor:"pointer",transition:"all .15s" }}
-          onMouseEnter={e=>{(e.target as HTMLElement).style.borderColor="#8b5cf6";(e.target as HTMLElement).style.color="#c4b5fd";}}
-          onMouseLeave={e=>{(e.target as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";(e.target as HTMLElement).style.color="rgba(255,255,255,0.45)";}}>
+        <button onClick={onEdit} className="lc-edit-btn" style={{ padding:"6px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.45)",cursor:"pointer",transition:"all .15s" }}
+          onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor="#8b5cf6";(e.currentTarget as HTMLButtonElement).style.color="#c4b5fd";}}
+          onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor="rgba(255,255,255,0.1)";(e.currentTarget as HTMLButtonElement).style.color="rgba(255,255,255,0.45)";}}>
           Edit
         </button>
       </div>
@@ -975,6 +988,7 @@ export default function AppPage() {
                     <button
                       key={p.tone}
                       onClick={() => setTone(p.tone)}
+                      className="persona-btn"
                       style={{
                         display: "flex", alignItems: "center", gap: 8, padding: "9px 10px",
                         borderRadius: 10,
@@ -984,9 +998,11 @@ export default function AppPage() {
                         boxShadow: active ? `0 0 0 3px ${p.color}18, 0 4px 16px rgba(0,0,0,0.2)` : "none",
                       }}
                     >
-                      <img src={p.photo} alt={p.name} style={{ width:32, height:32, borderRadius:"50%", objectFit:"cover", border: `2px solid ${active ? p.color : isDark ? "rgba(255,255,255,0.1)" : "#d4d4d8"}`, flexShrink:0 }} onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      <div style={{ width:32, height:32, borderRadius:"50%", background:`${p.color}20`, border:`2px solid ${active ? p.color : isDark ? "rgba(255,255,255,0.1)" : "#d4d4d8"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:active ? p.color : isDark ? "rgba(255,255,255,0.45)" : "#a1a1aa", flexShrink:0, boxShadow:active ? `0 0 10px ${p.color}30` : "none", transition:"all .15s" }}>
+                        {p.name[0]}
+                      </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : W, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: active ? p.color : isDark ? W : "#09090b", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                         <div style={{ fontSize: 10, color: K3, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.desc}</div>
                       </div>
                     </button>
@@ -1075,8 +1091,8 @@ export default function AppPage() {
                   style={{
                     display: "flex", alignItems: "center", gap: 6,
                     padding: "6px 12px", borderRadius: 7,
-                    border: `1px solid rgba(255,255,255,0.1)`,
-                    background: "rgba(255,255,255,0.05)",
+                    border: isDark ? `1px solid rgba(255,255,255,0.1)` : "1px solid #e4e4e7",
+                    background: isDark ? "rgba(255,255,255,0.05)" : "#f4f4f5",
                     fontSize: 12, fontWeight: 600, color: K2, cursor: "pointer",
                     transition: "all .15s",
                   }}
@@ -1091,8 +1107,8 @@ export default function AppPage() {
                     href="/api/auth/google"
                     style={{
                       padding: "9px 16px", borderRadius: 9,
-                      border: `1px solid rgba(255,255,255,0.1)`,
-                      background: "rgba(255,255,255,0.05)",
+                      border: isDark ? `1px solid rgba(255,255,255,0.1)` : "1px solid #e4e4e7",
+                      background: isDark ? "rgba(255,255,255,0.05)" : "#f4f4f5",
                       color: K2, fontSize: 12, fontWeight: 600,
                       textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6,
                       transition: "all .15s",
@@ -1113,9 +1129,9 @@ export default function AppPage() {
 
             {/* Expansion warning banner */}
             {expandedWarning && (
-              <div style={{ marginBottom: 12, padding: "11px 16px", borderRadius: 10, background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <div className="lc-expand-warn-bg" style={{ marginBottom: 12, padding: "11px 16px", borderRadius: 10, background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)", display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><path d="M7.5 1.5L1 13.5h13L7.5 1.5z" stroke="#fbbf24" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M7.5 6v3M7.5 11v.5" stroke="#fbbf24" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
+                <div className="lc-expand-warn" style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
                   <span style={{ fontWeight: 700, color: "#fbbf24" }}>Location expanded — </span>{expandedWarning} Leads from outside your area are marked below.
                 </div>
                 <button onClick={() => setExpandedWarning(undefined)} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
@@ -1165,8 +1181,8 @@ export default function AppPage() {
             </div>
             {/* Labels */}
             <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:16,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:8 }}>Ready to find your leads</div>
-              <div style={{ fontSize:13,color:"rgba(255,255,255,0.33)",maxWidth:300,lineHeight:1.65 }}>Fill in business type and location above, then click Generate. The AI will find, score, and write personalized emails for each prospect.</div>
+              <div style={{ fontSize:16,fontWeight:700,color:isDark ? "rgba(255,255,255,0.7)" : "#3f3f46",marginBottom:8 }}>Ready to find your leads</div>
+              <div style={{ fontSize:13,color:isDark ? "rgba(255,255,255,0.33)" : "#71717a",maxWidth:300,lineHeight:1.65 }}>Fill in business type and location above, then click Generate. The AI will find, score, and write personalized emails for each prospect.</div>
             </div>
             {/* Mini step list */}
             <div style={{ display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:320 }}>
@@ -1175,9 +1191,9 @@ export default function AppPage() {
                 { n:"02", label:"Score each lead by rating and opportunity" },
                 { n:"03", label:"Write a personalized cold email for each" },
               ].map(s => (
-                <div key={s.n} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)" }}>
+                <div key={s.n} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,background:isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.025)",border:isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #e4e4e7" }}>
                   <span style={{ fontSize:10,fontWeight:800,color:"rgba(139,92,246,0.6)",letterSpacing:".08em",fontFamily:"monospace",flexShrink:0 }}>{s.n}</span>
-                  <span style={{ fontSize:12,color:"rgba(255,255,255,0.45)" }}>{s.label}</span>
+                  <span style={{ fontSize:12,color:isDark ? "rgba(255,255,255,0.45)" : "#71717a" }}>{s.label}</span>
                 </div>
               ))}
             </div>
