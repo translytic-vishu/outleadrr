@@ -12,8 +12,8 @@ import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, find
 import { storage } from "./storage.js";
 import { z } from "zod";
 
-// ── Claude Opus 4.6 via OpenRouter (primary AI — MAIN_AI_OUTLEADR) ──────────
-const CLAUDE_MODEL = "anthropic/claude-opus-4-6";
+// ── Gemini 2.5 Flash via OpenRouter (primary AI — MAIN_AI_OUTLEADR) ──────────
+const CLAUDE_MODEL = "google/gemini-2.5-flash-preview";
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
 function getOpenRouterClient() {
