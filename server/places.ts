@@ -286,19 +286,20 @@ export async function scrapeEmailFromWebsite(
     return preferred || unique[0];
   }
 
-  // ── 2. You.com AI search (primary) — scans directories, review sites ──
+  // ── 2. You.com + Tavily in parallel — best coverage, no extra latency ─
   if (businessName && location) {
-    const youEmail = await youFindEmail(businessName, location);
-    if (youEmail) return youEmail;
+    const [youEmail, tavilyEmail] = await Promise.all([
+      youFindEmail(businessName, location),
+      tavilyFindEmail(businessName, location),
+    ]);
+    // Prefer a contact/info prefix; otherwise take whichever found something
+    const both = [youEmail, tavilyEmail].filter((e): e is string => !!e);
+    if (both.length > 0) {
+      return both.find(e => PREFERRED_PREFIX.test(e)) || both[0];
+    }
   }
 
-  // ── 3. Tavily fallback — second-opinion search ───────────────────────
-  if (businessName && location) {
-    const tavilyEmail = await tavilyFindEmail(businessName, location);
-    if (tavilyEmail) return tavilyEmail;
-  }
-
-  // ── 4. No scraped email — derive info@ for real business domains ─────
+  // ── 3. No scraped email — derive info@ for real business domains ─────
   if (HOSTED_DOMAINS.test(domain)) return null;
   return `info@${domain}`;
 }

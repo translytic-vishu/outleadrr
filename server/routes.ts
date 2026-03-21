@@ -349,12 +349,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             const scraped = await scrapeEmailFromWebsite(p.website, p.name, location);
             if (scraped) return scraped;
           }
-          // No website at all — go straight to You.com search, then Tavily
+          // No website — You.com + Tavily in parallel
           const { youFindEmail: youFind } = await import("./yousearch.js");
-          const youEmail = await youFind(p.name, location);
-          if (youEmail) return youEmail;
           const { tavilyFindEmail: tavilyFind } = await import("./tavily.js");
-          return await tavilyFind(p.name, location);
+          const [youEmail, tavilyEmail] = await Promise.all([
+            youFind(p.name, location),
+            tavilyFind(p.name, location),
+          ]);
+          const picks = [youEmail, tavilyEmail].filter((e): e is string => !!e);
+          return picks.find(e => /^(info|contact|hello|sales|support)@/i.test(e)) || picks[0] || null;
         } catch { return null; }
       }
 
@@ -597,22 +600,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const sortedDetails = finalCandidates.map(c => c.place);
       const confirmedEmails = finalCandidates.map(c => c.email!);
 
-      /* ── 9. You.com (primary) + Tavily (fallback): market research + enrichment ── */
+      /* ── 9. You.com + Tavily in parallel: market research + enrichment ── */
       const bizLocList = sortedDetails.map(p => ({ name: p.name, location: p.address || location }));
 
-      const [youMarket, youEnrich] = await Promise.all([
-        youResearchMarket(businessType, location),
-        youEnrichBusinesses(bizLocList),
+      const [[youMarket, tavilyMarket], [youEnrich, tavilyEnrich]] = await Promise.all([
+        // Market context — both run simultaneously
+        Promise.all([
+          youResearchMarket(businessType, location),
+          tavilyResearchMarket(businessType, location),
+        ]),
+        // Business enrichment — both run simultaneously
+        Promise.all([
+          youEnrichBusinesses(bizLocList),
+          tavilyEnrichBusinesses(bizLocList),
+        ]),
       ]);
 
-      // Tavily fills in what You.com missed
-      const [tavilyMarket, tavilyEnrich] = await Promise.all([
-        youMarket ? Promise.resolve("") : tavilyResearchMarket(businessType, location),
-        tavilyEnrichBusinesses(bizLocList.filter(b => !youEnrich[b.name])),
-      ]);
+      // Combine market context — join both for richer AI context (deduplicate if identical)
+      const marketContext = youMarket && tavilyMarket && youMarket !== tavilyMarket
+        ? `${youMarket}\n\nAdditional context: ${tavilyMarket}`.slice(0, 1000)
+        : youMarket || tavilyMarket;
 
-      const marketContext  = youMarket || tavilyMarket;
-      const businessEnrichment = { ...tavilyEnrich, ...youEnrich }; // You.com wins on conflict
+      // Merge enrichment — You.com wins on conflict, Tavily fills gaps
+      const businessEnrichment = { ...tavilyEnrich, ...youEnrich };
 
       /* ── 10. Build context list for AI ──────────────────────────── */
       const businessList = sortedDetails.map((p, i) => {
