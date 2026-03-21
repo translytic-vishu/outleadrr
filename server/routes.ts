@@ -623,7 +623,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : Promise.resolve(sortedDetails.map(() => "")),
       ]);
 
-      // Combine market context — join both for richer AI context (deduplicate if identical)
+      // Combine market context
       const marketContext = youMarket && tavilyMarket && youMarket !== tavilyMarket
         ? `${youMarket}\n\nAdditional context: ${tavilyMarket}`.slice(0, 1000)
         : youMarket || tavilyMarket;
@@ -631,26 +631,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Merge enrichment — You.com wins on conflict, Tavily fills gaps
       const businessEnrichment = { ...tavilyEnrich, ...youEnrich };
 
-      /* ── 10. Build context list for AI ──────────────────────────── */
-      const businessList = sortedDetails.map((p, i) => {
+      /* ── 10a. Filter out businesses that already have the pitched service ── */
+      // Build a name→serviceCheck map from the original check run
+      const serviceCheckMap = new Map<string, string>();
+      sortedDetails.forEach((p, i) => { if (serviceChecks[i]) serviceCheckMap.set(p.name, serviceChecks[i]); });
+
+      // Remove businesses that have the service, replace from reserve pool
+      let effectiveFinalCandidates = finalCandidates;
+      if (serviceKeyword) {
+        const hasService = finalCandidates.map(c => !!serviceCheckMap.get(c.place.name));
+        const kept = finalCandidates.filter((_, i) => !hasService[i]);
+        const needed = leadCount - kept.length;
+        if (needed > 0) {
+          const usedNames = new Set(kept.map(c => c.place.name.toLowerCase()));
+          const backups = sortedWithEmails
+            .slice(leadCount)
+            .filter(r => !usedNames.has(r.place.name.toLowerCase()) && r.email?.includes("@"))
+            .slice(0, needed);
+          effectiveFinalCandidates = [...kept, ...backups].slice(0, leadCount);
+        } else {
+          effectiveFinalCandidates = kept.slice(0, leadCount);
+        }
+      }
+      const effectiveSortedDetails   = effectiveFinalCandidates.map(c => c.place);
+      const effectiveConfirmedEmails = effectiveFinalCandidates.map(c => c.email!);
+
+      /* ── 10b. Build context list for AI ──────────────────────────── */
+      const businessList = effectiveSortedDetails.map((p, i) => {
         const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
         const domain = domainMatch?.[1] || "";
         const wq = websiteQuality(p);
         const webNote = pitchingWebsite
-          ? wq === 0 ? " [no website — prime candidate for website creation]"
-          : wq === 1 ? " [basic template site — strong candidate for professional website]"
+          ? wq === 0 ? " [NO WEBSITE — their biggest vulnerability, reference it naturally]"
+          : wq === 1 ? " [basic template site — weak web presence worth mentioning]"
           : ""
-          : (p.reviewCount < 10 ? " [minimal online presence]" : "");
-        const enrichNote = businessEnrichment[p.name] ? `\n   Context: ${businessEnrichment[p.name]}` : "";
-        const serviceNote = serviceChecks[i] ? `\n   NOTE: ${serviceChecks[i]} — acknowledge this in the email, pivot the pitch accordingly` : "";
+          : (p.reviewCount < 10 ? " [very few reviews — growing/underexposed business]" : "");
+        const enrichNote = businessEnrichment[p.name] ? `\n   Intel: ${businessEnrichment[p.name]}` : "";
         return [
-          `${i + 1}. Business: "${p.name}"${webNote}`,
-          `   Location: ${p.address || location}`,
-          `   Phone: ${p.phone || "not listed"}`,
+          `${i + 1}. "${p.name}"${webNote}`,
+          `   City/area: ${p.address || location}`,
+          `   Google: ${p.rating > 0 ? `${p.rating}/5 stars, ${p.reviewCount} reviews` : "no Google rating yet"}`,
           `   Website: ${domain || "none"}`,
-          `   Google rating: ${p.rating > 0 ? `${p.rating}/5 (${p.reviewCount} reviews)` : "not yet rated — new or under-the-radar business"}`,
           enrichNote,
-          serviceNote,
         ].filter(Boolean).join("\n");
       }).join("\n\n");
 
@@ -672,65 +694,60 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         messages: [
           {
             role: "system",
-            content: `You write cold emails that pass AI detectors and feel like they came from a real person who researched the business. You write differently for every single email — different structure, different length, different opening.
-${marketContext ? `\nLocal market context for your reference:\n${marketContext}\n` : ""}
+            content: `You are a cold email expert. Your emails consistently get 25-35% reply rates. You know that the secret is: short, specific, human, and one clear ask.
 
-Voice: ${toneConfig.voice}
-Style: ${toneConfig.style}
+${marketContext ? `LOCAL MARKET INTEL:\n${marketContext}\n` : ""}
 
-HARD RULES — breaking any of these is a failure:
-- Every email MUST open differently. Scan all emails before finalising — if two start the same way, rewrite one.
-- Vary sentence length wildly within each email. Mix 4-word sentences with 15-word ones.
-- Use contractions naturally (don't, we've, that's, I'm) unless the tone is strictly formal.
-- Never exceed 100 words in the body. Short emails get more replies.
-- Reference something specific about the business: their name, location, rating, review count, or website status.
-- Write like a human who types quickly and thinks clearly — not a copywriter trying to sound clever.
+PERSONA: ${toneConfig.voice}
+STYLE: ${toneConfig.style}
 
-BANNED OPENERS (instant rewrite if found):
-"I hope this", "I hope you're", "I wanted to reach out", "My name is", "I came across", "Are you struggling", "We help companies like", "I'd love to connect", "I noticed your", "Just reaching out", "Hope all is well"
+═══ THE HIGH-CONVERSION FRAMEWORK (use for every email) ═══
 
-BANNED WORDS (AI giveaways — never use):
-synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, innovative, pain points, deep dive, circle back, move the needle, tailored, comprehensive, actionable, impactful, holistic, solutions, delighted, pleased to
+STRUCTURE — 5 parts, 80-130 words total:
+1. HOOK (1 sentence): An observation about THIS specific business. Uses their real data: name, location, review count, star rating, or website status. NOT a compliment — a sharp observation.
+2. PROBLEM BRIDGE (1 sentence): Connect their situation to a missed opportunity or friction they feel every day. Don't name the problem — make them feel it.
+3. PROOF HOOK (1 sentence): One real, specific result. "A [business type] in [nearby city] went from X to Y in N weeks." Make it feel achievable, not magic.
+4. SOFT CTA (1 sentence): The lowest possible friction ask. Never "jump on a call." Ask for permission, not time. e.g. "Mind if I send over a quick breakdown?" / "${toneConfig.cta}"
+5. P.S. LINE (1 sentence, always): The P.S. is read more than the body. Use it for: a second proof stat, a curiosity hook, or a deadline. Example: "P.S. I only work with 3 new clients per city — [city] spot is open."
 
-SUBJECT LINES:
-- 4–6 words, no punctuation at end
-- Must be specific to that business or city
-- Rotate: observation ("Dallas plumbers missing this"), name reference ("re: ${"{businessName}"}'s reviews"), plain hook ("quick thought on your site"), number opener ("one thing I noticed")
-- Banned: "Quick question", "Partnership opportunity", "Growing your business", "Following up"
+SUBJECT LINES — rotated rules (never repeat a pattern):
+- 5 words max. No trailing punctuation.
+- Options: [Business name] + specific hook ("Torres Plumbing's Google gap"), location + niche insight ("Dallas plumbers doing this wrong"), plain curiosity ("one thing I noticed"), number hook ("missed 12 jobs this month?")
+- NEVER: "Quick question" / "Partnership opportunity" / "Following up" / "Growing your business"
 
-EMAIL VARIANTS — assign one per email, rotate across the batch:
-A) SHARP OBSERVATION: 1 sentence noticing something real about their situation → 1 sentence on what you do → CTA
-B) RESULT STORY: 1 sentence result you got for a similar business → 1 sentence why it applies → CTA
-C) BLUNT VALUE: State the offer plainly in the first 10 words → why it fits them specifically → CTA
-D) MICRO EMAIL: 3 sentences max, under 55 words total. No intro, no build-up, just hook + offer + ask.
-E) CONTEXT HOOK: Open with a real local market fact or trend → tie it to their specific situation → CTA
+NON-NEGOTIABLE RULES:
+- Every email opens with a DIFFERENT first word. No two emails in the batch can have the same first sentence structure.
+- Vary length: some 3-sentence bodies, some 5-sentence. Never uniform.
+- Contractions always (don't, we've, it's) unless formal tone specified.
+- No bullet points. No bold. No headers. Just flowing prose, like a real person typed it.
+- Banned openers: "I hope", "I wanted to", "My name is", "I came across", "Are you struggling", "We help companies like", "Just reaching out", "Hope all is well"
+- Banned words: synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, innovative, pain points, deep dive, circle back, move the needle, solutions, delighted, pleased to, holistic, comprehensive, actionable
 
-CTA to use: "${toneConfig.cta}"
-Closing: "${toneConfig.closing}"
-Signature line: {{YourName}}
+CLOSING: "${toneConfig.closing}"
+SIGNATURE: {{YourName}}
 
-OUTPUT: Valid JSON only. No markdown. No explanation before or after.
-Format: {"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
-- email field: always leave as ""
-- contactName: realistic name for the geographic area
-- emailBody: starts with "Hi [Name]," — then body — then blank line — then closing — then {{YourName}}`,
+OUTPUT: Valid JSON only. Zero markdown. Zero text before or after the JSON.
+{"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
+- email: always ""
+- contactName: realistic first+last name for the region
+- emailBody: "Hi [Name],\n\n[body]\n\n[closing]\n{{YourName}}\n\nP.S. [ps line]"`,
           },
           {
             role: "user",
-            content: `Write ${sortedDetails.length} cold emails for ${businessType} businesses in ${location}.
+            content: `Write ${effectiveSortedDetails.length} cold emails for ${businessType} businesses in ${location}.
 
-OFFER BEING PITCHED: ${intent ? `"${intent}"` : `A relevant service for ${businessType} owners — infer something specific from context`}
+OFFER: ${intent ? `"${intent}"` : `identify the most relevant service gap for ${businessType} businesses and pitch that`}
 
-IMPORTANT: If the offer mentions a demo, call, or trial — make sure the CTA references that specific action. Make the emails feel like they were written by someone who genuinely understands this business type. For businesses marked [no website] or [basic template site], reference their lack of a proper web presence naturally in the email.
+KEY: For businesses marked [NO WEBSITE], make the hook about that gap — it's their biggest pain and they know it. For businesses with strong review counts, reference their reputation as the hook. For businesses with few reviews, position around growth opportunity.
 
-BUSINESSES (write one email per business, vary structure for each):
+BUSINESSES:
 ${businessList}
 
-Return exactly ${sortedDetails.length} JSON contact objects. Each email body must use a DIFFERENT variant structure. No two emails can open the same way.`,
+Generate exactly ${effectiveSortedDetails.length} contact objects. Rotate through all 5 framework parts. No two emails can share an opening structure.`,
           },
         ],
-        // Scale token budget: ~350 tokens per email + 500 system overhead
-        max_tokens: Math.min(32000, Math.max(4096, sortedDetails.length * 400 + 1000)),
+        // Scale token budget: ~420 tokens per email + 800 overhead
+        max_tokens: Math.min(32000, Math.max(4096, effectiveSortedDetails.length * 420 + 800)),
       });
 
       const rawContent = completion.choices[0]?.message?.content;
@@ -792,8 +809,7 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
       const contacts: any[] = aiData.contacts || [];
 
       /* ── 12. Merge — every lead already has a confirmed email ───────── */
-      // No filtering needed here; confirmedEmails[idx] is guaranteed valid
-      const finalLeads = sortedDetails.map((place, idx) => {
+      const finalLeads = effectiveSortedDetails.map((place, idx) => {
         const contact = contacts[idx] || {};
         const scoring = scorePlace(place, businessType);
         return {
@@ -806,13 +822,13 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
           reviewCount:  place.reviewCount > 0 ? place.reviewCount : undefined,
           contactName:  contact.contactName  || "",
           title:        contact.title        || "",
-          email:        confirmedEmails[idx],
+          email:        effectiveConfirmedEmails[idx],
           emailVerified: true,
           emailSubject: contact.emailSubject || "",
           emailBody:    contact.emailBody    || "",
           industry:     businessType,
           status:       "new" as const,
-          expandedFrom: finalCandidates[idx].expandedFrom,
+          expandedFrom: effectiveFinalCandidates[idx]?.expandedFrom,
           ...scoring,
         };
       });

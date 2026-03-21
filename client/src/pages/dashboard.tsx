@@ -66,14 +66,21 @@ const CSS = `
   @keyframes radar-orb2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,40px) scale(0.95)} }
   @keyframes radar-send-pulse { 0%,100%{box-shadow:0 8px 32px rgba(99,102,241,0.4)} 50%{box-shadow:0 8px 48px rgba(99,102,241,0.7)} }
 
+  @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+  @keyframes borderPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  @keyframes blurFadeUp { from{opacity:0;transform:translateY(24px);filter:blur(6px)} to{opacity:1;transform:translateY(0);filter:blur(0)} }
+
   .btn-primary {
     display:inline-flex;align-items:center;gap:10px;
     padding:16px 40px;border-radius:12px;
-    background:${BLK};color:${WHT};border:none;
+    background:linear-gradient(90deg,#0a0a0a 0%,#0a0a0a 35%,#2a2a2a 50%,#0a0a0a 65%,#0a0a0a 100%);
+    background-size:300% auto;
+    color:${WHT};border:none;
     font-family:${F};font-weight:700;font-size:15px;letter-spacing:-0.01em;
     cursor:pointer;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);text-decoration:none;
+    animation:shimmer 4s linear infinite;
   }
-  .btn-primary:hover { background:#1e293b; transform:translateY(-2px); box-shadow:0 14px 40px rgba(0,0,0,0.22); }
+  .btn-primary:hover { background-size:300% auto; transform:translateY(-2px); box-shadow:0 14px 44px rgba(0,0,0,0.32); }
 
   .btn-ghost {
     display:inline-flex;align-items:center;gap:8px;
@@ -331,7 +338,7 @@ function Hero() {
   const opacity  = useTransform(scrollYProgress, [0.35, 0.65], [1, 0]);
 
   return (
-    <section ref={heroRef} style={{ position: "relative", paddingTop: 96, paddingBottom: 0, height: "100vh", minHeight: 700, maxHeight: 1100, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <section ref={heroRef} style={{ position: "relative", paddingTop: 96, paddingBottom: 0, minHeight: "100svh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className="hero-glow" />
       <WaveCanvas />
       <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 960, margin: "0 auto", padding: "0 24px", flex: "none" }}>
@@ -340,39 +347,79 @@ function Hero() {
           <span className="pdot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", flexShrink: 0 }} />
           AI-Powered B2B Lead Generation
         </div>
-        {/* Headline — 3 lines */}
-        <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(44px,5vw,72px)", fontWeight: 900, color: G1, letterSpacing: "-0.05em", lineHeight: 1.05, marginBottom: 28 }}>
-          Your next 10 clients.<br />
-          <span className="grad-text">Found and emailed.</span><br />
-          In 30 seconds.
+        {/* Headline — word-by-word blur+slide reveal */}
+        <h1 style={{ fontSize: "clamp(44px,5vw,72px)", fontWeight: 900, color: G1, letterSpacing: "-0.05em", lineHeight: 1.05, marginBottom: 28 }}>
+          {[
+            { words: ["Your", "next", "10", "clients."], base: 0.08, grad: false },
+            { words: ["Found", "and", "emailed."], base: 0.32, grad: true },
+            { words: ["In", "30", "seconds."],  base: 0.52, grad: false },
+          ].map((line, li) => (
+            <span key={li} style={{ display: "block" }}>
+              {line.words.map((w, wi) => (
+                <motion.span
+                  key={wi}
+                  initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  transition={{ delay: line.base + wi * 0.07, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className={line.grad ? "grad-text" : ""}
+                  style={{ display: "inline-block", marginRight: wi < line.words.length - 1 ? "0.22em" : 0 }}
+                >
+                  {w}
+                </motion.span>
+              ))}
+            </span>
+          ))}
         </h1>
         {/* Subline */}
-        <p className="h-up" style={{ animationDelay: "0.2s", fontSize: 17, color: G2, lineHeight: 1.7, maxWidth: 460, margin: "0 auto 44px" }}>
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.74, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          style={{ fontSize: 17, color: G2, lineHeight: 1.7, maxWidth: 460, margin: "0 auto 44px" }}
+        >
           Type a business type and city. We find real prospects from Google Maps, write personalised cold emails with AI, and send them from your own Gmail.
-        </p>
+        </motion.p>
         {/* CTAs */}
-        <div className="h-up" style={{ animationDelay: "0.28s", display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.86, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}
+        >
           <a href="/signup" className="btn-primary">Start for free — no card needed →</a>
           <a href="/login" className="btn-ghost">Log in</a>
-        </div>
+        </motion.div>
         {/* Stats */}
-        <div className="h-up" style={{ animationDelay: "0.36s", display: "flex", gap: 48, justifyContent: "center", marginTop: 56, flexWrap: "wrap" }}>
-          {[{ n: "2,000+", l: "businesses using it" }, { n: "30 sec", l: "to 10 qualified leads" }, { n: "100%", l: "live Google Maps data" }].map(s => (
-            <div key={s.n} style={{ textAlign: "center" }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.05, duration: 0.7 }}
+          style={{ display: "flex", gap: 48, justifyContent: "center", marginTop: 56, flexWrap: "wrap" }}
+        >
+          {[{ n: "2,000+", l: "businesses using it" }, { n: "30 sec", l: "to 10 qualified leads" }, { n: "100%", l: "live Google Maps data" }].map((s, i) => (
+            <motion.div
+              key={s.n}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.05 + i * 0.1, duration: 0.5 }}
+              style={{ textAlign: "center" }}
+            >
               <div style={{ fontSize: 24, fontWeight: 800, color: G1, letterSpacing: "-0.04em" }}>{s.n}</div>
               <div style={{ fontSize: 12, color: G3, marginTop: 3 }}>{s.l}</div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Scroll-linked mockup ── */}
       <motion.div
-        className="h-up"
-        style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 56, flex: 1 }}
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ position: "relative", zIndex: 1, marginTop: 56, flex: 1, minHeight: 480 }}
       >
-        {/* Bottom fade — covers full bottom so mockup clips cleanly */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "55%", background: "linear-gradient(to bottom, transparent 0%, #ffffff 70%)", zIndex: 10, pointerEvents: "none" }} />
+        {/* Bottom fade — smooth clip into next section */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.6) 50%, #ffffff 85%)", zIndex: 10, pointerEvents: "none" }} />
 
         {/* Floating badges */}
         <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 640px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
