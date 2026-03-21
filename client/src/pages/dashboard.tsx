@@ -1,5 +1,6 @@
 import logoSrc from "@assets/outleadr_1773257073565.png";
 import { useState, useEffect, useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { RadarEffect } from "@/components/ui/radar-effect";
 
 /* ─── Tokens ─────────────────────────────────────────────────────── */
@@ -323,37 +324,24 @@ function MockupContent() {
 
 /* ─── Hero ───────────────────────────────────────────────────────── */
 function Hero() {
-  const parallaxRef = useRef<HTMLDivElement>(null);
-  const perspRef    = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fn = () => {
-      const sy = window.scrollY;
-      if (parallaxRef.current) {
-        parallaxRef.current.style.transform = `translateY(${sy * 0.22}px)`;
-      }
-      if (perspRef.current) {
-        const rotX = Math.max(0, 8 - sy * 0.014);
-        const scaleVal = Math.min(1.01, 0.97 + sy * 0.00014);
-        perspRef.current.style.transform = `perspective(2400px) rotateX(${rotX}deg) scale(${scaleVal})`;
-      }
-    };
-    window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const rotateX  = useTransform(scrollYProgress, [0, 0.55], [8, 0]);
+  const scaleVal = useTransform(scrollYProgress, [0, 0.55], [0.97, 1.0]);
+  const opacity  = useTransform(scrollYProgress, [0.35, 0.65], [1, 0]);
 
   return (
-    <section style={{ position: "relative", paddingTop: 96, paddingBottom: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <section ref={heroRef} style={{ position: "relative", paddingTop: 96, paddingBottom: 0, height: "100vh", minHeight: 700, maxHeight: 1100, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className="hero-glow" />
       <WaveCanvas />
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 860, margin: "0 auto", padding: "0 48px", flex: "none" }}>
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 960, margin: "0 auto", padding: "0 24px", flex: "none" }}>
         {/* Badge */}
         <div className="h-in" style={{ animationDelay: "0.05s", display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", borderRadius: 99, background: WHT, border: `1px solid ${BDR}`, fontSize: 12, fontWeight: 500, color: G2, marginBottom: 36, boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
           <span className="pdot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#22c55e", display: "inline-block", flexShrink: 0 }} />
           AI-Powered B2B Lead Generation
         </div>
-        {/* Headline */}
-        <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(48px,6.8vw,88px)", fontWeight: 900, color: G1, letterSpacing: "-0.05em", lineHeight: 1.0, marginBottom: 28 }}>
+        {/* Headline — 3 lines */}
+        <h1 className="h-up" style={{ animationDelay: "0.1s", fontSize: "clamp(44px,5vw,72px)", fontWeight: 900, color: G1, letterSpacing: "-0.05em", lineHeight: 1.05, marginBottom: 28 }}>
           Your next 10 clients.<br />
           <span className="grad-text">Found and emailed.</span><br />
           In 30 seconds.
@@ -378,12 +366,15 @@ function Hero() {
         </div>
       </div>
 
-      {/* ── Parallax mockup ── */}
-      <div className="h-up" style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 72, flex: 1, minHeight: 560 }}>
-        {/* Bottom fade */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "32%", background: "linear-gradient(to bottom, transparent, #ffffff)", zIndex: 10, pointerEvents: "none" }} />
+      {/* ── Scroll-linked mockup ── */}
+      <motion.div
+        className="h-up"
+        style={{ animationDelay: "0.44s", position: "relative", zIndex: 1, marginTop: 56, flex: 1 }}
+      >
+        {/* Bottom fade — covers full bottom so mockup clips cleanly */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "55%", background: "linear-gradient(to bottom, transparent 0%, #ffffff 70%)", zIndex: 10, pointerEvents: "none" }} />
 
-        {/* Floating badges — independent depth */}
+        {/* Floating badges */}
         <div className="hero-cards fa" style={{ position: "absolute", top: "4%", left: "calc(50% - 640px)", background: WHT, borderRadius: 16, padding: "14px 20px", boxShadow: "0 8px 40px rgba(0,0,0,0.13)", border: `1px solid ${BDR}`, zIndex: 20, pointerEvents: "none" }}>
           <div style={{ fontSize: 10, color: G3, marginBottom: 4 }}>Lead score</div>
           <div style={{ fontSize: 32, fontWeight: 900, color: "#22c55e", letterSpacing: "-0.06em", lineHeight: 1 }}>92</div>
@@ -402,23 +393,21 @@ function Hero() {
           <span style={{ fontSize: 13, fontWeight: 600, color: WHT }}>10 plumbers found in Houston, TX</span>
         </div>
 
-        {/* Parallax wrapper — updated directly via ref, no React re-renders */}
-        <div ref={parallaxRef} style={{ willChange: "transform" }}>
-          <div
-            ref={perspRef}
-            style={{
-              maxWidth: 1440, margin: "0 auto", padding: "0 16px",
-              transform: "perspective(2400px) rotateX(8deg) scale(0.97)",
-              transformOrigin: "50% 0%",
-              willChange: "transform",
-            }}
-          >
-            <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 0 0 1px rgba(0,0,0,0.06), 0 32px 80px rgba(0,0,0,0.22), 0 80px 140px rgba(0,0,0,0.12)" }}>
-              <MockupContent />
-            </div>
+        {/* Framer-motion scroll tilt — flattens as you scroll, stays clipped inside section */}
+        <motion.div
+          style={{
+            maxWidth: 1440, margin: "0 auto", padding: "0 16px",
+            rotateX, scale: scaleVal, opacity,
+            transformOrigin: "50% 0%",
+            perspective: 2400,
+            willChange: "transform",
+          }}
+        >
+          <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 0 0 1px rgba(0,0,0,0.06), 0 32px 80px rgba(0,0,0,0.22), 0 80px 140px rgba(0,0,0,0.12)" }}>
+            <MockupContent />
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
