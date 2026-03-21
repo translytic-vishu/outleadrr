@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } from "@shared/schema";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 import { AppLayout } from "@/components/AppLayout";
 import { useTheme } from "@/lib/theme";
 import { LocationMap } from "@/components/ui/expand-map";
@@ -779,6 +780,7 @@ export default function AppPage() {
       setSelected(new Set(data.leads.map((_: Lead, i: number) => i)));
       setBillingError(false);
       setExpandedWarning(data.warning);
+      posthog.capture("campaign_generated", { lead_count: data.leads?.length, business_type: bizType, location: location_ });
       // Dismiss overlay after a short "done" display
       setTimeout(() => setShowProgress(false), 1800);
     },
@@ -805,6 +807,7 @@ export default function AppPage() {
         toast.error("No emails sent", { description: noEmail === data.failed ? "No email addresses found for these leads. Businesses without a website won't have scrapable emails." : `${data.failed} leads failed — check Gmail connection.` });
       } else {
         toast.success(`${data.sent} email${data.sent !== 1 ? "s" : ""} sent`, { description: data.failed > 0 ? `${data.failed} skipped (no email address found)` : "All delivered successfully" });
+        posthog.capture("emails_sent", { sent: data.sent, failed: data.failed });
       }
     },
     onError: (err) => {

@@ -5,6 +5,7 @@
  * Docs: https://serpapi.com/local-results
  */
 import * as cheerio from "cheerio";
+import { tavilyFindEmail } from "./tavily.js";
 
 const SERP_BASE = "https://serpapi.com/search.json";
 
@@ -259,13 +260,17 @@ async function fetchPage(url: string): Promise<string | null> {
  *  2. No scraped email but domain is a real business domain → derive info@domain (almost always works)
  *  3. Domain is a hosted platform (Wix, Yelp, etc.) → return null (can't email these)
  */
-export async function scrapeEmailFromWebsite(website: string): Promise<string | null> {
+export async function scrapeEmailFromWebsite(
+  website: string,
+  businessName?: string,
+  location?: string,
+): Promise<string | null> {
   if (!website) return null;
   const base   = (website.startsWith("http") ? website : `https://${website}`).replace(/\/+$/, "");
   const domain = extractDomain(base);
   if (!domain) return null;
 
-  // ── 1. Scrape 5 pages in parallel ───────────────────────────────────
+  // ── 1. Scrape 5 pages in parallel (Cheerio-powered) ─────────────────
   const pages = [base, `${base}/contact`, `${base}/contact-us`, `${base}/about`, `${base}/about-us`];
   const htmlResults = await Promise.all(pages.map(fetchPage));
 
@@ -276,18 +281,18 @@ export async function scrapeEmailFromWebsite(website: string): Promise<string | 
   const unique = [...new Set(allEmails)];
 
   if (unique.length > 0) {
-    // Real email found on the website — trust it, use immediately
     const preferred = unique.find(e => PREFERRED_PREFIX.test(e));
     return preferred || unique[0];
   }
 
-  // ── 2. No scraped email — derive info@ if it's a real business domain ─
-  // Skip hosted builder / directory platforms (they don't have business inboxes)
-  if (HOSTED_DOMAINS.test(domain)) return null;
+  // ── 2. Tavily AI search — finds emails in review sites, directories ──
+  if (businessName && location) {
+    const tavilyEmail = await tavilyFindEmail(businessName, location);
+    if (tavilyEmail) return tavilyEmail;
+  }
 
-  // For any other domain (custom business website), info@domain almost always works.
-  // Small US businesses universally set up email on their domain even if it's not
-  // advertised on the site. We trust the domain; Gmail will bounce if wrong.
+  // ── 3. No scraped email — derive info@ for real business domains ─────
+  if (HOSTED_DOMAINS.test(domain)) return null;
   return `info@${domain}`;
 }
 

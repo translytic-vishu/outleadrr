@@ -9,6 +9,9 @@ import bcrypt from "bcryptjs";
 import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema.js";
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail, fetchInboxMessages } from "./gmail.js";
 import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, findEmailViaWebSearch, PlaceDetails } from "./places.js";
+import { tavilyResearchMarket, tavilyEnrichBusinesses } from "./tavily.js";
+import { sendWelcomeEmail } from "./email.js";
+import { stripe, createCheckoutSession, createPortalSession, constructWebhookEvent, PLANS } from "./billing.js";
 import { storage } from "./storage.js";
 import { z } from "zod";
 
@@ -165,6 +168,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await storage.createUser(email, passwordHash);
       req.session.userId = user.id;
       setJwtCookie(res, user.id);
+      // Fire welcome email — non-blocking, don't fail signup if Resend is not configured
+      sendWelcomeEmail(user.email).catch(() => {});
       return res.status(201).json({ id: user.id, email: user.email });
     } catch (e: any) {
       console.error("Signup error:", e);
@@ -334,11 +339,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
-      // Helper: scrape email for one place
+      // Helper: scrape email for one place (Tavily as fallback)
       async function getEmail(p: PlaceDetails): Promise<string | null> {
         if (p.listedEmail?.includes("@")) return p.listedEmail.toLowerCase();
-        if (!p.website) return null;
-        try { return await scrapeEmailFromWebsite(p.website); } catch { return null; }
+        try {
+          if (p.website) {
+            const scraped = await scrapeEmailFromWebsite(p.website, p.name, location);
+            if (scraped) return scraped;
+          }
+          // Last resort: Tavily direct search even without website
+          const { tavilyFindEmail: tavilyFind } = await import("./tavily.js");
+          return await tavilyFind(p.name, location);
+        } catch { return null; }
       }
 
       // State → nearest major city (used when local area yields no emails)
@@ -580,7 +592,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const sortedDetails = finalCandidates.map(c => c.place);
       const confirmedEmails = finalCandidates.map(c => c.email!);
 
-      /* ── 9. Build context list for AI ───────────────────────────── */
+      /* ── 9. Tavily: market research + per-business enrichment ───────── */
+      const [marketContext, businessEnrichment] = await Promise.all([
+        tavilyResearchMarket(businessType, location),
+        tavilyEnrichBusinesses(sortedDetails.map(p => ({ name: p.name, location: p.address || location }))),
+      ]);
+
+      /* ── 10. Build context list for AI ──────────────────────────── */
       const businessList = sortedDetails.map((p, i) => {
         const domainMatch = p.website?.match(/(?:https?:\/\/)?(?:www\.)?([^\/?\s]+)/);
         const domain = domainMatch?.[1] || "";
@@ -590,13 +608,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : wq === 1 ? " [basic template site — strong candidate for professional website]"
           : ""
           : (p.reviewCount < 10 ? " [minimal online presence]" : "");
+        const enrichNote = businessEnrichment[p.name] ? `\n   Context: ${businessEnrichment[p.name]}` : "";
         return [
           `${i + 1}. Business: "${p.name}"${webNote}`,
           `   Location: ${p.address || location}`,
           `   Phone: ${p.phone || "not listed"}`,
           `   Website: ${domain || "none"}`,
           `   Google rating: ${p.rating > 0 ? `${p.rating}/5 (${p.reviewCount} reviews)` : "not yet rated — new or under-the-radar business"}`,
-        ].join("\n");
+          enrichNote,
+        ].filter(Boolean).join("\n");
       }).join("\n\n");
 
       /* ── 10. Generate cold emails via Gemini (OpenAI fallback) ──── */
@@ -618,6 +638,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           {
             role: "system",
             content: `You are a top-performing cold email copywriter. Every email you write sounds like a real human spent 20 minutes researching that specific business — because each one is crafted specifically for them.
+${marketContext ? `\n## LOCAL MARKET INTELLIGENCE (use to add credibility and local relevance)\n${marketContext}\n` : ""}
 
 ## CORE RULES
 1. Each email MUST reference the specific business by name, location, or real data (rating/reviews).
@@ -924,6 +945,68 @@ Return ONLY valid JSON: {"replies":["...","...","..."]}` },
     if (!res.headersSent) {
       res.status(500).json({ error: err.message || "Internal server error" });
     }
+  });
+
+  /* ─── Stripe Billing ────────────────────────────────────────────── */
+
+  // GET /api/billing/plans — return available plans
+  app.get("/api/billing/plans", (_req: Request, res: Response) => {
+    res.json({ plans: PLANS, stripeEnabled: !!stripe });
+  });
+
+  // POST /api/billing/checkout — create a Stripe checkout session
+  app.post("/api/billing/checkout", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { plan } = req.body as { plan: "starter" | "pro" | "agency" };
+      if (!plan || !PLANS[plan]) return res.status(400).json({ error: "Invalid plan" });
+
+      const me = await storage.getUser(req.session.userId!);
+      if (!me) return res.status(404).json({ error: "User not found" });
+
+      const origin = req.headers.origin || process.env.APP_URL || "https://outleadrr.vercel.app";
+      const url = await createCheckoutSession({
+        userEmail: me.email,
+        planKey: plan,
+        successUrl: `${origin}/settings?billing=success`,
+        cancelUrl:  `${origin}/settings?billing=cancel`,
+      });
+
+      if (!url) return res.status(503).json({ error: "Stripe not configured — add STRIPE_SECRET_KEY and price IDs to your env vars." });
+      res.json({ url });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/billing/portal — open Stripe billing portal for existing subscriber
+  app.post("/api/billing/portal", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { customerId } = req.body as { customerId: string };
+      if (!customerId) return res.status(400).json({ error: "customerId required" });
+      const origin = req.headers.origin || process.env.APP_URL || "https://outleadrr.vercel.app";
+      const url = await createPortalSession(customerId, `${origin}/settings`);
+      if (!url) return res.status(503).json({ error: "Stripe not configured" });
+      res.json({ url });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/billing/webhook — Stripe webhook (raw body required)
+  app.post("/api/billing/webhook", (req: Request, res: Response) => {
+    const sig = req.headers["stripe-signature"] as string;
+    const event = constructWebhookEvent(req.body as Buffer, sig);
+    if (!event) return res.status(400).json({ error: "Invalid webhook signature" });
+
+    switch (event.type) {
+      case "checkout.session.completed":
+        console.log("[Stripe] Checkout completed:", (event.data.object as any).customer_email);
+        break;
+      case "customer.subscription.deleted":
+        console.log("[Stripe] Subscription cancelled:", (event.data.object as any).customer);
+        break;
+    }
+    res.json({ received: true });
   });
 
   return httpServer;
