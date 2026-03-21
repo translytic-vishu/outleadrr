@@ -5,6 +5,7 @@
  * Docs: https://serpapi.com/local-results
  */
 import * as cheerio from "cheerio";
+import { youFindEmail } from "./yousearch.js";
 import { tavilyFindEmail } from "./tavily.js";
 
 const SERP_BASE = "https://serpapi.com/search.json";
@@ -285,13 +286,19 @@ export async function scrapeEmailFromWebsite(
     return preferred || unique[0];
   }
 
-  // ── 2. Tavily AI search — finds emails in review sites, directories ──
+  // ── 2. You.com AI search (primary) — scans directories, review sites ──
+  if (businessName && location) {
+    const youEmail = await youFindEmail(businessName, location);
+    if (youEmail) return youEmail;
+  }
+
+  // ── 3. Tavily fallback — second-opinion search ───────────────────────
   if (businessName && location) {
     const tavilyEmail = await tavilyFindEmail(businessName, location);
     if (tavilyEmail) return tavilyEmail;
   }
 
-  // ── 3. No scraped email — derive info@ for real business domains ─────
+  // ── 4. No scraped email — derive info@ for real business domains ─────
   if (HOSTED_DOMAINS.test(domain)) return null;
   return `info@${domain}`;
 }

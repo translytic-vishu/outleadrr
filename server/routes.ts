@@ -10,6 +10,7 @@ import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail, fetchInboxMessages } from "./gmail.js";
 import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, findEmailViaWebSearch, PlaceDetails } from "./places.js";
 import { tavilyResearchMarket, tavilyEnrichBusinesses } from "./tavily.js";
+import { youResearchMarket, youEnrichBusinesses } from "./yousearch.js";
 import { sendWelcomeEmail } from "./email.js";
 import { stripe, createCheckoutSession, createPortalSession, constructWebhookEvent, PLANS } from "./billing.js";
 import { storage } from "./storage.js";
@@ -339,15 +340,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
-      // Helper: scrape email for one place (Tavily as fallback)
+      // Helper: scrape email — You.com primary, Tavily fallback, info@ last
       async function getEmail(p: PlaceDetails): Promise<string | null> {
         if (p.listedEmail?.includes("@")) return p.listedEmail.toLowerCase();
         try {
+          // scrapeEmailFromWebsite already calls You.com then Tavily internally
           if (p.website) {
             const scraped = await scrapeEmailFromWebsite(p.website, p.name, location);
             if (scraped) return scraped;
           }
-          // Last resort: Tavily direct search even without website
+          // No website at all — go straight to You.com search, then Tavily
+          const { youFindEmail: youFind } = await import("./yousearch.js");
+          const youEmail = await youFind(p.name, location);
+          if (youEmail) return youEmail;
           const { tavilyFindEmail: tavilyFind } = await import("./tavily.js");
           return await tavilyFind(p.name, location);
         } catch { return null; }
@@ -592,11 +597,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const sortedDetails = finalCandidates.map(c => c.place);
       const confirmedEmails = finalCandidates.map(c => c.email!);
 
-      /* ── 9. Tavily: market research + per-business enrichment ───────── */
-      const [marketContext, businessEnrichment] = await Promise.all([
-        tavilyResearchMarket(businessType, location),
-        tavilyEnrichBusinesses(sortedDetails.map(p => ({ name: p.name, location: p.address || location }))),
+      /* ── 9. You.com (primary) + Tavily (fallback): market research + enrichment ── */
+      const bizLocList = sortedDetails.map(p => ({ name: p.name, location: p.address || location }));
+
+      const [youMarket, youEnrich] = await Promise.all([
+        youResearchMarket(businessType, location),
+        youEnrichBusinesses(bizLocList),
       ]);
+
+      // Tavily fills in what You.com missed
+      const [tavilyMarket, tavilyEnrich] = await Promise.all([
+        youMarket ? Promise.resolve("") : tavilyResearchMarket(businessType, location),
+        tavilyEnrichBusinesses(bizLocList.filter(b => !youEnrich[b.name])),
+      ]);
+
+      const marketContext  = youMarket || tavilyMarket;
+      const businessEnrichment = { ...tavilyEnrich, ...youEnrich }; // You.com wins on conflict
 
       /* ── 10. Build context list for AI ──────────────────────────── */
       const businessList = sortedDetails.map((p, i) => {
