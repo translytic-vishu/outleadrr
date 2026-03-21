@@ -154,3 +154,24 @@ export async function youEnrichBusinesses(
 
   return results;
 }
+
+/**
+ * Check if a business already has the service being pitched.
+ * Returns a string note like "already has active website" or "" if not found.
+ * Used to avoid pitching services businesses already clearly have.
+ */
+export async function youCheckHasService(
+  businessName: string,
+  location: string,
+  serviceKeyword: string,
+): Promise<string> {
+  const hits = await youSearch(`"${businessName}" ${location} ${serviceKeyword}`, 3);
+  if (hits.length === 0) return "";
+
+  const combined = hits.map(h => `${h.title || ""} ${h.description || ""} ${h.url || ""}`).join(" ").toLowerCase();
+  const has = combined.includes(serviceKeyword.toLowerCase());
+  if (!has) return "";
+
+  // Return a short note for the AI
+  return hits[0]?.url ? `appears to already use ${serviceKeyword} (${hits[0].url})` : `may already have ${serviceKeyword}`;
+}

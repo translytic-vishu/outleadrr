@@ -10,7 +10,7 @@ import { generateLeadsSchema, signupSchema, loginSchema } from "../shared/schema
 import { getAuthUrl, getLoginAuthUrl, getOAuthClient, getUserInfo, sendEmailViaGmail, fetchInboxMessages } from "./gmail.js";
 import { searchPlaces, getPlaceDetails, scorePlace, scrapeEmailFromWebsite, findEmailViaWebSearch, PlaceDetails } from "./places.js";
 import { tavilyResearchMarket, tavilyEnrichBusinesses } from "./tavily.js";
-import { youResearchMarket, youEnrichBusinesses } from "./yousearch.js";
+import { youResearchMarket, youEnrichBusinesses, youCheckHasService } from "./yousearch.js";
 import { sendWelcomeEmail } from "./email.js";
 import { stripe, createCheckoutSession, createPortalSession, constructWebhookEvent, PLANS } from "./billing.js";
 import { storage } from "./storage.js";
@@ -603,7 +603,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       /* ── 9. You.com + Tavily in parallel: market research + enrichment ── */
       const bizLocList = sortedDetails.map(p => ({ name: p.name, location: p.address || location }));
 
-      const [[youMarket, tavilyMarket], [youEnrich, tavilyEnrich]] = await Promise.all([
+      // Service keyword for "already has X" check (first 2-3 words of intent)
+      const serviceKeyword = intent ? intent.split(/\s+/).slice(0, 3).join(" ") : "";
+
+      const [[youMarket, tavilyMarket], [youEnrich, tavilyEnrich], serviceChecks] = await Promise.all([
         // Market context — both run simultaneously
         Promise.all([
           youResearchMarket(businessType, location),
@@ -614,6 +617,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           youEnrichBusinesses(bizLocList),
           tavilyEnrichBusinesses(bizLocList),
         ]),
+        // Service existence checks — only if YOU_API_KEY is set and intent provided
+        serviceKeyword
+          ? Promise.all(sortedDetails.map(p => youCheckHasService(p.name, p.address || location, serviceKeyword)))
+          : Promise.resolve(sortedDetails.map(() => "")),
       ]);
 
       // Combine market context — join both for richer AI context (deduplicate if identical)
@@ -635,6 +642,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : ""
           : (p.reviewCount < 10 ? " [minimal online presence]" : "");
         const enrichNote = businessEnrichment[p.name] ? `\n   Context: ${businessEnrichment[p.name]}` : "";
+        const serviceNote = serviceChecks[i] ? `\n   NOTE: ${serviceChecks[i]} — acknowledge this in the email, pivot the pitch accordingly` : "";
         return [
           `${i + 1}. Business: "${p.name}"${webNote}`,
           `   Location: ${p.address || location}`,
@@ -642,6 +650,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           `   Website: ${domain || "none"}`,
           `   Google rating: ${p.rating > 0 ? `${p.rating}/5 (${p.reviewCount} reviews)` : "not yet rated — new or under-the-radar business"}`,
           enrichNote,
+          serviceNote,
         ].filter(Boolean).join("\n");
       }).join("\n\n");
 
@@ -663,51 +672,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         messages: [
           {
             role: "system",
-            content: `You are a top-performing cold email copywriter. Every email you write sounds like a real human spent 20 minutes researching that specific business — because each one is crafted specifically for them.
-${marketContext ? `\n## LOCAL MARKET INTELLIGENCE (use to add credibility and local relevance)\n${marketContext}\n` : ""}
+            content: `You write cold emails that pass AI detectors and feel like they came from a real person who researched the business. You write differently for every single email — different structure, different length, different opening.
+${marketContext ? `\nLocal market context for your reference:\n${marketContext}\n` : ""}
 
-## CORE RULES
-1. Each email MUST reference the specific business by name, location, or real data (rating/reviews).
-2. Every email in the batch must have a DIFFERENT opening structure. No two can start the same way.
-3. Vary email LENGTH across the batch: some are tight 3-sentence punchy emails, some are 5-sentence with more context. Never the same length twice in a row.
+Voice: ${toneConfig.voice}
+Style: ${toneConfig.style}
 
-## PERSONA
-${toneConfig.voice}
+HARD RULES — breaking any of these is a failure:
+- Every email MUST open differently. Scan all emails before finalising — if two start the same way, rewrite one.
+- Vary sentence length wildly within each email. Mix 4-word sentences with 15-word ones.
+- Use contractions naturally (don't, we've, that's, I'm) unless the tone is strictly formal.
+- Never exceed 100 words in the body. Short emails get more replies.
+- Reference something specific about the business: their name, location, rating, review count, or website status.
+- Write like a human who types quickly and thinks clearly — not a copywriter trying to sound clever.
 
-## TONE
-${toneConfig.style}
+BANNED OPENERS (instant rewrite if found):
+"I hope this", "I hope you're", "I wanted to reach out", "My name is", "I came across", "Are you struggling", "We help companies like", "I'd love to connect", "I noticed your", "Just reaching out", "Hope all is well"
 
-## NEVER USE THESE OPENERS
-"I hope this finds you", "I hope you're doing well", "I wanted to reach out", "My name is X and I", "I came across your business", "Are you struggling with", "We help companies like yours", "I'd love to connect", "I noticed your business online"
+BANNED WORDS (AI giveaways — never use):
+synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, innovative, pain points, deep dive, circle back, move the needle, tailored, comprehensive, actionable, impactful, holistic, solutions, delighted, pleased to
 
-## BANNED WORDS (AI-detector words — never write these)
-synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, robust, innovative, pain points, deep dive, circle back, move the needle, best-in-class, world-class, tailored, comprehensive, actionable, impactful, holistic, robust, solutions
+SUBJECT LINES:
+- 4–6 words, no punctuation at end
+- Must be specific to that business or city
+- Rotate: observation ("Dallas plumbers missing this"), name reference ("re: ${"{businessName}"}'s reviews"), plain hook ("quick thought on your site"), number opener ("one thing I noticed")
+- Banned: "Quick question", "Partnership opportunity", "Growing your business", "Following up"
 
-## SUBJECT LINE RULES (pick a different structure for each email)
-- 4–7 words max, no trailing punctuation
-- Structures to rotate: city + industry ("Austin plumbers doing this wrong"), business name specific ("re: [Name]'s Google reviews"), question-free observation, number hook ("3 dental clinics in Dallas that...")
-- Never: "Quick question", "Partnership opportunity", "Growing your business"
+EMAIL VARIANTS — assign one per email, rotate across the batch:
+A) SHARP OBSERVATION: 1 sentence noticing something real about their situation → 1 sentence on what you do → CTA
+B) RESULT STORY: 1 sentence result you got for a similar business → 1 sentence why it applies → CTA
+C) BLUNT VALUE: State the offer plainly in the first 10 words → why it fits them specifically → CTA
+D) MICRO EMAIL: 3 sentences max, under 55 words total. No intro, no build-up, just hook + offer + ask.
+E) CONTEXT HOOK: Open with a real local market fact or trend → tie it to their specific situation → CTA
 
-## EMAIL BODY STRUCTURE — pick ONE variant per email (rotate variants across batch):
-VARIANT A (INSIGHT-FIRST): Open with a sharp local observation → specific value claim with a real number → soft CTA
-VARIANT B (RESULT-FIRST): Lead with a specific result you got for a similar business → explain why it applies to them → CTA
-VARIANT C (HOOK-QUESTION): Single sharp observation about their niche → what you do and one real proof stat → CTA
-VARIANT D (SHORT-PUNCH): 3 sentences total. No fluff. Specific hook, specific offer, specific CTA. Under 60 words.
+CTA to use: "${toneConfig.cta}"
+Closing: "${toneConfig.closing}"
+Signature line: {{YourName}}
 
-## CTA FOR THIS BATCH
-"${toneConfig.cta}"
-
-## CLOSING
-"${toneConfig.closing}"
-Signature: {{YourName}}
-
-## JSON OUTPUT ONLY — no markdown, no explanation
-{"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
-
-Rules:
-- email: always ""
-- contactName: real-sounding name for the region
-- emailBody: includes salutation (Hi [Name],), body, blank line, closing, {{YourName}}`,
+OUTPUT: Valid JSON only. No markdown. No explanation before or after.
+Format: {"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
+- email field: always leave as ""
+- contactName: realistic name for the geographic area
+- emailBody: starts with "Hi [Name]," — then body — then blank line — then closing — then {{YourName}}`,
           },
           {
             role: "user",
@@ -723,7 +729,8 @@ ${businessList}
 Return exactly ${sortedDetails.length} JSON contact objects. Each email body must use a DIFFERENT variant structure. No two emails can open the same way.`,
           },
         ],
-        max_tokens: 4096,
+        // Scale token budget: ~350 tokens per email + 500 system overhead
+        max_tokens: Math.min(32000, Math.max(4096, sortedDetails.length * 400 + 1000)),
       });
 
       const rawContent = completion.choices[0]?.message?.content;
@@ -734,14 +741,54 @@ Return exactly ${sortedDetails.length} JSON contact objects. Each email body mus
         .replace(/\s*```\s*$/, "")
         .trim();
 
-      let aiData: any;
-      try {
-        aiData = JSON.parse(aiContent);
-      } catch {
-        const match = aiContent.match(/\{[\s\S]*\}/);
-        if (!match) return res.status(500).json({ error: "AI returned invalid JSON" });
-        aiData = JSON.parse(match[0]);
+      // Robust JSON repair: handles smart quotes, truncation, trailing commas
+      function repairJson(raw: string): any {
+        // 1. Strip markdown fences if still present
+        let s = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+        // 2. Normalise smart quotes
+        s = s.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+
+        // 3. Remove trailing commas before ] or }
+        s = s.replace(/,\s*([\]\}])/g, "$1");
+
+        // 4. Try direct parse
+        try { return JSON.parse(s); } catch { /* continue */ }
+
+        // 5. Extract outermost { … } block
+        const start = s.indexOf("{");
+        if (start === -1) return null;
+        let depth = 0, end = -1;
+        for (let i = start; i < s.length; i++) {
+          if (s[i] === "{") depth++;
+          else if (s[i] === "}") { depth--; if (depth === 0) { end = i; break; } }
+        }
+        const block = end !== -1 ? s.slice(start, end + 1) : s.slice(start);
+
+        // 6. Try parsing the block directly
+        try { return JSON.parse(block); } catch { /* continue */ }
+
+        // 7. Truncation repair — find last complete contact object
+        const arrStart = block.indexOf("[");
+        if (arrStart === -1) return null;
+        let arrContent = block.slice(arrStart);
+
+        // Find the last } that closes a complete object in the array
+        const objPattern = /\{[^{}]*(?:"contactName"|"email"|"emailSubject")[^{}]*\}/gs;
+        const validObjs: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = objPattern.exec(arrContent)) !== null) {
+          try { JSON.parse(m[0]); validObjs.push(m[0]); } catch { /* skip partial */ }
+        }
+
+        if (validObjs.length > 0) {
+          return { contacts: validObjs.map(o => JSON.parse(o)) };
+        }
+        return null;
       }
+
+      const aiData = repairJson(aiContent);
+      if (!aiData) return res.status(500).json({ error: "AI returned invalid JSON — please retry" });
       const contacts: any[] = aiData.contacts || [];
 
       /* ── 12. Merge — every lead already has a confirmed email ───────── */
