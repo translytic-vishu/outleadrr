@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Lead, LeadsResponse, AuthStatus, SendEmailsResponse, MeResponse } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AppLayout } from "@/components/AppLayout";
 import { useTheme } from "@/lib/theme";
 import { LocationMap } from "@/components/ui/expand-map";
@@ -695,7 +695,6 @@ function GenerationProgress({ bizType, location_, tone, leadCount, done, resultC
 /* ─── Main Page ───────────────────────────────────────────────────── */
 export default function AppPage() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isDark } = useTheme();
 
@@ -788,7 +787,7 @@ export default function AppPage() {
       if (err.message?.includes("REQUEST_DENIED") || err.message?.toLowerCase().includes("billing") || err.message?.includes("SERPAPI_KEY")) {
         setBillingError(true);
       } else {
-        toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+        toast.error("Generation failed", { description: err.message });
       }
     },
   });
@@ -803,13 +802,13 @@ export default function AppPage() {
     onSuccess: (data) => {
       if (data.sent === 0 && data.failed > 0) {
         const noEmail = (data.results as any[])?.filter((r: any) => r.error?.includes("No email")).length ?? data.failed;
-        toast({ title: "No emails sent", description: noEmail === data.failed ? "No email addresses found for these leads. Businesses without a website won't have scrapable emails." : `${data.failed} leads failed — check Gmail connection.`, variant: "destructive" });
+        toast.error("No emails sent", { description: noEmail === data.failed ? "No email addresses found for these leads. Businesses without a website won't have scrapable emails." : `${data.failed} leads failed — check Gmail connection.` });
       } else {
-        toast({ title: `${data.sent} email${data.sent !== 1 ? "s" : ""} sent`, description: data.failed > 0 ? `${data.failed} skipped (no email address found)` : "All delivered successfully" });
+        toast.success(`${data.sent} email${data.sent !== 1 ? "s" : ""} sent`, { description: data.failed > 0 ? `${data.failed} skipped (no email address found)` : "All delivered successfully" });
       }
     },
     onError: (err) => {
-      toast({ title: "Send failed", description: err.message, variant: "destructive" });
+      toast.error("Send failed", { description: err.message });
     },
   });
 
@@ -817,15 +816,13 @@ export default function AppPage() {
 
   const handleGenerate = () => {
     if (!bizType.trim() || !location_.trim()) {
-      toast({ title: "Missing fields", description: "Business type and location are required", variant: "destructive" });
+      toast.error("Missing fields", { description: "Business type and location are required" });
       return;
     }
     // Warn if pitch is too vague (< 25 chars or just 1-2 words with no context)
     if (intent.trim() && intent.trim().split(/\s+/).length <= 2 && intent.trim().length < 25) {
-      toast({
-        title: "Describe your pitch in more detail",
-        description: `Instead of "${intent.trim()}", try something like: "Website redesign — hop on a free 15-min demo call to see a live preview". More detail = better emails.`,
-        variant: "destructive",
+      toast.warning("Describe your pitch in more detail", {
+        description: `Instead of "${intent.trim()}", try: "Website redesign — hop on a free 15-min demo call to see a live preview". More detail = better emails.`,
       });
       return;
     }
@@ -838,7 +835,7 @@ export default function AppPage() {
 
   const handleSend = () => {
     if (!gmailStatus?.connected) {
-      toast({ title: "Gmail not connected", description: "Connect your Gmail account first", variant: "destructive" });
+      toast.error("Gmail not connected", { description: "Connect your Gmail account in Settings first" });
       return;
     }
     sendMutation.mutate({

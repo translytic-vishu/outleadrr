@@ -1,9 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useState as useStateTable } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 import { AppLayout } from "@/components/AppLayout";
 import { useTheme } from "@/lib/theme";
 import type { MeResponse } from "@shared/schema";
+import {
+  useReactTable, getCoreRowModel, getSortedRowModel, getFilteredRowModel,
+  flexRender, type ColumnDef, type SortingState,
+} from "@tanstack/react-table";
 
 const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
 const ACC = "#8b5cf6";
@@ -110,17 +116,10 @@ function MiniBar({ values, color }: { values: number[]; color: string }) {
   );
 }
 
-/* ── Area chart ── */
-function AreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boolean }) {
-  const slice = campaigns.slice(-8);
-  const data = slice.map(c => c.sent);
-  const labels = slice.map(c => c.name.length > 9 ? c.name.slice(0, 9) + "…" : c.name);
-
-  const gridColor  = isDark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.1)";
-  const labelColor = isDark ? "#71717a" : "#a1a1aa";
+/* ── Recharts Area chart ── */
+function CampaignAreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boolean }) {
   const emptyColor = isDark ? "#52525b" : "#a1a1aa";
-
-  if (data.length === 0) return (
+  if (campaigns.length === 0) return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 180, gap: 12 }}>
       <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 13l4-5 3 3 4-6 4 3" stroke="rgba(139,92,246,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -129,60 +128,42 @@ function AreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boole
     </div>
   );
 
-  const W = 500, H = 150, PAD = 6;
-  const max = Math.max(...data, 1);
-  const xs = data.map((_, i) => PAD + (i / Math.max(data.length - 1, 1)) * (W - PAD * 2));
-  const ys = data.map(v => PAD + (1 - v / max) * (H - PAD * 2));
-  const linePts = xs.map((x, i) => `${x},${ys[i]}`).join(" L");
-  const areaPts = `M${xs[0]},${H} L` + xs.map((x, i) => `${x},${ys[i]}`).join(" L") + ` L${xs[xs.length - 1]},${H} Z`;
+  const data = campaigns.slice(-8).map(c => ({
+    name: c.name.length > 9 ? c.name.slice(0, 9) + "…" : c.name,
+    sent: c.sent,
+    leads: c.totalLeads,
+  }));
+
+  const gridColor   = isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.07)";
+  const tickColor   = isDark ? "#52525b" : "#a1a1aa";
+  const tooltipBg   = isDark ? "#161616" : "#ffffff";
+  const tooltipBdr  = isDark ? "rgba(255,255,255,0.1)" : "#e4e4e7";
 
   return (
-    <div style={{ width: "100%", overflow: "hidden" }}>
-      <svg viewBox={`0 0 ${W + 40} ${H + 30}`} style={{ width: "100%", height: "auto", display: "block" }}>
+    <ResponsiveContainer width="100%" height={180}>
+      <AreaChart data={data} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
         <defs>
-          <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={ACC} stopOpacity={isDark ? ".22" : ".14"} />
-            <stop offset="85%" stopColor={ACC} stopOpacity="0" />
+          <linearGradient id="gradSent" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={ACC} stopOpacity={isDark ? 0.25 : 0.15} />
+            <stop offset="90%" stopColor={ACC} stopOpacity={0} />
           </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-            <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
+          <linearGradient id="gradLeads" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity={isDark ? 0.18 : 0.1} />
+            <stop offset="90%" stopColor="#10b981" stopOpacity={0} />
+          </linearGradient>
         </defs>
-        {/* Grid lines */}
-        {[0, .33, .66, 1].map((t, i) => (
-          <line key={i} x1={40} y1={PAD + t * (H - PAD * 2)} x2={W + 40} y2={PAD + t * (H - PAD * 2)}
-            stroke={gridColor} strokeWidth="1" />
-        ))}
-        {/* Y labels */}
-        {[0, .5, 1].map((t, i) => (
-          <text key={i} x={34} y={PAD + (1 - t) * (H - PAD * 2) + 4} textAnchor="end"
-            style={{ fontSize: 9, fill: labelColor, fontFamily: F }}>
-            {Math.round(max * t)}
-          </text>
-        ))}
-        <g transform="translate(40,0)">
-          <path d={areaPts} fill="url(#areaG)" style={{ animation: "areaFadeIn .8s ease both .3s", opacity: 0 }} />
-          <path d={`M${linePts}`} fill="none" stroke={ACC} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            filter={isDark ? "url(#glow)" : undefined}
-            strokeDasharray="800" style={{ animation: "lineDrawAnim 1.6s cubic-bezier(.16,1,.3,1) both .1s" }} />
-          {xs.map((x, i) => (
-            <g key={i}>
-              <circle cx={x} cy={ys[i]} r="4" fill={ACC} opacity=".3"
-                style={{ animation: `countIn .3s ease both ${.5 + i * .1}s`, opacity: 0 }} />
-              <circle cx={x} cy={ys[i]} r="2.5" fill={ACC}
-                style={{ animation: `countIn .3s ease both ${.5 + i * .1}s`, opacity: 0 }} />
-            </g>
-          ))}
-          {xs.map((x, i) => (
-            <text key={i} x={x} y={H + 20} textAnchor="middle"
-              style={{ fontSize: 8, fill: labelColor, fontFamily: F, fontWeight: 600 }}>
-              {labels[i]}
-            </text>
-          ))}
-        </g>
-      </svg>
-    </div>
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 9, fill: tickColor, fontFamily: F, fontWeight: 600 }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 9, fill: tickColor, fontFamily: F }} axisLine={false} tickLine={false} />
+        <Tooltip
+          contentStyle={{ background: tooltipBg, border: `1px solid ${tooltipBdr}`, borderRadius: 10, fontSize: 12, fontFamily: F, boxShadow: "0 8px 32px rgba(0,0,0,.25)" }}
+          labelStyle={{ color: isDark ? "#ededed" : "#09090b", fontWeight: 700, marginBottom: 4 }}
+          itemStyle={{ color: isDark ? "#a1a1aa" : "#52525b" }}
+        />
+        <Area type="monotone" dataKey="sent"  stroke={ACC}       strokeWidth={2} fill="url(#gradSent)"  dot={false} name="Sent" />
+        <Area type="monotone" dataKey="leads" stroke="#10b981"   strokeWidth={2} fill="url(#gradLeads)" dot={false} name="Leads" />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -210,6 +191,168 @@ function KPICard({ label, value, sub, icon, bg, accent, sparkValues, delay = 0 }
   );
 }
 
+
+/* ── TanStack-powered campaigns table ── */
+function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
+  campaigns: Campaign[];
+  isDark: boolean;
+  onNewCampaign: () => void;
+  colors: Record<string, string>;
+}) {
+  const [sorting, setSorting] = useStateTable<SortingState>([{ id: "createdAt", desc: true }]);
+  const [globalFilter, setGlobalFilter] = useStateTable("");
+
+  const columns: ColumnDef<Campaign>[] = [
+    {
+      id: "name", accessorKey: "name", header: "Campaign",
+      cell: ({ getValue }) => (
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.tableRowText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{getValue() as string}</div>
+      ),
+    },
+    {
+      id: "industry", header: "Industry / Location",
+      cell: ({ row }) => (
+        <div>
+          <div style={{ fontSize: 12, color: colors.tableSubText }}>{row.original.businessType}</div>
+          <div style={{ fontSize: 11, color: colors.tableSubText2, marginTop: 2 }}>{row.original.location}</div>
+        </div>
+      ),
+    },
+    {
+      id: "totalLeads", accessorKey: "totalLeads", header: "Leads",
+      cell: ({ getValue }) => <span style={{ fontSize: 13, fontWeight: 700, color: colors.tableCellGray }}>{getValue() as number}</span>,
+    },
+    {
+      id: "sent", accessorKey: "sent", header: "Sent",
+      cell: ({ getValue }) => <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80", background: "rgba(74,222,128,.1)", padding: "2px 8px", borderRadius: 6 }}>{getValue() as number}</span>,
+    },
+    {
+      id: "failed", accessorKey: "failed", header: "Failed",
+      cell: ({ getValue }) => {
+        const v = getValue() as number;
+        return v > 0
+          ? <span style={{ fontSize: 12, fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,.1)", padding: "2px 8px", borderRadius: 6 }}>{v}</span>
+          : <span style={{ color: colors.tableNone, fontSize: 12 }}>—</span>;
+      },
+    },
+    {
+      id: "delivery", header: "Delivery",
+      accessorFn: row => row.sent + row.failed > 0 ? Math.round((row.sent / (row.sent + row.failed)) * 100) : 0,
+      cell: ({ getValue }) => {
+        const dr = getValue() as number;
+        const drColor = dr >= 80 ? "#4ade80" : dr >= 50 ? "#fbbf24" : "#f87171";
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 64, height: 4, background: colors.delivBarBg, borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${dr}%`, background: drColor, borderRadius: 2, transition: "width .6s cubic-bezier(.16,1,.3,1)" }} />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: drColor }}>{dr}%</span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "createdAt", accessorKey: "createdAt", header: "Date",
+      cell: ({ getValue }) => {
+        try { return <span style={{ fontSize: 11, color: colors.tableSubText2, whiteSpace: "nowrap" }}>{new Date(getValue() as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>; }
+        catch { return <span style={{ fontSize: 11, color: colors.tableSubText2 }}>—</span>; }
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: campaigns,
+    columns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  const inputBg = isDark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)";
+  const inputBdr = isDark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.1)";
+  const inputColor = isDark ? "#a1a1aa" : "#52525b";
+
+  return (
+    <div className="d-card" style={{ marginBottom: 14, animation: "fadeUp .5s ease both .43s" }}>
+      <div style={{ padding: "20px 26px", borderBottom: `1px solid ${colors.tableHeaderBdr}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: colors.cardTitle }}>All Campaigns</div>
+          <div style={{ fontSize: 11, color: colors.cardSub, marginTop: 3 }}>{campaigns.length} total · complete history</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {campaigns.length > 0 && (
+            <div style={{ position: "relative" }}>
+              <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke={inputColor} strokeWidth="1.3"/><path d="M9 9l2.5 2.5" stroke={inputColor} strokeWidth="1.3" strokeLinecap="round"/></svg>
+              <input
+                value={globalFilter}
+                onChange={e => setGlobalFilter(e.target.value)}
+                placeholder="Search campaigns…"
+                style={{ paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: inputBg, border: `1px solid ${inputBdr}`, borderRadius: 9, fontSize: 12, color: inputColor, outline: "none", fontFamily: F, width: 180 }}
+              />
+            </div>
+          )}
+          <button className="qbtn-primary" onClick={onNewCampaign} style={{ padding: "9px 16px", fontSize: 12, flexShrink: 0 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            New Campaign
+          </button>
+        </div>
+      </div>
+
+      {campaigns.length === 0 ? (
+        <div style={{ padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5.5-7 4.5 4 5.5-8" stroke="rgba(139,92,246,.7)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: colors.emptyText }}>No campaigns yet</div>
+          <div style={{ fontSize: 12, color: colors.emptyText2, maxWidth: 280, lineHeight: 1.6 }}>Generate your first batch of leads and emails in minutes.</div>
+          <button className="qbtn-primary" onClick={onNewCampaign} style={{ padding: "10px 22px", fontSize: 13, marginTop: 4 }}>Start a campaign</button>
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              {table.getHeaderGroups().map(hg => (
+                <tr key={hg.id} style={{ borderBottom: `1px solid ${colors.tableHeaderBdr}` }}>
+                  {hg.headers.map(header => (
+                    <th key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      style={{ padding: "11px 20px", textAlign: "left", fontSize: 9, fontWeight: 800, color: colors.tableHeaderColor, letterSpacing: ".1em", textTransform: "uppercase", whiteSpace: "nowrap", cursor: header.column.getCanSort() ? "pointer" : "default", userSelect: "none" }}
+                    >
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getIsSorted() === "asc" ? " ↑" : header.column.getIsSorted() === "desc" ? " ↓" : ""}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map((row, i) => (
+                <tr key={row.id} className="row-in" style={{ borderBottom: i < table.getRowModel().rows.length - 1 ? `1px solid ${colors.tableRowBdr}` : "none", transition: "background .12s", animationDelay: `${.43 + i * .04}s` }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = colors.tableHover; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
+                >
+                  {row.getVisibleCells().map(cell => (
+                    <td key={cell.id} style={{ padding: "14px 20px" }}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              {table.getRowModel().rows.length === 0 && (
+                <tr><td colSpan={7} style={{ padding: "32px", textAlign: "center", fontSize: 13, color: colors.tableSubText2 }}>No matching campaigns</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AppDashboard() {
   const [, setLocation] = useLocation();
@@ -345,7 +488,7 @@ export default function AppDashboard() {
                   </div>
                 )}
               </div>
-              <AreaChart campaigns={campaigns} isDark={isDark} />
+              <CampaignAreaChart campaigns={campaigns} isDark={isDark} />
             </div>
 
             {/* Top Campaigns */}
@@ -410,84 +553,13 @@ export default function AppDashboard() {
             </div>
           )}
 
-          {/* ── Row 4: Full Campaigns Table ── */}
-          <div className="d-card" style={{ marginBottom: 14, animation: "fadeUp .5s ease both .43s" }}>
-            <div style={{ padding: "20px 26px", borderBottom: `1px solid ${tableHeaderBdr}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle }}>All Campaigns</div>
-                <div style={{ fontSize: 11, color: cardSub, marginTop: 3 }}>{campaigns.length} total · complete history</div>
-              </div>
-              <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "9px 16px", fontSize: 12, flexShrink: 0 }}>
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                New Campaign
-              </button>
-            </div>
-
-            {campaigns.length === 0 ? (
-              <div style={{ padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
-                <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5.5-7 4.5 4 5.5-8" stroke="rgba(139,92,246,.7)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: emptyText }}>No campaigns yet</div>
-                <div style={{ fontSize: 12, color: emptyText2, maxWidth: 280, lineHeight: 1.6 }}>Generate your first batch of leads and emails in minutes.</div>
-                <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ padding: "10px 22px", fontSize: 13, marginTop: 4 }}>Start a campaign</button>
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: `1px solid ${tableHeaderBdr}` }}>
-                      {["Campaign", "Industry / Location", "Leads", "Sent", "Failed", "Delivery", "Date"].map(h => (
-                        <th key={h} style={{ padding: "11px 20px", textAlign: "left", fontSize: 9, fontWeight: 800, color: tableHeaderColor, letterSpacing: ".1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {campaigns.map((c, i) => {
-                      const dr = c.sent + c.failed > 0 ? Math.round((c.sent / (c.sent + c.failed)) * 100) : 0;
-                      const drColor = dr >= 80 ? "#4ade80" : dr >= 50 ? "#fbbf24" : "#f87171";
-                      const date = (() => { try { return new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return "—"; } })();
-                      return (
-                        <tr key={c.id} className="row-in" style={{
-                          borderBottom: i < campaigns.length - 1 ? `1px solid ${tableRowBdr}` : "none",
-                          transition: "background .12s", animationDelay: `${.43 + i * .04}s`,
-                        }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = tableHover; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
-                        >
-                          <td style={{ padding: "14px 20px" }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: tableRowText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>{c.name}</div>
-                          </td>
-                          <td style={{ padding: "14px 20px" }}>
-                            <div style={{ fontSize: 12, color: tableSubText }}>{c.businessType}</div>
-                            <div style={{ fontSize: 11, color: tableSubText2, marginTop: 2 }}>{c.location}</div>
-                          </td>
-                          <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: tableCellGray }}>{c.totalLeads}</td>
-                          <td style={{ padding: "14px 20px" }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80", background: "rgba(74,222,128,.1)", padding: "2px 8px", borderRadius: 6 }}>{c.sent}</span>
-                          </td>
-                          <td style={{ padding: "14px 20px" }}>
-                            {c.failed > 0
-                              ? <span style={{ fontSize: 12, fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,.1)", padding: "2px 8px", borderRadius: 6 }}>{c.failed}</span>
-                              : <span style={{ color: tableNone, fontSize: 12 }}>—</span>}
-                          </td>
-                          <td style={{ padding: "14px 20px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <div style={{ width: 64, height: 4, background: delivBarBg, borderRadius: 2, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${dr}%`, background: drColor, borderRadius: 2, transition: "width .6s cubic-bezier(.16,1,.3,1)" }} />
-                              </div>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: drColor }}>{dr}%</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: "14px 20px", fontSize: 11, color: tableSubText2, whiteSpace: "nowrap" }}>{date}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          {/* ── Row 4: Full Campaigns Table (TanStack Table) ── */}
+          <CampaignsTable
+            campaigns={campaigns}
+            isDark={isDark}
+            onNewCampaign={() => setLocation("/app")}
+            colors={{ cardTitle, cardSub, tableHeaderColor, tableRowText, tableSubText, tableSubText2, tableRowBdr, tableHover, tableHeaderBdr, tableCellGray, tableNone, delivBarBg, emptyText, emptyText2 }}
+          />
 
           {/* ── Row 5: Lead Pipeline + Quick Actions ── */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 14, marginBottom: 14 }}>

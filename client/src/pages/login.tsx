@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import mailcheck from "mailcheck";
 import logoSrc from "@assets/outleadr_1773257073565.png";
 
 const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
@@ -98,8 +99,8 @@ export default function Login() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const oauthError = new URLSearchParams(search).get("error");
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
   const [password, setPassword] = useState("");
 
   const loginMutation = useMutation({
@@ -109,7 +110,7 @@ export default function Login() {
       return res.json();
     },
     onSuccess: () => { sessionStorage.setItem("outleadrr_new_login", "1"); navigate("/dashboard"); },
-    onError: (err: any) => { toast({ title: err.message, variant: "destructive" }); },
+    onError: (err: any) => { toast.error(err.message); },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,8 +171,20 @@ export default function Login() {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom:16 }}>
                 <label className="auth-label">Email address</label>
-                <input className="auth-input" type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                <input className="auth-input" type="email" value={email}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    mailcheck.run({ email: e.target.value, suggested: (s: any) => setEmailSuggestion(s.full), empty: () => setEmailSuggestion(null) });
+                  }}
                   placeholder="you@company.com" autoComplete="email" data-testid="input-email" required />
+                {emailSuggestion && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: "#f59e0b" }}>
+                    Did you mean{" "}
+                    <span style={{ cursor: "pointer", textDecoration: "underline", fontWeight: 600 }} onClick={() => { setEmail(emailSuggestion); setEmailSuggestion(null); }}>
+                      {emailSuggestion}
+                    </span>?
+                  </div>
+                )}
               </div>
               <div style={{ marginBottom:24 }}>
                 <label className="auth-label">Password</label>

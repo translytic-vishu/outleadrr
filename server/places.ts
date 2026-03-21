@@ -4,6 +4,7 @@
  * Env var: SERPAPI_KEY
  * Docs: https://serpapi.com/local-results
  */
+import * as cheerio from "cheerio";
 
 const SERP_BASE = "https://serpapi.com/search.json";
 
@@ -187,14 +188,49 @@ const SKIP_EMAIL = /noreply|no-reply|mailer|daemon|bounce|sentry|example\.|w3\.o
 /** Prefixes that indicate a genuine contact inbox */
 const PREFERRED_PREFIX = /^(info|contact|hello|office|admin|mail|team|support|enquir|inquir|sales|booking|reception|general|studio|shop|help|service|parts|front|desk)@/i;
 
-/** Scrape emails from raw HTML — mailto: links first, then plain text */
+/** Scrape emails from raw HTML — Cheerio-powered (mailto: links first, then visible text) */
 function extractEmailsFromHtml(html: string): string[] {
-  const mailtoReg = /href=["']mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})["']/gi;
-  const plainReg  = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/g;
   const found: string[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = mailtoReg.exec(html)) !== null) found.push(m[1].toLowerCase());
-  while ((m = plainReg.exec(html))  !== null) found.push(m[1].toLowerCase());
+  const plainReg = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/g;
+
+  try {
+    const $ = cheerio.load(html);
+
+    // 1. mailto: links — highest confidence
+    $("a[href^='mailto:'], a[href^='MAILTO:']").each((_, el) => {
+      const href = $(el).attr("href") || "";
+      const email = href.replace(/^mailto:/i, "").split("?")[0].trim().toLowerCase();
+      if (email && email.includes("@")) found.push(email);
+    });
+
+    // 2. Visible text in contact-relevant elements (spans, p, li, td, div)
+    const contactSelectors = [
+      "[class*='contact']","[class*='email']","[id*='contact']","[id*='email']",
+      "footer","address","[class*='footer']","[class*='info']",
+    ];
+    contactSelectors.forEach(sel => {
+      try {
+        $(sel).each((_, el) => {
+          const text = $(el).text();
+          let m: RegExpExecArray | null;
+          const re = new RegExp(plainReg.source, "g");
+          while ((m = re.exec(text)) !== null) found.push(m[1].toLowerCase());
+        });
+      } catch { /* ignore invalid selector */ }
+    });
+
+    // 3. Full-page plain text fallback (catches obfuscated emails in body copy)
+    const bodyText = $("body").text();
+    let m: RegExpExecArray | null;
+    const re2 = new RegExp(plainReg.source, "g");
+    while ((m = re2.exec(bodyText)) !== null) found.push(m[1].toLowerCase());
+  } catch {
+    // Cheerio parse failed — fall back to raw regex
+    let m: RegExpExecArray | null;
+    const re = new RegExp(plainReg.source, "g");
+    while ((m = re.exec(html)) !== null) found.push(m[1].toLowerCase());
+  }
+
   return [...new Set(found)].filter(e => !SKIP_EMAIL.test(e));
 }
 

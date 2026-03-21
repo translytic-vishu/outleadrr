@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import mailcheck from "mailcheck";
 import logoSrc from "@assets/outleadr_1773257073565.png";
 
 const F = "'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif";
@@ -96,8 +97,8 @@ function passwordStrength(pw: string) {
 
 export default function Signup() {
   const [, navigate] = useLocation();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const str = passwordStrength(password);
@@ -109,13 +110,13 @@ export default function Signup() {
       return res.json();
     },
     onSuccess: () => { sessionStorage.setItem("outleadrr_new_login", "1"); navigate("/dashboard"); },
-    onError: (err: any) => { toast({ title: err.message, variant: "destructive" }); },
+    onError: (err: any) => { toast.error(err.message); },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirm) { toast({ title: "Passwords do not match", variant: "destructive" }); return; }
-    if (password.length < 8) { toast({ title: "Password must be at least 8 characters", variant: "destructive" }); return; }
+    if (password !== confirm) { toast.error("Passwords do not match"); return; }
+    if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     signupMutation.mutate({ email: email.trim(), password });
   };
 
@@ -162,8 +163,20 @@ export default function Signup() {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom:16 }}>
                 <label className="auth-label">Email address</label>
-                <input className="auth-input" type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                <input className="auth-input" type="email" value={email}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    mailcheck.run({ email: e.target.value, suggested: (s: any) => setEmailSuggestion(s.full), empty: () => setEmailSuggestion(null) });
+                  }}
                   placeholder="you@company.com" autoComplete="email" data-testid="input-email" required />
+                {emailSuggestion && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: "#f59e0b" }}>
+                    Did you mean{" "}
+                    <span style={{ cursor: "pointer", textDecoration: "underline", fontWeight: 600 }} onClick={() => { setEmail(emailSuggestion); setEmailSuggestion(null); }}>
+                      {emailSuggestion}
+                    </span>?
+                  </div>
+                )}
               </div>
               <div style={{ marginBottom:16 }}>
                 <label className="auth-label">Password</label>
