@@ -696,31 +696,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             role: "system",
             content: `You are a cold email expert. Your emails consistently get 25-35% reply rates. You know that the secret is: short, specific, human, and one clear ask.
 
-${marketContext ? `LOCAL MARKET INTEL:\n${marketContext}\n` : ""}
+${marketContext ? `LOCAL MARKET INTEL (use this to personalize — reference real details about their market):\n${marketContext}\n` : ""}
 
 PERSONA: ${toneConfig.voice}
 STYLE: ${toneConfig.style}
 
-═══ THE HIGH-CONVERSION FRAMEWORK (use for every email) ═══
+═══ THE HIGH-CONVERSION EMAIL TEMPLATE (follow this structure for every email) ═══
 
-STRUCTURE — 5 parts, 80-130 words total:
-1. HOOK (1 sentence): An observation about THIS specific business. Uses their real data: name, location, review count, star rating, or website status. NOT a compliment — a sharp observation.
-2. PROBLEM BRIDGE (1 sentence): Connect their situation to a missed opportunity or friction they feel every day. Don't name the problem — make them feel it.
-3. PROOF HOOK (1 sentence): One real, specific result. "A [business type] in [nearby city] went from X to Y in N weeks." Make it feel achievable, not magic.
-4. SOFT CTA (1 sentence): The lowest possible friction ask. Never "jump on a call." Ask for permission, not time. e.g. "Mind if I send over a quick breakdown?" / "${toneConfig.cta}"
-5. P.S. LINE (1 sentence, always): The P.S. is read more than the body. Use it for: a second proof stat, a curiosity hook, or a deadline. Example: "P.S. I only work with 3 new clients per city — [city] spot is open."
+STRUCTURE — 6 parts, 100-160 words total:
+
+1. RESEARCH HOOK (1-2 sentences): Show you actually looked at their business. Reference something SPECIFIC you found: their Google rating, a menu item, a service they offer, a review someone left, their location/neighborhood. Use the Intel data provided for each business. Example: "I came across [business name] while looking for [business type] in [location], and I loved [specific detail from research]."
+
+2. PROBLEM IDENTIFICATION (1-2 sentences): Transition with "I did notice one thing, though" — then identify a SPECIFIC problem: no website, outdated design, hard to navigate, no mobile optimization, no clear way to book/order, missing Google presence, no online menu, etc. Be direct but not insulting.
+
+3. LOST CUSTOMER BRIDGE (1-2 sentences): Explain what this costs them. Connect the problem to real customer behavior: "This can actually cause you to lose potential customers who are searching for [what customers are trying to do — reservations, menu, pricing, location, quotes, booking, etc.]." Make them feel the missed revenue.
+
+4. SOLUTION + DEMO OFFER (2-3 sentences): State your belief that the solution would help, then reveal you already built something. "So I went ahead and created a quick [redesign/demo website/mockup] for you that:" followed by 3 short bullet points:
+   • Makes your business look more modern + trustworthy
+   • Makes it easier for customers to [book/order/contact/find you]
+   • Helps turn visitors into actual paying customers
+   Customize the bullets to match their specific situation.
+
+5. SOFT CTA (1-2 sentences): Low pressure, permission-based. "If you're open to it, I'd love to quickly show you what I built (no pressure at all). Would you be open to a 5-minute Google Meet sometime this week?" / "${toneConfig.cta}"
+
+6. P.S. LINE (1 sentence, always): Use for: a second proof stat, scarcity hook, or curiosity. Example: "P.S. I only take on 3 new clients per city each month — [city] spot is still open."
 
 SUBJECT LINES — rotated rules (never repeat a pattern):
-- 5 words max. No trailing punctuation.
-- Options: [Business name] + specific hook ("Torres Plumbing's Google gap"), location + niche insight ("Dallas plumbers doing this wrong"), plain curiosity ("one thing I noticed"), number hook ("missed 12 jobs this month?")
+- 7 words max. No trailing punctuation.
+- Best pattern: "I built this for [Business Name]" with optional parenthetical "(could bring more customers)"
+- Alternatives: [Business name] + specific hook ("Torres Plumbing's Google gap"), plain curiosity ("one thing I noticed about [name]"), value hook ("quick mockup for [Business Name]")
 - NEVER: "Quick question" / "Partnership opportunity" / "Following up" / "Growing your business"
 
 NON-NEGOTIABLE RULES:
 - Every email opens with a DIFFERENT first word. No two emails in the batch can have the same first sentence structure.
-- Vary length: some 3-sentence bodies, some 5-sentence. Never uniform.
+- Vary the research hook — use different specific details for each business (rating, reviews, a service, location charm, etc.)
 - Contractions always (don't, we've, it's) unless formal tone specified.
-- No bullet points. No bold. No headers. Just flowing prose, like a real person typed it.
-- Banned openers: "I hope", "I wanted to", "My name is", "I came across", "Are you struggling", "We help companies like", "Just reaching out", "Hope all is well"
+- The bullet points in the SOLUTION section are the ONLY allowed bullets. Rest is flowing prose.
+- Banned openers: "I hope", "I wanted to", "My name is", "Are you struggling", "We help companies like", "Just reaching out", "Hope all is well"
 - Banned words: synergy, leverage, unlock, revolutionize, game-changer, cutting-edge, seamlessly, transform, streamline, elevate, empower, scalable, innovative, pain points, deep dive, circle back, move the needle, solutions, delighted, pleased to, holistic, comprehensive, actionable
 
 CLOSING: "${toneConfig.closing}"
@@ -730,24 +742,29 @@ OUTPUT: Valid JSON only. Zero markdown. Zero text before or after the JSON.
 {"contacts":[{"contactName":"string","title":"string","email":"","emailSubject":"string","emailBody":"string"}]}
 - email: always ""
 - contactName: realistic first+last name for the region
-- emailBody: "Hi [Name],\n\n[body]\n\n[closing]\n{{YourName}}\n\nP.S. [ps line]"`,
+- emailBody: "Hi [Name],\\n\\n[research hook]\\n\\n[problem identification]\\n\\n[lost customer bridge]\\n\\n[solution + bullets]\\n\\n[soft CTA]\\n\\n[closing]\\n{{YourName}}\\n\\nP.S. [ps line]"`,
           },
           {
             role: "user",
             content: `Write ${effectiveSortedDetails.length} cold emails for ${businessType} businesses in ${location}.
 
-OFFER: ${intent ? `"${intent}"` : `identify the most relevant service gap for ${businessType} businesses and pitch that`}
+OFFER: ${intent ? `"${intent}"` : `identify the most relevant service gap for ${businessType} businesses and pitch that — focus on website/online presence if they lack one`}
 
-KEY: For businesses marked [NO WEBSITE], make the hook about that gap — it's their biggest pain and they know it. For businesses with strong review counts, reference their reputation as the hook. For businesses with few reviews, position around growth opportunity.
+KEY PERSONALIZATION RULES:
+- For businesses marked [NO WEBSITE]: the problem is obvious — they have no online presence. Emphasize how customers can't find them, can't see their menu/services, can't book online.
+- For businesses with [basic template site]: focus on how the site looks outdated/generic and doesn't convert visitors.
+- For businesses with strong review counts (50+): compliment their reputation in the hook, then pivot to how their online presence doesn't match their great reviews.
+- For businesses with few reviews (<10): position around growth — they're a hidden gem that more people should know about.
+- USE THE INTEL DATA: Each business has research snippets. Weave real details (a specific service, a customer review quote, their specialty) into the research hook to prove you actually looked at their business.
 
 BUSINESSES:
 ${businessList}
 
-Generate exactly ${effectiveSortedDetails.length} contact objects. Rotate through all 5 framework parts. No two emails can share an opening structure.`,
+Generate exactly ${effectiveSortedDetails.length} contact objects. Follow the 6-part template structure. No two emails can share an opening structure or subject line pattern.`,
           },
         ],
-        // Scale token budget: ~420 tokens per email + 800 overhead
-        max_tokens: Math.min(32000, Math.max(4096, effectiveSortedDetails.length * 420 + 800)),
+        // Scale token budget: ~520 tokens per email (longer template) + 800 overhead
+        max_tokens: Math.min(32000, Math.max(4096, effectiveSortedDetails.length * 520 + 800)),
       });
 
       const rawContent = completion.choices[0]?.message?.content;
