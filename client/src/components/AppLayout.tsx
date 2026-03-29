@@ -16,7 +16,6 @@ const IND = "#8b5cf6";
 
 const CSS = `
   *,*::before,*::after{box-sizing:border-box;}
-  /* ── Command palette ── */
   .cmd-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);z-index:9998;display:flex;align-items:flex-start;justify-content:center;padding-top:15vh;}
   [cmdk-dialog]{width:100%;max-width:520px;}
   [cmdk-root]{background:var(--t-sidebar,#111);border:1px solid var(--t-border,rgba(255,255,255,0.1));border-radius:14px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.7);font-family:${F};}

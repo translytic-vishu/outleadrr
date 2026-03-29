@@ -27,56 +27,42 @@ interface Campaign {
 
 const CSS = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes countIn{from{opacity:0;transform:scale(.85) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-  @keyframes lineDrawAnim{from{stroke-dashoffset:800}to{stroke-dashoffset:0}}
-  @keyframes areaFadeIn{0%{opacity:0}100%{opacity:1}}
-  @keyframes orb1{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-32px)}}
-  @keyframes orb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-36px,28px)}}
-  @keyframes shimmerSlide{0%{background-position:-200% center}100%{background-position:200% center}}
-  @keyframes barGrow{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}
-  @keyframes pulseRing{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
   .d-card{
     background:rgba(255,255,255,0.035);
     border:1px solid rgba(255,255,255,0.08);
-    border-radius:18px;
-    transition:border-color .25s,box-shadow .25s,transform .25s;
+    border-radius:14px;
+    transition:border-color .2s,box-shadow .2s;
     cursor:default;
-    position:relative;overflow:hidden;
   }
-  .d-card:hover{border-color:rgba(255,255,255,0.14);box-shadow:0 12px 40px rgba(0,0,0,.5);transform:translateY(-1px);}
-  .stat-num{animation:countIn .6s cubic-bezier(.16,1,.3,1) both;}
-  .row-in{animation:fadeUp .45s cubic-bezier(.16,1,.3,1) both;}
+  .d-card:hover{border-color:rgba(255,255,255,0.12);box-shadow:0 8px 24px rgba(0,0,0,.3);}
   .qbtn{
     display:flex;align-items:center;gap:10px;
-    padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+    padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
     background:rgba(255,255,255,.035);color:#a1a1aa;
     font-size:13px;font-weight:600;font-family:${F};
-    cursor:pointer;transition:all .2s;text-align:left;width:100%;
+    cursor:pointer;transition:all .15s;text-align:left;width:100%;
   }
-  .qbtn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#ededed;transform:translateX(4px);}
+  .qbtn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#ededed;}
   .qbtn-primary{
     display:flex;align-items:center;justify-content:center;gap:8px;
-    padding:12px 18px;border-radius:12px;border:none;
+    padding:10px 18px;border-radius:10px;border:none;
     background:linear-gradient(135deg,#7c3aed,#8b5cf6);color:#fff;
     font-size:13px;font-weight:700;font-family:${F};
-    cursor:pointer;transition:all .2s;
-    box-shadow:0 4px 20px rgba(139,92,246,.35);
-    position:relative;overflow:hidden;
+    cursor:pointer;transition:all .15s;
+    box-shadow:0 2px 12px rgba(139,92,246,.25);
   }
-  .qbtn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);background-size:200%;animation:shimmerSlide 3s ease infinite;}
-  .qbtn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(139,92,246,.5);}
+  .qbtn-primary:hover{box-shadow:0 4px 20px rgba(139,92,246,.4);}
   .kpi-card{
-    border-radius:18px;padding:22px 24px;
+    border-radius:14px;padding:20px 22px;
     position:relative;overflow:hidden;
-    transition:transform .25s,box-shadow .25s;
-    border:1px solid rgba(255,255,255,0.08);
+    transition:box-shadow .2s;
+    border:1px solid rgba(255,255,255,0.06);
   }
-  .kpi-card:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(0,0,0,.5);}
+  .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.3);}
   [data-theme="light"] .d-card{background:#ffffff!important;border-color:#e4e4e7!important;}
-  [data-theme="light"] .d-card:hover{border-color:#d4d4d8!important;box-shadow:0 8px 28px rgba(0,0,0,.06)!important;}
+  [data-theme="light"] .d-card:hover{border-color:#d4d4d8!important;box-shadow:0 4px 16px rgba(0,0,0,.06)!important;}
   [data-theme="light"] .kpi-card{border-color:#e4e4e7!important;}
-  [data-theme="light"] .kpi-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.08)!important;}
+  [data-theme="light"] .kpi-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)!important;}
   [data-theme="light"] .qbtn{background:#f4f4f5!important;border-color:#e4e4e7!important;color:#3f3f46!important;}
   [data-theme="light"] .qbtn:hover{background:#e4e4e7!important;border-color:#d4d4d8!important;color:#09090b!important;}
   [data-theme="light"] .stat-num{color:#09090b!important;}
@@ -96,40 +82,37 @@ function formatDate() {
   return new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
-/* ── Mini bar sparkline ── */
+/* -- Mini bar sparkline -- */
 function MiniBar({ values, color }: { values: number[]; color: string }) {
   if (!values.length) return null;
   const max = Math.max(...values, 1);
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 28 }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 26 }}>
       {values.map((v, i) => (
         <div key={i} style={{
-          width: 5, borderRadius: 3,
+          width: 4, borderRadius: 2,
           height: `${Math.max((v / max) * 100, 8)}%`,
           background: color,
-          opacity: i === values.length - 1 ? 1 : 0.4 + (i / values.length) * 0.5,
-          animation: `barGrow .5s cubic-bezier(.16,1,.3,1) both`,
-          animationDelay: `${0.4 + i * 0.05}s`,
+          opacity: i === values.length - 1 ? 1 : 0.35 + (i / values.length) * 0.55,
         }} />
       ))}
     </div>
   );
 }
 
-/* ── Recharts Area chart ── */
+/* -- Recharts Area chart -- */
 function CampaignAreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDark: boolean }) {
-  const emptyColor = isDark ? "#52525b" : "#a1a1aa";
   if (campaigns.length === 0) return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 180, gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 200, gap: 10 }}>
       <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 13l4-5 3 3 4-6 4 3" stroke="rgba(139,92,246,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </div>
-      <div style={{ fontSize: 12, color: emptyColor, fontWeight: 500 }}>Launch your first campaign to see activity</div>
+      <div style={{ fontSize: 13, color: isDark ? "#52525b" : "#a1a1aa", fontWeight: 500 }}>Launch your first campaign to see activity</div>
     </div>
   );
 
   const data = campaigns.slice(-8).map(c => ({
-    name: c.name.length > 9 ? c.name.slice(0, 9) + "…" : c.name,
+    name: c.name.length > 9 ? c.name.slice(0, 9) + "\u2026" : c.name,
     sent: c.sent,
     leads: c.totalLeads,
   }));
@@ -140,7 +123,7 @@ function CampaignAreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDar
   const tooltipBdr  = isDark ? "rgba(255,255,255,0.1)" : "#e4e4e7";
 
   return (
-    <ResponsiveContainer width="100%" height={180}>
+    <ResponsiveContainer width="100%" height={200}>
       <AreaChart data={data} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="gradSent" x1="0" y1="0" x2="0" y2="1">
@@ -153,8 +136,8 @@ function CampaignAreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDar
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-        <XAxis dataKey="name" tick={{ fontSize: 9, fill: tickColor, fontFamily: F, fontWeight: 600 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 9, fill: tickColor, fontFamily: F }} axisLine={false} tickLine={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 10, fill: tickColor, fontFamily: F, fontWeight: 600 }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: tickColor, fontFamily: F }} axisLine={false} tickLine={false} />
         <Tooltip
           contentStyle={{ background: tooltipBg, border: `1px solid ${tooltipBdr}`, borderRadius: 10, fontSize: 12, fontFamily: F, boxShadow: "0 8px 32px rgba(0,0,0,.25)" }}
           labelStyle={{ color: isDark ? "#ededed" : "#09090b", fontWeight: 700, marginBottom: 4 }}
@@ -167,24 +150,22 @@ function CampaignAreaChart({ campaigns, isDark }: { campaigns: Campaign[]; isDar
   );
 }
 
-/* ── KPI Card — premium style ── */
+/* -- KPI Card -- */
 function KPICard({ label, value, sub, icon, bg, accent, sparkValues, delay = 0 }:
   { label: string; value: string | number; sub?: string; icon: React.ReactNode; bg: string; accent: string; sparkValues?: number[]; delay?: number }) {
   return (
-    <div className="kpi-card" style={{ background: bg, borderRadius: 18, padding: "22px 24px", position: "relative", overflow: "hidden", transition: "transform .25s,box-shadow .25s", border: "1px solid rgba(255,255,255,0.06)", animation: `fadeUp .5s cubic-bezier(.16,1,.3,1) both ${delay}s` }}>
-      {/* Ambient glow */}
-      <div style={{ position: "absolute", width: 120, height: 120, borderRadius: "50%", background: `radial-gradient(circle,${accent}30 0%,transparent 70%)`, top: -30, right: -20, pointerEvents: "none" }} />
+    <div className="kpi-card" style={{ background: bg, animationDelay: `${delay}s` }}>
       <div style={{ position: "relative", zIndex: 1 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: `${accent}1a`, border: `1px solid ${accent}30`, display: "flex", alignItems: "center", justifyContent: "center", color: accent }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${accent}1a`, border: `1px solid ${accent}30`, display: "flex", alignItems: "center", justifyContent: "center", color: accent }}>
             {icon}
           </div>
           {sparkValues && sparkValues.length > 1 && <MiniBar values={sparkValues} color={accent} />}
         </div>
-        <div className="stat-num" style={{ fontSize: 34, fontWeight: 900, color: "#fff", letterSpacing: "-.06em", lineHeight: 1, marginBottom: 6, animationDelay: `${delay + .1}s` }}>
+        <div className="stat-num" style={{ fontSize: 30, fontWeight: 800, color: "#fff", letterSpacing: "-.04em", lineHeight: 1, marginBottom: 6 }}>
           {value}
         </div>
-        <div className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.35)", textTransform: "uppercase", letterSpacing: ".08em" }}>{label}</div>
+        <div className="kpi-label" style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.35)", textTransform: "uppercase", letterSpacing: ".06em" }}>{label}</div>
         {sub && <div className="kpi-sub" style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginTop: 3 }}>{sub}</div>}
       </div>
     </div>
@@ -192,7 +173,7 @@ function KPICard({ label, value, sub, icon, bg, accent, sparkValues, delay = 0 }
 }
 
 
-/* ── TanStack-powered campaigns table ── */
+/* -- TanStack-powered campaigns table -- */
 function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
   campaigns: Campaign[];
   isDark: boolean;
@@ -232,7 +213,7 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
         const v = getValue() as number;
         return v > 0
           ? <span style={{ fontSize: 12, fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,.1)", padding: "2px 8px", borderRadius: 6 }}>{v}</span>
-          : <span style={{ color: colors.tableNone, fontSize: 12 }}>—</span>;
+          : <span style={{ color: colors.tableNone, fontSize: 12 }}>&mdash;</span>;
       },
     },
     {
@@ -244,7 +225,7 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
         return (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 64, height: 4, background: colors.delivBarBg, borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${dr}%`, background: drColor, borderRadius: 2, transition: "width .6s cubic-bezier(.16,1,.3,1)" }} />
+              <div style={{ height: "100%", width: `${dr}%`, background: drColor, borderRadius: 2, transition: "width .3s ease" }} />
             </div>
             <span style={{ fontSize: 11, fontWeight: 700, color: drColor }}>{dr}%</span>
           </div>
@@ -255,7 +236,7 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
       id: "createdAt", accessorKey: "createdAt", header: "Date",
       cell: ({ getValue }) => {
         try { return <span style={{ fontSize: 11, color: colors.tableSubText2, whiteSpace: "nowrap" }}>{new Date(getValue() as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>; }
-        catch { return <span style={{ fontSize: 11, color: colors.tableSubText2 }}>—</span>; }
+        catch { return <span style={{ fontSize: 11, color: colors.tableSubText2 }}>&mdash;</span>; }
       },
     },
   ];
@@ -276,11 +257,11 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
   const inputColor = isDark ? "#a1a1aa" : "#52525b";
 
   return (
-    <div className="d-card" style={{ marginBottom: 14, animation: "fadeUp .5s ease both .43s" }}>
-      <div style={{ padding: "20px 26px", borderBottom: `1px solid ${colors.tableHeaderBdr}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+    <div className="d-card" style={{ marginBottom: 16 }}>
+      <div style={{ padding: "18px 24px", borderBottom: `1px solid ${colors.tableHeaderBdr}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: colors.cardTitle }}>All Campaigns</div>
-          <div style={{ fontSize: 11, color: colors.cardSub, marginTop: 3 }}>{campaigns.length} total · complete history</div>
+          <div style={{ fontSize: 11, color: colors.cardSub, marginTop: 3 }}>{campaigns.length} total</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           {campaigns.length > 0 && (
@@ -289,7 +270,7 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
               <input
                 value={globalFilter}
                 onChange={e => setGlobalFilter(e.target.value)}
-                placeholder="Search campaigns…"
+                placeholder="Search campaigns\u2026"
                 style={{ paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: inputBg, border: `1px solid ${inputBdr}`, borderRadius: 9, fontSize: 12, color: inputColor, outline: "none", fontFamily: F, width: 180 }}
               />
             </div>
@@ -302,9 +283,9 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
       </div>
 
       {campaigns.length === 0 ? (
-        <div style={{ padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center" }}>
-          <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 17l5.5-7 4.5 4 5.5-8" stroke="rgba(139,92,246,.7)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <div style={{ padding: "56px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, textAlign: "center" }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(139,92,246,.08)", border: "1px solid rgba(139,92,246,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 15l5-6.5 4 3.5 5-7" stroke="rgba(139,92,246,.7)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, color: colors.emptyText }}>No campaigns yet</div>
           <div style={{ fontSize: 12, color: colors.emptyText2, maxWidth: 280, lineHeight: 1.6 }}>Generate your first batch of leads and emails in minutes.</div>
@@ -323,7 +304,7 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
                     >
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === "asc" ? " ↑" : header.column.getIsSorted() === "desc" ? " ↓" : ""}
+                        {header.column.getIsSorted() === "asc" ? " \u2191" : header.column.getIsSorted() === "desc" ? " \u2193" : ""}
                       </span>
                     </th>
                   ))}
@@ -332,12 +313,12 @@ function CampaignsTable({ campaigns, isDark, onNewCampaign, colors }: {
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row, i) => (
-                <tr key={row.id} className="row-in" style={{ borderBottom: i < table.getRowModel().rows.length - 1 ? `1px solid ${colors.tableRowBdr}` : "none", transition: "background .12s", animationDelay: `${.43 + i * .04}s` }}
+                <tr key={row.id} style={{ borderBottom: i < table.getRowModel().rows.length - 1 ? `1px solid ${colors.tableRowBdr}` : "none", transition: "background .1s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = colors.tableHover; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = "transparent"; }}
                 >
                   {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} style={{ padding: "14px 20px" }}>
+                    <td key={cell.id} style={{ padding: "12px 20px" }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -370,7 +351,6 @@ export default function AppDashboard() {
   const tableSubText2    = isDark ? "#52525b"  : "#a1a1aa";
   const tableRowBdr      = isDark ? "rgba(255,255,255,0.04)" : "#f4f4f5";
   const tableHover       = isDark ? "rgba(255,255,255,0.025)" : "#f4f4f5";
-  const gridBg           = isDark ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)";
   const tableHeaderBdr   = isDark ? "rgba(255,255,255,0.05)"  : "#e4e4e7";
   const pipelineLabel    = isDark ? "#a1a1aa"  : "#3f3f46";
   const qaLabel          = isDark ? "#71717a"  : "#71717a";
@@ -403,8 +383,6 @@ export default function AppDashboard() {
   const sentSpark  = campaigns.slice(-7).map(c => c.sent);
   const leadsSpark = campaigns.slice(-7).map(c => c.totalLeads);
 
-  const latest     = campaigns.length > 0 ? [...campaigns].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] : null;
-  const mostLeads  = campaigns.length > 0 ? campaigns.reduce((best, c) => c.totalLeads > best.totalLeads ? c : best) : null;
   const bestDel    = campaigns.length > 0 ? campaigns.reduce((best, c) => {
     const r = c.sent + c.failed > 0 ? c.sent / (c.sent + c.failed) : 0;
     const br = best.sent + best.failed > 0 ? best.sent / (best.sent + best.failed) : 0;
@@ -417,67 +395,58 @@ export default function AppDashboard() {
     <AppLayout>
       <style>{CSS}</style>
 
-      <div style={{ flex: 1, background: dashBg, minHeight: "100vh", fontFamily: F, position: "relative", overflowX: "hidden" }}>
+      <div style={{ flex: 1, background: dashBg, minHeight: "100vh", fontFamily: F }}>
+        <div style={{ padding: "28px 36px 48px", maxWidth: 1200, margin: "0 auto" }}>
 
-        {/* Ambient background orbs */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-          <div style={{ position: "absolute", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle,rgba(139,92,246,.06) 0%,transparent 70%)", top: -200, right: -150, animation: "orb1 16s ease-in-out infinite" }} />
-          <div style={{ position: "absolute", width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(99,102,241,.04) 0%,transparent 70%)", bottom: -80, left: -100, animation: "orb2 20s ease-in-out infinite" }} />
-          {/* Subtle grid */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${gridBg} 1px,transparent 1px),linear-gradient(90deg,${gridBg} 1px,transparent 1px)`, backgroundSize: "40px 40px" }} />
-        </div>
-
-        <div style={{ position: "relative", zIndex: 1, padding: "32px 40px 56px" }}>
-
-          {/* ── Header ── */}
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, animation: "fadeUp .5s cubic-bezier(.16,1,.3,1) both" }}>
+          {/* -- Header -- */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: dateText, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: dateText, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 6 }}>
                 {formatDate()}
               </div>
-              <h1 style={{ fontSize: 30, fontWeight: 900, color: headText, letterSpacing: "-.05em", lineHeight: 1, marginBottom: 8 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: headText, letterSpacing: "-.04em", lineHeight: 1, marginBottom: 6 }}>
                 {me?.email ? greeting(me.email) : "Dashboard"}
               </h1>
               <p style={{ fontSize: 13, color: subText }}>
                 {campaigns.length === 0
                   ? "Ready to launch your first outreach campaign."
-                  : `${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""} · ${totalSent} email${totalSent !== 1 ? "s" : ""} sent`}
+                  : `${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""} \u00b7 ${totalSent} email${totalSent !== 1 ? "s" : ""} sent`}
               </p>
             </div>
-            <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ flexShrink: 0, padding: "12px 22px" }}>
+            <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ flexShrink: 0, padding: "10px 20px" }}>
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
               New Campaign
             </button>
           </div>
 
-          {/* ── KPI Cards ── */}
+          {/* -- KPI Cards -- */}
           {(() => {
             const end = isDark ? "rgba(10,10,12,0)" : "rgba(249,249,251,0)";
             return (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 20 }}>
-                <KPICard label="Campaigns" value={isLoading ? "—" : campaigns.length} sub="total run"
+                <KPICard label="Campaigns" value={isLoading ? "\u2014" : campaigns.length} sub="total run"
                   icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 13l4-5 3.5 3 5-7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  bg={`linear-gradient(135deg,rgba(139,92,246,${isDark?".14":".09"}) 0%,${end} 100%)`} accent="#8b5cf6" delay={0.05} />
-                <KPICard label="Emails Sent" value={isLoading ? "—" : totalSent} sub="across all campaigns" sparkValues={sentSpark}
+                  bg={`linear-gradient(135deg,rgba(139,92,246,${isDark?".14":".09"}) 0%,${end} 100%)`} accent="#8b5cf6" delay={0} />
+                <KPICard label="Emails Sent" value={isLoading ? "\u2014" : totalSent} sub="across all campaigns" sparkValues={sentSpark}
                   icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M15 2L2 7l6 3 3 6L15 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  bg={`linear-gradient(135deg,rgba(16,185,129,${isDark?".12":".08"}) 0%,${end} 100%)`} accent="#10b981" delay={0.1} />
-                <KPICard label="Leads Found" value={isLoading ? "—" : totalLeads} sub="from Google Maps" sparkValues={leadsSpark}
+                  bg={`linear-gradient(135deg,rgba(16,185,129,${isDark?".12":".08"}) 0%,${end} 100%)`} accent="#10b981" delay={0} />
+                <KPICard label="Leads Found" value={isLoading ? "\u2014" : totalLeads} sub="from Google Maps" sparkValues={leadsSpark}
                   icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="7.5" cy="7.5" r="5" stroke="currentColor" strokeWidth="1.5"/><path d="M12 12l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
-                  bg={`linear-gradient(135deg,rgba(245,158,11,${isDark?".12":".08"}) 0%,${end} 100%)`} accent="#f59e0b" delay={0.15} />
-                <KPICard label="Delivery Rate" value={isLoading ? "—" : `${deliveryRate}%`} sub={totalSent + totalFailed > 0 ? `${totalFailed} failed` : "no sends yet"}
+                  bg={`linear-gradient(135deg,rgba(245,158,11,${isDark?".12":".08"}) 0%,${end} 100%)`} accent="#f59e0b" delay={0} />
+                <KPICard label="Delivery Rate" value={isLoading ? "\u2014" : `${deliveryRate}%`} sub={totalSent + totalFailed > 0 ? `${totalFailed} failed` : "no sends yet"}
                   icon={<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 9.5l4.5 4.5 8.5-9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   bg={deliveryRate >= 80 ? `linear-gradient(135deg,rgba(74,222,128,${isDark?".12":".08"}) 0%,${end} 100%)` : `linear-gradient(135deg,rgba(251,191,36,${isDark?".12":".08"}) 0%,${end} 100%)`}
-                  accent={deliveryRate >= 80 ? "#4ade80" : "#fbbf24"} delay={0.2} />
+                  accent={deliveryRate >= 80 ? "#4ade80" : "#fbbf24"} delay={0} />
               </div>
             );
           })()}
 
-          {/* ── Row 2: Area Chart + Top Campaigns ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 14, marginBottom: 14 }}>
+          {/* -- Row 2: Area Chart + Top Campaigns -- */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14, marginBottom: 16 }}>
 
             {/* Activity Chart */}
-            <div className="d-card" style={{ padding: "24px 26px", animation: "fadeUp .5s ease both .28s" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+            <div className="d-card" style={{ padding: "22px 24px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle }}>Outreach Activity</div>
                   <div style={{ fontSize: 11, color: cardSub, marginTop: 3 }}>Emails sent per campaign</div>
@@ -492,9 +461,9 @@ export default function AppDashboard() {
             </div>
 
             {/* Top Campaigns */}
-            <div className="d-card" style={{ padding: "24px", animation: "fadeUp .5s ease both .33s" }}>
+            <div className="d-card" style={{ padding: "22px" }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle, marginBottom: 4 }}>Top Campaigns</div>
-              <div style={{ fontSize: 11, color: cardSub, marginBottom: 20 }}>Highest lead volume</div>
+              <div style={{ fontSize: 11, color: cardSub, marginBottom: 18 }}>Highest lead volume</div>
 
               {topCampaigns.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 0", gap: 10, textAlign: "center" }}>
@@ -516,9 +485,9 @@ export default function AppDashboard() {
                           <div style={{ fontSize: 11, fontWeight: 700, color: col, flexShrink: 0 }}>{c.totalLeads} leads</div>
                         </div>
                         <div style={{ height: 4, background: delivBarBg, borderRadius: 99, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${pct}%`, background: col, borderRadius: 99, transition: "width .8s cubic-bezier(.16,1,.3,1)" }} />
+                          <div style={{ height: "100%", width: `${pct}%`, background: col, borderRadius: 99, transition: "width .3s ease" }} />
                         </div>
-                        <div style={{ fontSize: 10, color: topCampSub, marginTop: 5 }}>{c.businessType} · {c.location}</div>
+                        <div style={{ fontSize: 10, color: topCampSub, marginTop: 5 }}>{c.businessType} \u00b7 {c.location}</div>
                       </div>
                     );
                   })}
@@ -527,22 +496,22 @@ export default function AppDashboard() {
             </div>
           </div>
 
-          {/* ── Row 3: Horizontal Bar Chart (Analytics) ── */}
+          {/* -- Row 3: Horizontal Bar Chart -- */}
           {campaigns.length > 0 && (
-            <div className="d-card" style={{ padding: "24px 26px", marginBottom: 14, animation: "fadeUp .5s ease both .38s" }}>
+            <div className="d-card" style={{ padding: "22px 24px", marginBottom: 16 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle, marginBottom: 4 }}>Emails Sent per Campaign</div>
-              <div style={{ fontSize: 11, color: cardSub, marginBottom: 20 }}>Campaign-level email delivery breakdown</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-                {campaigns.slice(0, 8).map((c, i) => {
+              <div style={{ fontSize: 11, color: cardSub, marginBottom: 18 }}>Campaign-level email delivery breakdown</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {campaigns.slice(0, 8).map((c) => {
                   const MAX = Math.max(...campaigns.map(x => x.sent), 1);
                   const pct = Math.max((c.sent / MAX) * 100, c.sent > 0 ? 4 : 0);
                   const delRate = c.sent + c.failed > 0 ? Math.round((c.sent / (c.sent + c.failed)) * 100) : 0;
                   const barColor = delRate >= 80 ? "#4ade80" : delRate >= 50 ? "#fbbf24" : "#f87171";
                   return (
-                    <div key={c.id} className="row-in" style={{ display: "flex", alignItems: "center", gap: 14, animationDelay: `${.38 + i * .05}s` }}>
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 14 }}>
                       <div style={{ fontSize: 12, color: tableCellGray, width: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>{c.name}</div>
-                      <div style={{ flex: 1, height: 7, background: barBg, borderRadius: 4, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${ACC},${barColor})`, borderRadius: 4, transition: "width .6s cubic-bezier(.16,1,.3,1)" }} />
+                      <div style={{ flex: 1, height: 6, background: barBg, borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${ACC},${barColor})`, borderRadius: 3, transition: "width .3s ease" }} />
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#10b981", width: 28, textAlign: "right", flexShrink: 0 }}>{c.sent}</div>
                       <div style={{ fontSize: 11, color: cardSub, width: 36, textAlign: "right", flexShrink: 0 }}>{delRate}%</div>
@@ -553,7 +522,7 @@ export default function AppDashboard() {
             </div>
           )}
 
-          {/* ── Row 4: Full Campaigns Table (TanStack Table) ── */}
+          {/* -- Row 4: Full Campaigns Table -- */}
           <CampaignsTable
             campaigns={campaigns}
             isDark={isDark}
@@ -561,13 +530,13 @@ export default function AppDashboard() {
             colors={{ cardTitle, cardSub, tableHeaderColor, tableRowText, tableSubText, tableSubText2, tableRowBdr, tableHover, tableHeaderBdr, tableCellGray, tableNone, delivBarBg, emptyText, emptyText2 }}
           />
 
-          {/* ── Row 5: Lead Pipeline + Quick Actions ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 14, marginBottom: 14 }}>
+          {/* -- Row 5: Lead Pipeline + Quick Actions -- */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 14 }}>
 
             {/* Lead Pipeline */}
-            <div className="d-card" style={{ padding: "24px 26px", animation: "fadeUp .5s ease both .48s" }}>
+            <div className="d-card" style={{ padding: "22px 24px" }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: cardTitle, marginBottom: 4 }}>Lead Pipeline</div>
-              <div style={{ fontSize: 11, color: cardSub, marginBottom: 20 }}>Track leads through your sales stages</div>
+              <div style={{ fontSize: 11, color: cardSub, marginBottom: 18 }}>Track leads through your sales stages</div>
               <div style={{ display: "flex", gap: 10 }}>
                 {[
                   { label: "New",        color: "#8b5cf6", count: totalLeads },
@@ -576,14 +545,14 @@ export default function AppDashboard() {
                   { label: "Meeting",    color: "#f59e0b", count: 0 },
                   { label: "Closed",     color: "#4ade80", count: 0 },
                 ].map(col => (
-                  <div key={col.label} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  <div key={col.label} style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <div style={{ width: 7, height: 7, borderRadius: "50%", background: col.color }} />
                       <span style={{ fontSize: 10, fontWeight: 700, color: pipelineLabel, letterSpacing: ".05em" }}>{col.label.toUpperCase()}</span>
                     </div>
-                    <div style={{ background: `${col.color}10`, border: `1.5px dashed ${col.color}30`, borderRadius: 10, padding: "18px 12px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
-                      <div style={{ fontSize: 22, fontWeight: 900, color: col.color, letterSpacing: "-.04em", lineHeight: 1 }}>{col.count}</div>
-                      <div style={{ fontSize: 9, color: topCampSub, marginTop: 4, textTransform: "uppercase", letterSpacing: ".08em" }}>leads</div>
+                    <div style={{ background: `${col.color}10`, border: `1.5px dashed ${col.color}30`, borderRadius: 10, padding: "16px 12px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 72 }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: col.color, letterSpacing: "-.03em", lineHeight: 1 }}>{col.count}</div>
+                      <div style={{ fontSize: 9, color: topCampSub, marginTop: 4, textTransform: "uppercase", letterSpacing: ".06em" }}>leads</div>
                     </div>
                   </div>
                 ))}
@@ -592,7 +561,7 @@ export default function AppDashboard() {
 
             {/* Quick Actions + Insights */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div className="d-card" style={{ padding: "20px", animation: "fadeUp .5s ease both .5s" }}>
+              <div className="d-card" style={{ padding: "18px" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: qaLabel, letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 12 }}>Quick Actions</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   <button className="qbtn-primary" onClick={() => setLocation("/app")} style={{ marginBottom: 2 }}>
@@ -609,7 +578,7 @@ export default function AppDashboard() {
               </div>
 
               {campaigns.length > 0 && (
-                <div className="d-card" style={{ padding: "18px 20px", animation: "fadeUp .5s ease both .55s" }}>
+                <div className="d-card" style={{ padding: "18px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: qaLabel, letterSpacing: ".09em", textTransform: "uppercase", marginBottom: 12 }}>Insights</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {bestDel && (
@@ -618,18 +587,14 @@ export default function AppDashboard() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80" }}>{bestDel.sent + bestDel.failed > 0 ? Math.round((bestDel.sent / (bestDel.sent + bestDel.failed)) * 100) : 0}%</div>
                       </div>
                     )}
-                    {mostLeads && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: 11, color: pipelineLabel }}>Most leads</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>{mostLeads.totalLeads}</div>
-                      </div>
-                    )}
-                    {latest && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontSize: 11, color: pipelineLabel }}>Latest sent</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981" }}>{latest.sent}</div>
-                      </div>
-                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: 11, color: pipelineLabel }}>Most leads</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>{topCampaigns[0]?.totalLeads ?? 0}</div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: 11, color: pipelineLabel }}>Avg per campaign</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: ACC }}>{campaigns.length > 0 ? Math.round(totalSent / campaigns.length) : 0}</div>
+                    </div>
                   </div>
                 </div>
               )}
